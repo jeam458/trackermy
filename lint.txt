@@ -1,0 +1,37 @@
+
+> app-bike@0.1.0 lint
+> eslint
+
+
+C:\Users\jeam\Desktop\app bike\src\app\dashboard\components\WeeklyRecord.tsx
+  1:10  warning  'Trophy' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\jeam\Desktop\app bike\src\app\login\LoginForm.tsx
+  12:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\jeam\Desktop\app bike\src\app\login\LoginForm.tsx:12:5
+  10 |
+  11 |   useEffect(() => {
+> 12 |     setSupabase(createClient())
+     |     ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  13 |   }, [])
+  14 |
+  15 |   if (!supabase) return <div className="animate-pulse h-32 bg-slate-700 rounded-xl"></div>  react-hooks/set-state-in-effect
+
+C:\Users\jeam\Desktop\app bike\src\core\infrastructure\supabase\middleware.ts
+  18:48  warning  'options' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\jeam\Desktop\app bike\src\core\infrastructure\supabase\server.ts
+  1:35  warning  'CookieOptions' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\jeam\Desktop\app bike\src\middleware.ts
+  3:43  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 5 problems (2 errors, 3 warnings)
+
