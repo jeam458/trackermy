@@ -1,126 +1,124 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter, useParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/core/infrastructure/supabase/client'
-import { SupabaseRouteRepository } from '@/core/infrastructure/repositories/SupabaseRouteRepository'
-import { RouteMapViewerDynamic } from '@/components/routes/MapWrapper'
+import { RouteTimer } from '@/components/routes/RouteTimer'
 import {
-  ArrowLeft,
-  Edit2,
-  MapPin,
+  Trophy,
+  Clock,
+  Users,
   TrendingUp,
+  Gauge,
   Mountain,
+  Play,
+  BarChart3,
+  AlertTriangle,
   Loader2,
-  Calendar,
-  User,
-  Eye,
-  EyeOff,
-  CheckCircle2,
 } from 'lucide-react'
-import { Route } from '@/core/domain/Route'
 
-export default function RouteDetailPage() {
+interface RouteStatistics {
+  total_attempts: number
+  unique_riders: number
+  best_time: number | null
+  avg_time: number | null
+  best_score: number | null
+  avg_score: number | null
+  max_recorded_speed: number | null
+  avg_jumps: number | null
+  avg_stops: number | null
+}
+
+interface RouteData {
+  id: string
+  name: string
+  description: string | null
+  distance_km: number
+  elevation_gain_m: number | null
+  difficulty: string
+  is_public: boolean
+}
+
+export default function RouteDashboardPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
-  const params = useParams()
-  const routeId = params.id as string
+  const [routeId, setRouteId] = useState<string | null>(null)
+  const [route, setRoute] = useState<RouteData | null>(null)
+  const [statistics, setStatistics] = useState<RouteStatistics | null>(null)
+  const [bestTime, setBestTime] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [showTimer, setShowTimer] = useState(false)
 
-  const [isLoading, setIsLoading] = useState(true)
-  const [route, setRoute] = useState<Route | null>(null)
-  const [isOwner, setIsOwner] = useState(false)
-  const [calculatedStats, setCalculatedStats] = useState({
-    distance: 0,
-    elevationGain: 0,
-    elevationLoss: 0,
-  })
-
-  const repository = new SupabaseRouteRepository()
-
-  // Calcular estadísticas desde los puntos GPS
-  const calculateStats = (points: Array<{latitude: number; longitude: number; altitude?: number}>) => {
-    if (points.length < 2) {
-      setCalculatedStats({ distance: 0, elevationGain: 0, elevationLoss: 0 })
-      return
-    }
-
-    let distance = 0
-    let elevationGain = 0
-    let elevationLoss = 0
-
-    for (let i = 1; i < points.length; i++) {
-      const prev = points[i - 1]
-      const curr = points[i]
-
-      // Distancia (Haversine)
-      const R = 6371000
-      const dLat = ((curr.latitude - prev.latitude) * Math.PI) / 180
-      const dLng = ((curr.longitude - prev.longitude) * Math.PI) / 180
-      const a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos((prev.latitude * Math.PI) / 180) *
-          Math.cos((curr.latitude * Math.PI) / 180) *
-          Math.sin(dLng / 2) *
-          Math.sin(dLng / 2)
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-      distance += R * c
-
-      // Elevación
-      if (prev.altitude !== undefined && curr.altitude !== undefined) {
-        const diff = curr.altitude - prev.altitude
-        if (diff > 0) {
-          elevationGain += diff
-        } else {
-          elevationLoss += Math.abs(diff)
-        }
-      }
-    }
-
-    setCalculatedStats({
-      distance: distance / 1000, // km
-      elevationGain,
-      elevationLoss,
-    })
-  }
-
+  // Obtener routeId de params
   useEffect(() => {
-    const loadRoute = async () => {
+    params.then(p => setRouteId(p.id))
+  }, [params])
+
+  // Cargar datos de la ruta
+  useEffect(() => {
+    if (!routeId) return
+
+    const loadRouteData = async () => {
       try {
         const supabase = createClient()
-        const { data: { user } } = await supabase.auth.getUser()
 
-        if (!user) {
-          router.push('/login')
-          return
+        // Cargar ruta
+        const { data: routeData, error: routeError } = await supabase
+          .from('routes')
+          .select('*')
+          .eq('id', routeId)
+          .single()
+
+        if (routeError) throw routeError
+        setRoute(routeData)
+
+        // Cargar estadísticas
+        const { data: statsData } = await supabase
+          .rpc('get_route_statistics', { p_route_id: routeId })
+
+        if (statsData && statsData.length > 0) {
+          setStatistics(statsData[0])
         }
 
-        const loadedRoute = await repository.getRouteById(routeId)
+        // Cargar mejor tiempo
+        const { data: bestTimeData } = await supabase
+          .from('route_attempts')
+          .select('*')
+          .eq('route_id', routeId)
+          .eq('is_public', true)
+          .order('total_time', { ascending: true })
+          .limit(1)
+          .single()
 
-        if (!loadedRoute) {
-          router.push('/dashboard/routes')
-          return
+        if (bestTimeData) {
+          setBestTime(bestTimeData)
         }
-
-        setRoute(loadedRoute)
-        setIsOwner(loadedRoute.createdBy === user.id)
-
-        // Calcular estadísticas desde los puntos GPS
-        const allPoints = loadedRoute.trackPoints.map(p => ({
-          latitude: p.latitude,
-          longitude: p.longitude,
-          altitude: p.altitude,
-        }))
-        calculateStats(allPoints)
-      } catch (error) {
-        console.error('Error cargando ruta:', error)
+      } catch (err) {
+        console.error('Error cargando ruta:', err)
+        setError('No se pudo cargar la ruta')
       } finally {
-        setIsLoading(false)
+        setLoading(false)
       }
     }
 
-    loadRoute()
+    loadRouteData()
   }, [routeId])
 
-  if (isLoading) {
+  // Formatear tiempo
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60)
+    const secs = Math.floor(seconds % 60)
+    const ms = Math.floor((seconds % 1) * 100)
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`
+  }
+
+  // Formatear velocidad
+  const formatSpeed = (ms: number): string => {
+    const kmh = ms * 3.6
+    return `${kmh.toFixed(1)} km/h`
+  }
+
+  if (loading) {
     return (
       <div className="min-h-screen bg-[#1c2327] flex items-center justify-center">
         <div className="text-center">
@@ -131,196 +129,185 @@ export default function RouteDetailPage() {
     )
   }
 
-  if (!route) {
-    return null
+  if (error || !route) {
+    return (
+      <div className="min-h-screen bg-[#1c2327] flex items-center justify-center">
+        <div className="text-center">
+          <AlertTriangle className="mx-auto text-red-500 mb-4" size={40} />
+          <p className="text-gray-400 mb-4">{error || 'Ruta no encontrada'}</p>
+          <button
+            onClick={() => router.back()}
+            className="px-6 py-3 bg-amber-500 hover:bg-amber-400 text-slate-900 font-semibold rounded-lg"
+          >
+            Volver
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // Mostrar timer
+  if (showTimer) {
+    return (
+      <RouteTimer
+        routeId={route.id}
+        routeName={route.name}
+        onComplete={() => setShowTimer(false)}
+      />
+    )
   }
 
   return (
     <div className="min-h-screen bg-[#1c2327] text-slate-100">
       {/* Header */}
-      <header className="bg-slate-900/50 backdrop-blur-sm border-b border-slate-800 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.back()}
-              className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
-              title="Volver a la página anterior"
-            >
-              <ArrowLeft size={20} />
-            </button>
-            <div>
-              <h1 className="text-2xl font-bold text-white">{route.name}</h1>
-              <p className="text-sm text-gray-400">
-                {route.difficulty} • {route.distanceKm.toFixed(2)} km
-              </p>
-            </div>
-          </div>
-
-          {isOwner && (
-            <button
-              onClick={() => router.push(`/dashboard/routes/${routeId}/edit`)}
-              className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-900 font-semibold rounded-lg transition-colors flex items-center gap-2"
-            >
-              <Edit2 size={18} />
-              Editar Ruta
-            </button>
-          )}
+      <header className="bg-slate-900/50 backdrop-blur-sm border-b border-slate-800">
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          <button
+            onClick={() => router.back()}
+            className="text-gray-400 hover:text-white mb-4 flex items-center gap-2"
+          >
+            ← Volver
+          </button>
+          <h1 className="text-3xl font-bold text-white mb-2">{route.name}</h1>
+          <p className="text-gray-400">{route.description || 'Sin descripción'}</p>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto p-4 space-y-6">
-        {/* Mapa */}
-        <div className="bg-slate-900/50 rounded-xl overflow-hidden border border-slate-800">
-          <div className="h-[500px]">
-            <RouteMapViewerDynamic
-              startPoint={{
-                latitude: route.startCoord[0],
-                longitude: route.startCoord[1],
-              }}
-              endPoint={{
-                latitude: route.endCoord[0],
-                longitude: route.endCoord[1],
-              }}
-              trackPoints={route.trackPoints.slice(1, -1).map(p => ({
-                latitude: p.latitude,
-                longitude: p.longitude,
-                altitude: p.altitude,
-              }))}
-              zoom={15}
-            />
+      <main className="max-w-7xl mx-auto p-4 space-y-6">
+        {/* Info de ruta */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="p-4 bg-slate-800/50 rounded-xl">
+            <div className="flex items-center gap-2 mb-2">
+              <TrendingUp className="text-amber-500" size={18} />
+              <span className="text-xs text-gray-400">Distancia</span>
+            </div>
+            <p className="text-xl font-bold text-white">{route.distance_km.toFixed(2)} km</p>
           </div>
+
+          <div className="p-4 bg-slate-800/50 rounded-xl">
+            <div className="flex items-center gap-2 mb-2">
+              <Mountain className="text-green-500" size={18} />
+              <span className="text-xs text-gray-400">Elevación</span>
+            </div>
+            <p className="text-xl font-bold text-white">
+              {route.elevation_gain_m ? `+${route.elevation_gain_m.toFixed(0)} m` : 'N/A'}
+            </p>
+          </div>
+
+          <div className="p-4 bg-slate-800/50 rounded-xl">
+            <div className="flex items-center gap-2 mb-2">
+              <Gauge className="text-blue-500" size={18} />
+              <span className="text-xs text-gray-400">Dificultad</span>
+            </div>
+            <p className="text-xl font-bold text-white">{route.difficulty}</p>
+          </div>
+
+          {statistics && (
+            <div className="p-4 bg-slate-800/50 rounded-xl">
+              <div className="flex items-center gap-2 mb-2">
+                <Users className="text-purple-500" size={18} />
+                <span className="text-xs text-gray-400">Riders</span>
+              </div>
+              <p className="text-xl font-bold text-white">{statistics.unique_riders}</p>
+            </div>
+          )}
         </div>
 
-        {/* Información */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Estadísticas */}
-          <div className="bg-slate-900/50 rounded-xl p-6 border border-slate-800">
-            <h3 className="font-semibold text-white mb-4">Estadísticas</h3>
+        {/* Botón iniciar intento */}
+        <button
+          onClick={() => setShowTimer(true)}
+          className="w-full py-6 bg-green-500 hover:bg-green-400 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-3 text-xl"
+        >
+          <Play size={28} />
+          Iniciar Recorrido
+        </button>
 
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-gray-400">
-                  <TrendingUp size={18} />
-                  <span>Distancia</span>
-                </div>
-                <span className="text-xl font-bold text-white">
-                  {calculatedStats.distance > 0 
-                    ? `${calculatedStats.distance.toFixed(2)} km` 
-                    : `${route.distanceKm.toFixed(2)} km`}
-                </span>
+        {/* Mejor tiempo */}
+        {bestTime && (
+          <div className="p-6 bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-xl border-2 border-amber-500/30">
+            <div className="flex items-center gap-3 mb-4">
+              <Trophy className="text-amber-500" size={32} />
+              <div>
+                <h3 className="text-sm text-gray-400">Mejor Tiempo</h3>
+                <p className="text-3xl font-bold text-amber-500 font-mono">
+                  {formatTime(bestTime.total_time)}
+                </p>
               </div>
-
-              {(calculatedStats.elevationGain > 0 || route.elevationGainM) && (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-gray-400">
-                    <Mountain size={18} />
-                    <span>Elevación +</span>
-                  </div>
-                  <span className="text-xl font-bold text-green-400">
-                    +{calculatedStats.elevationGain > 0 
-                      ? calculatedStats.elevationGain.toFixed(0) 
-                      : route.elevationGainM?.toFixed(0)} m
-                  </span>
-                </div>
-              )}
-
-              {(calculatedStats.elevationLoss > 0 || route.elevationLossM) && (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-gray-400">
-                    <Mountain size={18} className="rotate-180" />
-                    <span>Elevación -</span>
-                  </div>
-                  <span className="text-xl font-bold text-red-400">
-                    -{calculatedStats.elevationLoss > 0 
-                      ? calculatedStats.elevationLoss.toFixed(0) 
-                      : route.elevationLossM?.toFixed(0)} m
-                  </span>
-                </div>
-              )}
             </div>
-
-            {calculatedStats.distance > 0 && (
-              <p className="text-xs text-gray-400 mt-4 flex items-center gap-2">
-                <CheckCircle2 size={12} className="text-green-500" />
-                Estadísticas calculadas desde {route.trackPoints.length} puntos GPS
-              </p>
-            )}
-          </div>
-
-          {/* Detalles */}
-          <div className="bg-slate-900/50 rounded-xl p-6 border border-slate-800">
-            <h3 className="font-semibold text-white mb-4">Detalles</h3>
-
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-gray-400">
-                <User size={18} />
-                <span>Creado por</span>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <p className="text-gray-400">Velocidad máxima</p>
+                <p className="font-semibold text-white">{formatSpeed(bestTime.max_speed)}</p>
               </div>
-              <p className="text-white">Usuario</p>
-
-              <div className="flex items-center gap-2 text-gray-400">
-                <Calendar size={18} />
-                <span>Fecha de creación</span>
+              <div>
+                <p className="text-gray-400">Score</p>
+                <p className="font-semibold text-white">{bestTime.overall_score}/100</p>
               </div>
-              <p className="text-white">
-                {new Date(route.createdAt).toLocaleDateString('es-ES')}
-              </p>
-
-              <div className="flex items-center gap-2 text-gray-400">
-                {route.isPublic ? <Eye size={18} /> : <EyeOff size={18} />}
-                <span>Visibilidad</span>
-              </div>
-              <p className="text-white">
-                {route.isPublic ? 'Pública' : 'Privada'}
-              </p>
             </div>
-          </div>
-        </div>
-
-        {/* Descripción */}
-        {route.description && (
-          <div className="bg-slate-900/50 rounded-xl p-6 border border-slate-800">
-            <h3 className="font-semibold text-white mb-4">Descripción</h3>
-            <p className="text-gray-300">{route.description}</p>
           </div>
         )}
 
-        {/* Puntos del track */}
-        <div className="bg-slate-900/50 rounded-xl p-6 border border-slate-800">
-          <h3 className="font-semibold text-white mb-4">
-            Puntos del Track ({route.trackPoints.length})
-          </h3>
+        {/* Estadísticas */}
+        {statistics && (
+          <div className="p-6 bg-slate-800/50 rounded-xl space-y-4">
+            <div className="flex items-center gap-2 mb-4">
+              <BarChart3 className="text-blue-500" size={24} />
+              <h3 className="text-xl font-bold text-white">Estadísticas de la Ruta</h3>
+            </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-            {route.trackPoints.slice(0, 9).map((point, index) => (
-              <div
-                key={index}
-                className="bg-slate-800 rounded-lg p-3 text-sm"
-              >
-                <div className="flex items-center gap-2 mb-1">
-                  <MapPin size={14} className="text-amber-500" />
-                  <span className="text-gray-400">Punto {index + 1}</span>
-                </div>
-                <p className="text-white font-mono text-xs">
-                  {point.latitude.toFixed(6)}, {point.longitude.toFixed(6)}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="p-4 bg-slate-700/50 rounded-lg">
+                <p className="text-xs text-gray-400 mb-1">Total de intentos</p>
+                <p className="text-2xl font-bold text-white">{statistics.total_attempts}</p>
+              </div>
+
+              <div className="p-4 bg-slate-700/50 rounded-lg">
+                <p className="text-xs text-gray-400 mb-1">Tiempo promedio</p>
+                <p className="text-2xl font-bold text-white">
+                  {statistics.avg_time ? formatTime(statistics.avg_time) : 'N/A'}
                 </p>
-                {point.altitude && (
-                  <p className="text-gray-400 text-xs">
-                    Altitud: {point.altitude.toFixed(0)}m
-                  </p>
-                )}
               </div>
-            ))}
-            {route.trackPoints.length > 9 && (
-              <div className="bg-slate-800 rounded-lg p-3 text-sm flex items-center justify-center">
-                <span className="text-gray-400">
-                  +{route.trackPoints.length - 9} puntos más
-                </span>
+
+              <div className="p-4 bg-slate-700/50 rounded-lg">
+                <p className="text-xs text-gray-400 mb-1">Score promedio</p>
+                <p className="text-2xl font-bold text-white">
+                  {statistics.avg_score ? statistics.avg_score.toFixed(0) : 'N/A'}
+                </p>
               </div>
-            )}
+
+              <div className="p-4 bg-slate-700/50 rounded-lg">
+                <p className="text-xs text-gray-400 mb-1">Vel. máxima registrada</p>
+                <p className="text-2xl font-bold text-green-400">
+                  {statistics.max_recorded_speed ? formatSpeed(statistics.max_recorded_speed) : 'N/A'}
+                </p>
+              </div>
+
+              <div className="p-4 bg-slate-700/50 rounded-lg">
+                <p className="text-xs text-gray-400 mb-1">Saltos promedio</p>
+                <p className="text-2xl font-bold text-white">
+                  {statistics.avg_jumps ? statistics.avg_jumps.toFixed(1) : '0'}
+                </p>
+              </div>
+
+              <div className="p-4 bg-slate-700/50 rounded-lg">
+                <p className="text-xs text-gray-400 mb-1">Paradas promedio</p>
+                <p className="text-2xl font-bold text-white">
+                  {statistics.avg_stops ? statistics.avg_stops.toFixed(1) : '0'}
+                </p>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        )}
+
+        {/* Link a ranking */}
+        <button
+          onClick={() => router.push(`/dashboard/routes/${routeId}/ranking`)}
+          className="w-full py-4 bg-slate-800 hover:bg-slate-700 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+        >
+          <Trophy size={20} className="text-amber-500" />
+          Ver Ranking Completo
+        </button>
+      </main>
     </div>
   )
 }
