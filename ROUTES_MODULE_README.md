@@ -16,6 +16,14 @@ El sistema incluye algoritmos avanzados de mitigación de ruido GPS para garanti
 - **Detección de outliers**: Elimina puntos con velocidad imposible o baja precisión
 - **Validación de distancia mínima**: Evita puntos redundantes
 
+### 📴 Modo Offline (¡NUEVO!)
+- **Tracking sin internet**: Grabación GPS completa sin conexión
+- **Almacenamiento local**: IndexedDB para persistencia
+- **Sincronización automática**: Detecta conexión y sincroniza
+- **Indicadores visuales**: Estado online/offline en tiempo real
+- **Reintentos inteligentes**: Cada 30 segundos automáticamente
+- **Cero pérdida de datos**: Todo se guarda localmente primero
+
 ### 🗺️ Creación de Rutas
 - **Punto de partida y llegada**: Define los extremos de la ruta
 - **Puntos intermedios**: Traza el camino exacto a seguir
@@ -35,6 +43,25 @@ El sistema incluye algoritmos avanzados de mitigación de ruido GPS para garanti
 - **Pausar/Reanudar**: Control total sobre la grabación
 - **Filtrado automático**: Descarta puntos con baja precisión automáticamente
 
+### 📴 Modo Offline (¡NUEVO!)
+- **Funciona SIN internet**: GPS tracking completo sin conexión
+- **Almacenamiento IndexedDB**: Datos persistentes localmente
+- **Sincronización automática**: Al detectar conexión
+- **Indicadores de estado**: Online/Offline/Pendiente en UI
+- **Cero pérdida de datos**: Todo se guarda localmente primero
+- **Reintentos automáticos**: Cada 30 segundos
+
+**¿Cómo funciona?**
+```
+Sin Internet:
+  GPS → Coordenadas → IndexedDB (local) → ✅ Guardado
+
+Con Internet:
+  IndexedDB → Sincronización → Supabase → ✅ Ruta creada
+```
+
+**Ver documentación completo**: [OFFLINE_MODE.md](./OFFLINE_MODE.md)
+
 ## Estructura de Archivos
 
 ```
@@ -53,18 +80,27 @@ src/
 │           ├── client.ts         # Cliente de Supabase (browser)
 │           └── server.ts         # Cliente de Supabase (server)
 ├── components/
-│   └── routes/
-│       ├── RouteMapEditor.tsx    # Componente de mapa interactivo
-│       └── MapWrapper.tsx        # Wrapper para carga dinámica
+│   ├── routes/
+│   │   ├── RouteMapEditor.tsx    # Componente de mapa interactivo
+│   │   └── MapWrapper.tsx        # Wrapper para carga dinámica
+│   └── mobile/
+│       └── MobileGPSTracker.tsx  # Componente de tracking móvil (nuevo)
 ├── hooks/
 │   ├── useRouteCreator.ts        # Hook para creación de rutas
-│   └── useGPSRecorder.ts         # Hook para grabación GPS
+│   ├── useGPSRecorder.ts         # Hook para grabación GPS
+│   └── useMobileGPSTracker.ts    # Hook para tracking móvil (nuevo)
+├── services/
+│   ├── GPSTrackingService.ts     # Servicio GPS avanzado (nuevo)
+│   ├── IndexedDBService.ts       # Servicio offline (nuevo)
+│   └── SyncManager.ts            # Gestor de sincronización (nuevo)
 └── app/
     └── dashboard/
         └── routes/
             ├── page.tsx          # Lista de rutas del usuario
             ├── create/
-            │   └── page.tsx      # Página de creación (dibujo)
+            │   ├── page.tsx      # Página de creación (dibujo web)
+            │   └── mobile/
+            │       └── page.tsx  # Página de creación móvil (nuevo)
             └── record/
                 └── page.tsx      # Página de grabación (GPS)
 ```
@@ -135,12 +171,52 @@ Reduce la cantidad de puntos manteniendo la forma del track (tolerancia: 5 metro
 
 ## Uso
 
+### Detectar Dispositivo Automáticamente
+El sistema detecta si estás en un dispositivo móvil y sugiere el método de grabación GPS:
+- **Móvil**: GPS Tracker en tiempo real (paso a paso)
+- **Web**: Editor manual en el mapa
+
+Puedes acceder directamente:
+- Móvil: `/dashboard/routes/create/mobile`
+- Web: `/dashboard/routes/create`
+
 ### Crear Ruta desde el Perfil
 1. Ve a tu perfil en `/dashboard/profile`
 2. Click en el botón verde `+` (Crear nueva ruta)
 3. Selecciona "Dibujar en mapa" o "Grabar en tiempo real"
 
-### Dibujar en Mapa
+### 📱 GPS Tracker Móvil (Recomendado para Celulares)
+**Flujo paso a paso:**
+
+1. **Paso 1: Punto de Partida**
+   - Click en "Usar Mi Ubicación Actual"
+   - El sistema obtiene tus coordenadas GPS
+
+2. **Paso 2: Punto de Llegada**
+   - Click en "Usar Mi Ubicación Actual"
+   - Se establece el punto final de la ruta
+
+3. **Paso 3: Grabación Automática**
+   - El tracking inicia automáticamente
+   - Camina/pedalea tu ruta
+   - **Pausa automática**: Si te detienes (>5 segundos), el tracking se pausa solo
+   - **Control de velocidad**: Muestra velocidad actual, promedio y máxima
+   - **Métricas en vivo**: Distancia, tiempo, puntos GPS
+
+4. **Finalizar y Guardar**
+   - Click en "Finalizar" para detener la grabación
+   - Completa nombre, descripción y dificultad
+   - Click en "Guardar Ruta"
+
+**Características del Tracking Móvil:**
+- ✅ Detección automática de paradas por velocidad
+- ✅ Filtrado de precisión GPS (máx 30 metros)
+- ✅ Distancia mínima entre puntos (5 metros)
+- ✅ Suavizado con filtro de Kalman
+- ✅ Métricas en tiempo real
+- ✅ Indicador de calidad de señal GPS
+
+### 🖥️ Dibujar en Mapa (Web)
 1. Click en "Comenzar a Dibujar"
 2. Click para marcar el punto de partida
 3. Click para marcar el punto de llegada
@@ -149,14 +225,6 @@ Reduce la cantidad de puntos manteniendo la forma del track (tolerancia: 5 metro
 6. "Procesar Ruta" para aplicar filtros GPS
 7. Completa la información (nombre, dificultad, etc.)
 8. "Guardar Ruta"
-
-### Grabar en Tiempo Real
-1. Click en "Grabar Ruta"
-2. Click en "Iniciar Grabación" (permite acceso al GPS)
-3. Recorre la ruta en bicicleta
-4. Pausa si necesitas detenerte
-5. Click en "Detener" al finalizar
-6. Ingresa el nombre y guarda la ruta
 
 ## APIs y Funciones
 
@@ -189,6 +257,107 @@ const {
   minDistance: 3,
 })
 ```
+
+### Hook `useMobileGPSTracker` (Nuevo)
+Hook optimizado para dispositivos móviles con flujo paso a paso:
+
+```typescript
+const { state, actions } = useMobileGPSTracker({
+  minMovementSpeed: 0.5, // m/s (~1.8 km/h)
+  minStopDuration: 5000, // ms (5 segundos)
+  samplingInterval: 2000, // ms (2 segundos)
+  maxAccuracyThreshold: 30, // metros
+  minDistanceBetweenPoints: 5, // metros
+  speedAveragingWindow: 10000, // ms (10 segundos)
+})
+
+// Estado incluye:
+state.step // 'set-start' | 'set-end' | 'tracking' | 'paused' | 'completed'
+state.startPoint, state.endPoint, state.trackPoints
+state.isTracking, state.isPaused, state.isStopped
+state.currentSpeed, state.averageSpeed, state.maxSpeed
+state.distanceTraveled, state.elapsedTime
+state.accuracy, state.gpsSignalLost
+
+// Acciones:
+actions.setStartPoint() // Obtener ubicación actual como inicio
+actions.setEndPoint() // Obtener ubicación actual como fin
+actions.pauseTracking() // Pausar manualmente
+actions.resumeTracking() // Reanudar tracking
+actions.completeTracking() // Finalizar y completar
+actions.cancelTracking() // Cancelar y reiniciar todo
+```
+
+### Componente `MobileGPSTracker`
+Componente UI completo para tracking móvil:
+
+```typescript
+<MobileGPSTracker
+  onComplete={(points, start, end) => {
+    // Manejar puntos grabados
+    console.log(`Track: ${points.length} puntos`)
+  }}
+  onCancel={() => {
+    // Manejar cancelación
+  }}
+/>
+```
+
+**Características:**
+- Flujo paso a paso visual con barra de progreso
+- Detección automática de paradas por velocidad
+- Métricas en tiempo real (distancia, tiempo, velocidad)
+- Indicador de precisión GPS
+- Controles de pausa/reanudación
+- Consejos de uso integrados
+
+### Servicio `GPSTrackingService`
+Servicio avanzado para tracking GPS con filtro de Kalman:
+
+```typescript
+const gpsService = new GPSTrackingService()
+
+// Iniciar sesión de tracking
+await gpsService.startSession(
+  (reading) => {
+    console.log('Nueva lectura:', reading)
+  },
+  (error) => {
+    console.error('Error:', error)
+  },
+  true, // enableHighAccuracy
+  0, // maximumAge
+  15000 // timeout
+)
+
+// Obtener puntos procesados
+const points = gpsService.getTrackPoints({
+  minAccuracy: 30, // metros
+  minDistance: 5 // metros
+})
+
+// Obtener estadísticas
+const stats = gpsService.getSessionStats()
+// {
+//   totalPoints: number,
+//   totalDistance: number,
+//   averageSpeed: number,
+//   maxSpeed: number,
+//   averageAccuracy: number,
+//   duration: number
+// }
+
+// Detener sesión
+gpsService.stopSession()
+```
+
+**Características del Servicio:**
+- Filtro de Kalman para suavizar coordenadas
+- Evaluación automática de calidad de señal
+- Calibración manual de altitud
+- Filtrado por precisión y distancia mínima
+- Estadísticas completas de la sesión
+- Gestión automática de permisos
 
 ### Servicio `GPSTrackProcessingService`
 ```typescript
