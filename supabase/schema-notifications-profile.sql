@@ -6,20 +6,31 @@
 -- ============================================
 -- 1. Tabla: notifications
 -- ============================================
-CREATE TABLE IF NOT EXISTS public.notifications (
+DROP TABLE IF EXISTS public.notifications CASCADE;
+
+CREATE TABLE public.notifications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    type TEXT NOT NULL CHECK (type IN ('new_route', 'new_record', 'route_updated')),
+    type TEXT NOT NULL,
     title TEXT NOT NULL,
     message TEXT NOT NULL,
     route_id UUID REFERENCES public.routes(id) ON DELETE CASCADE,
     attempt_id UUID REFERENCES public.route_attempts(id) ON DELETE CASCADE,
     is_read BOOLEAN NOT NULL DEFAULT false,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-    -- Índice para consultas eficientes
-    CONSTRAINT notifications_type_check CHECK (type IN ('new_route', 'new_record', 'route_updated'))
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Add check constraint safely
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'notifications_type_check'
+    ) THEN
+        ALTER TABLE public.notifications 
+            ADD CONSTRAINT notifications_type_check 
+            CHECK (type IN ('new_route', 'new_record', 'route_updated'));
+    END IF;
+END $$;
 
 -- Índices
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON public.notifications(user_id);
