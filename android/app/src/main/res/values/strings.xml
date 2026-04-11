@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Downhill Tracker</string>
+    <string name="title_activity_main">Downhill Tracker</string>
+    <string name="package_name">com.dhtracker.app</string>
+    <string name="custom_url_scheme">com.dhtracker.app</string>
+</resources>

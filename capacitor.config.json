@@ -1,0 +1,14 @@
+{
+  "appId": "com.dhtracker.app",
+  "appName": "Downhill Tracker",
+  "webDir": "out",
+  "bundledWebRuntime": false,
+  "android": {
+    "buildOptions": {
+      "keystorePath": "",
+      "keystorePassword": "",
+      "keystoreAlias": "",
+      "keystoreAliasPassword": ""
+    }
+  }
+}
