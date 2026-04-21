@@ -7,9 +7,11 @@ import { MapPin, Navigation, Trash2, Undo2, Layers } from 'lucide-react'
 import 'leaflet/dist/leaflet.css'
 import { HYBRID_MAP_LAYERS, DOWNHILL_HYBRID_CONFIG } from './hybridMapStyle'
 
-// Fix para iconos de Leaflet en React
+import { GeoSearchControl, OpenStreetMapProvider } from 'leaflet-geosearch'
+import 'leaflet-geosearch/dist/geosearch.css'
+
+// Fix para iconos de Leaflet en React (Soporte SSR)
 const createCustomIcon = (color: string, size = 25) => {
-  // Usar encodeURIComponent en lugar de btoa para evitar problemas con SSR
   const svgContent = `
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${color}" width="${size}" height="${size}">
         <circle cx="12" cy="12" r="10" stroke="white" stroke-width="2"/>
@@ -17,7 +19,7 @@ const createCustomIcon = (color: string, size = 25) => {
     `.trim()
   
   return new Icon({
-    iconUrl: `data:image/svg+xml;base64,${btoa(svgContent)}`,
+    iconUrl: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgContent),
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
     popupAnchor: [0, -size / 2],
@@ -63,7 +65,7 @@ function MapEventHandler({
   onMapClick: (lat: number, lng: number) => void
   onMapReady: (map: Map) => void
 }) {
-  useMapEvents({
+  const map = useMapEvents({
     click: (e) => {
       onMapClick(e.latlng.lat, e.latlng.lng)
     },
@@ -71,6 +73,35 @@ function MapEventHandler({
       onMapReady(e.target)
     },
   })
+
+  // Add GeoSearch Component
+  useEffect(() => {
+    if (!map) return
+
+    const provider = new OpenStreetMapProvider()
+    // Utilizar new para instanciar la clase y position topright para que no se oculte
+    const searchControl = new (GeoSearchControl as any)({
+      provider: provider,
+      style: 'bar',
+      position: 'topright',
+      showMarker: true,
+      showPopup: false,
+      autoClose: true,
+      searchLabel: 'Buscar dirección o ciudad...'
+    })
+
+    map.addControl(searchControl)
+    
+    // Ensure map instance is passed out
+    onMapReady(map)
+    
+    return () => {
+      if (map && searchControl) {
+        map.removeControl(searchControl)
+      }
+    }
+  }, [map, onMapReady])
+
   return null
 }
 
@@ -330,12 +361,12 @@ export function RouteMapEditor({
         switch (pointSelectionMode) {
           case 'start':
             onStartPointSet(newPoint)
-            // Después de poner el inicio, limpiar selección para mostrar el panel
+            cancelPointSelection() // LIMPIAR LA SELECCIÓN
             break
 
           case 'end':
             onEndPointSet(newPoint)
-            // Después de poner el fin, limpiar selección
+            cancelPointSelection() // LIMPIAR LA SELECCIÓN
             break
 
           case 'intermediate':
@@ -379,19 +410,53 @@ export function RouteMapEditor({
         className="w-full h-full rounded-lg"
         style={{ minHeight: '400px' }}
       >
-        {/* Capa satelital (Esri World Imagery) - Zoom máximo 19 */}
+        {/* Capa satelital (Esri World Imagery) - Base */}
         <TileLayer
-          attribution='Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
-          url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-          maxZoom={19}
+          attribution={HYBRID_MAP_LAYERS.satellite.attribution}
+          url={HYBRID_MAP_LAYERS.satellite.url}
+          opacity={HYBRID_MAP_LAYERS.satellite.opacity}
         />
 
-        {/* Capa de etiquetas de calles (referencia) */}
+        {/* 2. Relieve sombreado (terrain) */}
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://stamen-tiles.a.ssl.fastly.net/toner-labels/{z}/{x}/{y}.png"
-          opacity={0.4}
-          maxZoom={19}
+          attribution={HYBRID_MAP_LAYERS.terrain.attribution}
+          url={HYBRID_MAP_LAYERS.terrain.url}
+          opacity={HYBRID_MAP_LAYERS.terrain.opacity}
+        />
+
+        {/* 3. Hidrografía (ríos, lagos, quebradas) */}
+        <TileLayer
+          attribution={HYBRID_MAP_LAYERS.hydrography.attribution}
+          url={HYBRID_MAP_LAYERS.hydrography.url}
+          opacity={HYBRID_MAP_LAYERS.hydrography.opacity}
+        />
+
+        {/* 4. Parques y áreas verdes */}
+        <TileLayer
+          attribution={HYBRID_MAP_LAYERS.parks.attribution}
+          url={HYBRID_MAP_LAYERS.parks.url}
+          opacity={HYBRID_MAP_LAYERS.parks.opacity}
+        />
+
+        {/* 5. Transporte (carreteras, avenidas, pasajes) */}
+        <TileLayer
+          attribution={HYBRID_MAP_LAYERS.transport.attribution}
+          url={HYBRID_MAP_LAYERS.transport.url}
+          opacity={HYBRID_MAP_LAYERS.transport.opacity}
+        />
+
+        {/* 6. Etiquetas de calles */}
+        <TileLayer
+          attribution={HYBRID_MAP_LAYERS.labelsRoads.attribution}
+          url={HYBRID_MAP_LAYERS.labelsRoads.url}
+          opacity={HYBRID_MAP_LAYERS.labelsRoads.opacity}
+        />
+
+        {/* 7. Etiquetas de lugares (ciudades, pueblos, locales) */}
+        <TileLayer
+          attribution={HYBRID_MAP_LAYERS.labelsPlaces.attribution}
+          url={HYBRID_MAP_LAYERS.labelsPlaces.url}
+          opacity={HYBRID_MAP_LAYERS.labelsPlaces.opacity}
         />
 
         {/* Marker de inicio */}

@@ -12,17 +12,17 @@ export const HYBRID_MAP_LAYERS = {
     opacity: 1,
   },
 
-  // Capa de etiquetas de lugares (ciudades, pueblos, sitios)
+  // Capa de etiquetas de lugares (ciudades, pueblos, sitios) - Dark Mode
   labelsPlaces: {
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
-    attribution: 'Esri - Lugares',
+    url: 'https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
+    attribution: 'Esri - Dark Reference',
     opacity: 0.9,
   },
 
   // Capa de etiquetas de calles
   labelsRoads: {
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Road_Attribution/MapServer/tile/{z}/{y}/{x}',
-    attribution: 'Esri - Calles',
+    url: 'https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
+    attribution: 'Esri - Calles Oscuras',
     opacity: 0.8,
   },
 
@@ -54,9 +54,9 @@ export const HYBRID_MAP_LAYERS = {
     opacity: 0.5,
   },
 
-  // Capa de límites administrativos
+  // Capa de límites administrativos - Dark boundaries
   boundaries: {
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Administrative_Boundaries/MapServer/tile/{z}/{y}/{x}',
+    url: 'https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
     attribution: 'Esri - Límites',
     opacity: 0.6,
   },

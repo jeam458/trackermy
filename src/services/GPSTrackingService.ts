@@ -2,6 +2,9 @@
 
 import { GPSTrackPoint } from '@/hooks/useMobileGPSTracker'
 import { MapPoint } from '@/components/routes/RouteMapEditor'
+import { Capacitor, registerPlugin } from '@capacitor/core'
+
+const BackgroundGeolocation = registerPlugin<any>('BackgroundGeolocation')
 
 export interface GPSReading {
   latitude: number
@@ -113,6 +116,8 @@ class SimpleKalmanFilter {
 
 export class GPSTrackingService {
   private watchId: number | null = null
+  private nativeWatcherId: string | null = null
+  private isNative: boolean = Capacitor.isNativePlatform()
   private session: GPSSession = {
     isActive: false,
     readings: [],
@@ -162,15 +167,83 @@ export class GPSTrackingService {
     this.kalmanLat = null
     this.kalmanLng = null
 
+    if (this.isNative) {
+      try {
+        const watcherId = await BackgroundGeolocation.addWatcher(
+          {
+            backgroundMessage: "Cancel to prevent battery drain.",
+            backgroundTitle: "Tracking You.",
+            requestPermissions: true,
+            stale: false,
+            distanceFilter: 1 // Actualizar por cada metro si es posible en descenso
+          },
+          (location: any, error: any) => {
+            if (error) {
+              if (error.code === "NOT_AUTHORIZED") {
+                 this.session.permissionGranted = false
+                 onError('Permiso de ubicación denegado.')
+              } else {
+                 onError('Error de GPS nativo: ' + (error.message || 'Desconocido'))
+              }
+              return
+            }
+
+            if (location) {
+              // Convertir a formato GeolocationPosition para reusar procesador
+              const pos = {
+                coords: {
+                  latitude: location.latitude,
+                  longitude: location.longitude,
+                  altitude: location.altitude !== undefined ? location.altitude : null,
+                  accuracy: location.accuracy,
+                  altitudeAccuracy: location.altitudeAccuracy || null,
+                  heading: location.bearing || null,
+                  speed: location.speed || null,
+                },
+                timestamp: location.time || Date.now(),
+              } as unknown as GeolocationPosition
+              
+              const reading = this.processGPSReading(pos)
+              this.session.currentReading = reading
+              this.session.readings.push(reading)
+              
+              if (this.session.readings.length > 2000) {
+                this.session.readings = this.session.readings.slice(-2000)
+              }
+
+              onLocationUpdate(reading)
+            }
+          }
+        )
+        this.nativeWatcherId = watcherId
+      } catch (err) {
+        console.error("Error setting up background geolocation", err)
+        // Fallback
+        this.startWebWatcher(onLocationUpdate, onError, enableHighAccuracy, maximumAge, timeout)
+      }
+    } else {
+      this.startWebWatcher(onLocationUpdate, onError, enableHighAccuracy, maximumAge, timeout)
+    }
+
+    return true
+  }
+
+  private startWebWatcher(
+    onLocationUpdate: (reading: GPSReading) => void,
+    onError: (error: string) => void,
+    enableHighAccuracy: boolean,
+    maximumAge: number,
+    timeout: number
+  ) {
     this.watchId = navigator.geolocation.watchPosition(
       (position) => {
         const reading = this.processGPSReading(position)
         this.session.currentReading = reading
         this.session.readings.push(reading)
         
-        // Mantener solo últimas 1000 lecturas
-        if (this.session.readings.length > 1000) {
-          this.session.readings = this.session.readings.slice(-1000)
+        // Mantener solo últimas 2000 lecturas
+        if (this.session.readings.length > 2000) {
+          this.session.readings = this.session.readings.slice(-2000)
         }
 
         onLocationUpdate(reading)
@@ -200,8 +273,6 @@ export class GPSTrackingService {
         timeout,
       }
     )
-
-    return true
   }
 
   // Detener sesión
@@ -209,6 +280,10 @@ export class GPSTrackingService {
     if (this.watchId !== null) {
       navigator.geolocation.clearWatch(this.watchId)
       this.watchId = null
+    }
+    if (this.nativeWatcherId !== null) {
+      BackgroundGeolocation.removeWatcher({ id: this.nativeWatcherId })
+      this.nativeWatcherId = null
     }
     this.session.isActive = false
     this.kalmanLat = null

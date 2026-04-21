@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { MapPoint } from '@/components/routes/RouteMapEditor'
 import { indexedDBService } from '@/services/IndexedDBService'
 import { syncManager } from '@/services/SyncManager'
+import { GPSTrackingService, GPSReading } from '@/services/GPSTrackingService'
 
 export interface GPSTrackPoint extends MapPoint {
   timestamp: Date
@@ -128,6 +129,7 @@ export function useMobileGPSTracker(config?: TrackingConfig) {
   const stopStartTimeRef = useRef<Date | null>(null)
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const isTrackingRef = useRef(false)
+  const gpsServiceRef = useRef<GPSTrackingService>(new GPSTrackingService())
 
   // Calcular velocidad entre dos puntos
   const calculateSpeed = useCallback((point1: GPSTrackPoint, point2: GPSTrackPoint): number => {
@@ -183,12 +185,11 @@ export function useMobileGPSTracker(config?: TrackingConfig) {
   }, [])
 
   // Procesar nueva ubicación GPS
-  const processLocationUpdate = useCallback((position: GeolocationPosition) => {
-    const { latitude, longitude, altitude, accuracy, speed, heading } = position.coords
-    const timestamp = new Date(position.timestamp)
+  const processLocationUpdate = useCallback((reading: GPSReading) => {
+    const { latitude, longitude, altitude, accuracy, speed, heading, timestamp } = reading
 
     // Verificar precisión
-    if (!isAccurateEnough(accuracy)) {
+    if (!isAccurateEnough(accuracy !== null ? accuracy : undefined)) {
       console.log(`Precisión insuficiente: ${accuracy}m > ${cfg.maxAccuracyThreshold}m`)
       return
     }
@@ -200,7 +201,7 @@ export function useMobileGPSTracker(config?: TrackingConfig) {
       accuracy: accuracy ?? undefined,
       timestamp,
       speed: speed ?? 0,
-      heading: heading,
+      heading,
     }
 
     setState(prev => {
@@ -318,61 +319,26 @@ export function useMobileGPSTracker(config?: TrackingConfig) {
 
   // Iniciar watch de posición GPS
   const startGPSWatch = useCallback(() => {
-    if (!navigator.geolocation) {
-      setState(prev => ({
-        ...prev,
-        error: 'Geolocalización no soportada por este dispositivo',
-      }))
-      return
-    }
-
-    // Limpiar watch anterior
-    if (watchIdRef.current !== null) {
-      navigator.geolocation.clearWatch(watchIdRef.current)
-    }
-
-    watchIdRef.current = navigator.geolocation.watchPosition(
+    gpsServiceRef.current.startSession(
       processLocationUpdate,
-      (error) => {
-        console.error('Error de GPS:', error)
-        let errorMsg = 'Error de GPS: '
-
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            errorMsg += 'Permiso denegado. Activa la ubicación en tu dispositivo.'
-            break
-          case error.POSITION_UNAVAILABLE:
-            errorMsg += 'Ubicación no disponible'
-            break
-          case error.TIMEOUT:
-            errorMsg += 'Timeout al obtener ubicación'
-            break
-          default:
-            errorMsg += 'Error desconocido'
-        }
-
+      (errorMsg) => {
+        console.error('Error de GPSTrackingService:', errorMsg)
         setState(prev => ({
           ...prev,
           error: errorMsg,
           gpsSignalLost: true,
         }))
       },
-      {
-        enableHighAccuracy: true,
-        maximumAge: 0, // No aceptar caché
-        timeout: 15000, // 15 segundos timeout
-      }
+      true, // enableHighAccuracy
+      0, // maximumAge
+      15000 // timeout
     )
-
     isTrackingRef.current = true
   }, [processLocationUpdate])
 
   // Detener watch de posición GPS
   const stopGPSWatch = useCallback(() => {
-    if (watchIdRef.current !== null) {
-      navigator.geolocation.clearWatch(watchIdRef.current)
-      watchIdRef.current = null
-    }
+    gpsServiceRef.current.stopSession()
     isTrackingRef.current = false
   }, [])
 

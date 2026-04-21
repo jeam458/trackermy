@@ -6,7 +6,7 @@ echo.
 
 set ANDROID_HOME=C:\Users\jeam\AppData\Local\Android\Sdk
 set ANDROID_SDK_ROOT=C:\Users\jeam\AppData\Local\Android\Sdk
-set JAVA_HOME=C:\Program Files\Java\jdk-17
+set JAVA_HOME=C:\Program Files\Java\jdk-21.0.10
 
 echo [1/4] Creating Android project...
 npx cap sync android
