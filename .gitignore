@@ -45,7 +45,5 @@ next-env.d.ts
 
 .vercel
 
-# local IDE / agent (no versionar en el repo de la app)
-.cursor/
-.agents/
+# local IDE (si no quieres versionarlo)
 .vscode/
