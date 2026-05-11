@@ -1,0 +1,180 @@
+{
+  "version": 1,
+  "nodes": [
+    {
+      "id": "gdh.linea",
+      "parent_id": null,
+      "level": 1,
+      "title_es": "Línea, visión y modulación de frenos",
+      "summary_es": "Eje raíz: una intención clara por tramo, lectura temprana y frenos progresivos alineados a la pendiente y al grip disponible.",
+      "practice_cues_es": [],
+      "tags": ["linea_freno", "replay_coach", "attempt_stats", "record_coach"],
+      "evidence": {
+        "strength": "practice_consensus",
+        "citation_label_es": "Síntesis de manuales técnicos DH/enduro y clínicas de skills (consenso de práctica, no estudio individual del rider).",
+        "source_url": null
+      }
+    },
+    {
+      "id": "gdh.linea.anticipacion_visual",
+      "parent_id": "gdh.linea",
+      "level": 2,
+      "title_es": "Anticipación visual y referencias lejanas",
+      "summary_es": "En deportes interceptivos, fijaciones estables y tempranas sobre la trayectoria deseada se asocian con mejor toma de decisión bajo tiempo limitado; en bajada se traduce en mirar la salida y el corredor, no el obstáculo inmediato bajo la rueda.",
+      "practice_cues_es": [
+        "Elegí un punto de salida antes de encajar",
+        "Evitá seguir con la vista solo el bulón delantero en la curva"
+      ],
+      "tags": ["linea_freno", "replay_coach", "attempt_stats"],
+      "evidence": {
+        "strength": "literature_synthesis",
+        "citation_label_es": "Marco teórico alineado a revisiones sobre atención visual y acción interceptiva (p. ej. literatura tipo «quiet eye» en deportes de precisión); aplicación a MTB es inferencia práctica controlada.",
+        "source_url": null
+      }
+    },
+    {
+      "id": "gdh.linea.freno_progresivo",
+      "parent_id": "gdh.linea",
+      "level": 2,
+      "title_es": "Freno progresivo y un gesto por pliegue",
+      "summary_es": "Modulación larga reduce patinado y carga ciclica en el neumático; un bloque de freno claro antes del pliegue suele rendir mejor que varios pellizcos dentro de la curva cuando hay grip.",
+      "practice_cues_es": [
+        "Una palanca de freno antes del ápice, soltar progresivo al salir",
+        "Si el terreno suelta, acortá el bloque y repetí intención en el siguiente tramo"
+      ],
+      "tags": ["linea_freno", "replay_coach", "record_coach"],
+      "evidence": {
+        "strength": "practice_consensus",
+        "citation_label_es": "Consenso técnico de instructores de gravity bike y biomecánica aplicada a tracción/frenado (síntesis interna).",
+        "source_url": null
+      }
+    },
+    {
+      "id": "gdh.ritmo",
+      "parent_id": null,
+      "level": 1,
+      "title_es": "Ritmo, pendiente y carga de ruedas",
+      "summary_es": "El ritmo efectivo integra lectura de pendiente, distribución de peso y velocidad de entrada; no es solo «más rápido», sino coincidir intención con el tramo.",
+      "practice_cues_es": [],
+      "tags": ["ritmo_desnivel", "replay_coach", "attempt_stats"],
+      "evidence": {
+        "strength": "practice_consensus",
+        "citation_label_es": "Síntesis de coaching de carrera DH/XC orientado a lectura de terreno (no prescripción médica).",
+        "source_url": null
+      }
+    },
+    {
+      "id": "gdh.ritmo.pendiente_velocidad",
+      "parent_id": "gdh.ritmo",
+      "level": 2,
+      "title_es": "Pendiente y velocidad de entrada",
+      "summary_es": "Trabajos sobre pacing en deportes de inercia sugieren ajustar la velocidad de entrada al radio visible y al margen de error del rider; en DH implica segmentar la bajada en bloques con objetivo explícito por curva o sección.",
+      "practice_cues_es": [
+        "Nombrá en voz baja el objetivo del próximo bloque (ej. «suelto freno hasta el pino»)",
+        "Si la pendiente cambia, recalibrá antes de que la curva te lo exija"
+      ],
+      "tags": ["ritmo_desnivel", "replay_coach"],
+      "evidence": {
+        "strength": "literature_synthesis",
+        "citation_label_es": "Marco de pacing y segmentación inspirado en literatura de control motor y deportes de velocidad; adaptación a trail es heurística GuardDH.",
+        "source_url": null
+      }
+    },
+    {
+      "id": "gdh.postura",
+      "parent_id": null,
+      "level": 1,
+      "title_es": "Postura: base, manos y cadera",
+      "summary_es": "Una base estable con carga en pies y manos ligeras mejora el rango útil de dirección y reduce sobre-freno por tensión en brazos.",
+      "practice_cues_es": [],
+      "tags": ["postura_manos", "replay_coach", "attempt_stats", "record_coach"],
+      "evidence": {
+        "strength": "practice_consensus",
+        "citation_label_es": "Consenso de biomecánica aplicada a ciclismo de montaña (posición neutral atacable; síntesis interna).",
+        "source_url": null
+      }
+    },
+    {
+      "id": "gdh.postura.manos_pies",
+      "parent_id": "gdh.postura",
+      "level": 2,
+      "title_es": "Manos sueltas y peso en pies",
+      "summary_es": "Presión excesiva en manos limita sensibilidad delantero y favorece micro-frenos; el peso en pies permite micro-ajustes de ángulo de cadera sin bloquear codos.",
+      "practice_cues_es": [
+        "Comprobá que podés flexionar un poco los dedos en el manillar al entrar",
+        "Pensá en empujar el suelo con los pies en la curva, no en apretar el manillar"
+      ],
+      "tags": ["postura_manos", "replay_coach", "record_coach"],
+      "evidence": {
+        "strength": "practice_consensus",
+        "citation_label_es": "Transferencia desde literatura de control postural en ciclismo y práctica de skills gravity (síntesis).",
+        "source_url": null
+      }
+    },
+    {
+      "id": "gdh.habitos",
+      "parent_id": null,
+      "level": 1,
+      "title_es": "Constancia, volumen y aprendizaje",
+      "summary_es": "La mejora sostenida combina volumen prudente, variación de estímulo y revisión de errores recurrentes; los riders con más horas suelen beneficiarse de focalizar un solo hábito por sesión.",
+      "practice_cues_es": [],
+      "tags": ["habitos_constancia", "replay_coach", "activity_coach", "attempt_stats"],
+      "evidence": {
+        "strength": "program_design_meta",
+        "citation_label_es": "Principios de periodización y carga del entrenamiento deportivo (meta-análisis y guías generales; no sustituye plan individual con profesional).",
+        "source_url": null
+      }
+    },
+    {
+      "id": "gdh.habitos.un_habito_por_sesion",
+      "parent_id": "gdh.habitos",
+      "level": 2,
+      "title_es": "Un hábito técnico por salida",
+      "summary_es": "La evidencia de aprendizaje motor favorece la práctica deliberada con retroalimentación específica; en trail, repetir un solo foco (mirada, un solo dedo de freno, salida ancha) por vuelta aumenta retención frente a listas largas.",
+      "practice_cues_es": [
+        "Elegí un solo foco antes de subir al shuttle o pedalear",
+        "Al terminar, anotá si cumpliste el foco, no el tiempo"
+      ],
+      "tags": ["habitos_constancia", "activity_coach", "replay_coach"],
+      "evidence": {
+        "strength": "literature_synthesis",
+        "citation_label_es": "Alineado a literatura de práctica deliberada y aprendizaje motor (síntesis; no evalúa tu progreso real sin datos).",
+        "source_url": null
+      }
+    },
+    {
+      "id": "gdh.habitos.recuperacion",
+      "parent_id": "gdh.habitos",
+      "level": 2,
+      "title_es": "Fatiga y calidad de repeticiones",
+      "summary_es": "Con fatiga alta, la coordinación fina empeora; en periodización moderna se prioriza calidad de pocas repeticiones vs volumen ciego cuando el riesgo de error aumenta.",
+      "practice_cues_es": [
+        "Si repetís el mismo error cansado, cortá bloque técnico y volvé con frescura",
+        "Intercalá días ligeros después de picos de impacto o muchas bajadas"
+      ],
+      "tags": ["habitos_constancia", "activity_coach", "attempt_stats"],
+      "evidence": {
+        "strength": "program_design_meta",
+        "citation_label_es": "Referencias generales de gestión de fatiga y riesgo en deportes de impacto (síntesis; no es consejo médico).",
+        "source_url": null
+      }
+    },
+    {
+      "id": "gdh.seguridad.margen",
+      "parent_id": null,
+      "level": 1,
+      "title_es": "Margen de error y lectura de riesgo",
+      "summary_es": "Profesionales priorizan margen visual y de velocidad sobre el límite absoluto; el coach debe reflejar eso cuando los datos marcan velocidad o tramo comprometido.",
+      "practice_cues_es": [
+        "Si no ves la salida, el margen correcto suele ser frenar antes, no «confiar»",
+        "Aumentá radio de entrada cuando el grip o la visibilidad son dudosos"
+      ],
+      "tags": ["linea_freno", "ritmo_desnivel", "replay_coach", "record_coach", "attempt_stats"],
+      "evidence": {
+        "strength": "practice_consensus",
+        "citation_label_es": "Protocolos de seguridad y coaching de alto rendimiento en gravity (síntesis interna).",
+        "source_url": null
+      }
+    }
+  ]
+}

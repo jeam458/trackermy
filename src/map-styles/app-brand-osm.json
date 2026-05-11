@@ -1,0 +1,50 @@
+{
+  "$schemaComment": "Paleta para mapas OSM en Leaflet (raster). Las claves describen elementos típicos; en tiles PNG no pueden colorearse por capa sin vector tiles.",
+  "id": "app-bike-brand-osm-raster-v1",
+  "name": "App Bike Brand — OSM raster (Leaflet)",
+  "sources": {
+    "raster": {
+      "type": "raster",
+      "provider": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    "notes": [
+      "Hoy usamos filtros CSS en las imágenes de tesela (ver leafletRaster en mapTheme).",
+      "Para estilo tipo MapLibre/vector en el futuro, mapear palette.* por layer (fill/line) en fuente vector."
+    ]
+  },
+  "appSurfaces": {
+    "page": "#121820",
+    "card": "#181f29",
+    "mapCanvasDark": "#121820",
+    "mapCanvasOutdoor": "#181f29"
+  },
+  "palette": {
+    "canvasVoid": "#121820",
+    "oceanAndLargeWater": "#0f3d38",
+    "riversAndPools": "#115e54",
+    "vegetationForest": "#1a3d31",
+    "vegetationParkGrass": "#1e4938",
+    "wetlandFarm": "#1e382c",
+    "buildingFootprint": "#252d3a",
+    "buildingEdge": "#2f3948",
+    "motorwayTrunkMajor": "#3a4542",
+    "secondaryTertiary": "#313b42",
+    "residentialService": "#2b333e",
+    "pathFootwayCycle": "#394542",
+    "railIndustrial": "#4a5568",
+    "sportLeisureTracks": "#2a382f",
+    "labelRoad": "#cbd5e1",
+    "labelWater": "#5eead4",
+    "labelGreen": "#6ee7b7"
+  },
+  "leafletRaster": {
+    "tileCssClassDark": "leaflet-app-brand-osm-tiles",
+    "tileCssClassOutdoor": "leaflet-app-brand-osm-tiles-outdoor",
+    "filterIntent": {
+      "dark": "Base muy oscura (canvas #121820), carreteras y contornos legibles sin quemar verdes/azules.",
+      "outdoor": "Más luminosidad pero misma línea fría/teal oscura para calles, agua y verdes."
+    }
+  },
+  "routeAccentReference": ["#14b8a6", "#2dd4bf", "#0f766e", "#6366f1"]
+}

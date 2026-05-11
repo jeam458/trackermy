@@ -1,0 +1,19 @@
+# Solo indexación (menos RAM en el indexador). @mencionar archivo sigue funcionando.
+
+node_modules/
+.next/
+out/
+build/
+coverage/
+.vercel/
+.venv/
+.turbo/
+.swc/
+**/.cache/
+
+android/.gradle/
+android/app/build/
+android/build/
+
+ios/Pods/
+ios/**/build/

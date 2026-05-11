@@ -119,8 +119,8 @@ BEGIN
         SELECT
             ra.*,
             ROW_NUMBER() OVER (ORDER BY ra.total_time ASC) as position,
-            u.user_metadata->>'fullName' as user_name,
-            u.user_metadata->>'avatarUrl' as avatar_url
+            u.raw_user_meta_data->>'fullName' as user_name,
+            u.raw_user_meta_data->>'avatarUrl' as avatar_url
         FROM public.route_attempts ra
         JOIN auth.users u ON u.id = ra.user_id
         WHERE ra.route_id = p_route_id

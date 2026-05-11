@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ToastProvider } from "@/components/ui/Toast";
+import { OAuthDeepLinkHandler } from "@/components/auth/OAuthDeepLinkHandler";
+import { AppBootstrapGate } from "@/components/bootstrap/AppBootstrapGate";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -9,8 +11,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Downhill Tracker",
-  description: "Track your fastest downhill runs",
+  title: "guardDh",
+  description: "Seguí tus bajadas, rutas y ranking",
   manifest: "/manifest.json"
 };
 
@@ -25,7 +27,10 @@ export default function RootLayout({
         className={`${inter.variable} font-sans antialiased`}
       >
         <ToastProvider>
-          {children}
+          <AppBootstrapGate>
+            <OAuthDeepLinkHandler />
+            {children}
+          </AppBootstrapGate>
         </ToastProvider>
       </body>
     </html>

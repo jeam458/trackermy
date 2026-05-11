@@ -2,12 +2,14 @@ import { createClient } from '../supabase/client'
 import {
   Route,
   RouteCreationRequest,
+  RouteTrackType,
   RouteUpdateRequest,
   RouteRepository,
   RouteTrackPoint,
 } from '../../domain/Route'
 import { ProcessedTrackPoint } from '../../domain/GPSTrack'
 import { RouteEnhancementService } from '../../application/RouteEnhancementService'
+import { heuristicRouteIconKey } from '@/lib/routeThemedIcons'
 
 export class SupabaseRouteRepository implements RouteRepository {
   private client = createClient()
@@ -50,6 +52,7 @@ export class SupabaseRouteRepository implements RouteRepository {
         name: routeData.name,
         description: routeData.description,
         difficulty: routeData.difficulty,
+        track_type: routeData.trackType ?? 'trail',
         distance_km: enhancementResult.enhanced.distanceKm || 0,
         elevation_gain_m: enhancementResult.enhanced.elevationGainM,
         elevation_loss_m: enhancementResult.enhanced.elevationLossM,
@@ -60,6 +63,11 @@ export class SupabaseRouteRepository implements RouteRepository {
         created_by: createdBy,
         is_public: routeData.isPublic ?? false,
         status: 'active',
+        icon_symbol_key: heuristicRouteIconKey(
+          routeData.name,
+          routeData.description,
+          routeData.difficulty
+        ),
       })
       .select()
       .single()
@@ -112,6 +120,35 @@ export class SupabaseRouteRepository implements RouteRepository {
     return this.getRouteById(route.id) as Promise<Route>
   }
 
+  /**
+   * PostgREST (Supabase) suele devolver como máximo 1000 filas por petición.
+   * Rutas largas (p. ej. rodando todo un humedal) quedaban truncadas en vista / edición.
+   */
+  private async fetchAllTrackPointsForRoute(routeId: string) {
+    const PAGE = 1000
+    let offset = 0
+    const all: unknown[] = []
+    for (;;) {
+      const { data, error } = await this.client
+        .from('route_track_points')
+        .select('*')
+        .eq('route_id', routeId)
+        .order('order_index', { ascending: true })
+        .range(offset, offset + PAGE - 1)
+
+      if (error) {
+        console.error('Error getting track points:', error)
+        return offset === 0 ? [] : all
+      }
+
+      const batch = data ?? []
+      all.push(...batch)
+      if (batch.length < PAGE) break
+      offset += PAGE
+    }
+    return all
+  }
+
   async updateRoute(
     routeId: string,
     updates: RouteUpdateRequest
@@ -123,8 +160,39 @@ export class SupabaseRouteRepository implements RouteRepository {
       updateData.description = updates.description
     if (updates.difficulty !== undefined)
       updateData.difficulty = updates.difficulty
+    if (updates.trackType !== undefined) updateData.track_type = updates.trackType
     if (updates.isPublic !== undefined) updateData.is_public = updates.isPublic
     if (updates.status !== undefined) updateData.status = updates.status
+    if (updates.previewMediaUrl !== undefined)
+      updateData.preview_media_url = updates.previewMediaUrl
+    if (updates.iconSymbolKey !== undefined)
+      updateData.icon_symbol_key = updates.iconSymbolKey
+
+    const needsIconRefresh =
+      updates.iconSymbolKey === undefined &&
+      (updates.name !== undefined ||
+        updates.description !== undefined ||
+        updates.difficulty !== undefined)
+
+    if (needsIconRefresh) {
+      const { data: row } = await this.client
+        .from('routes')
+        .select('name, description, difficulty')
+        .eq('id', routeId)
+        .maybeSingle()
+      if (row) {
+        const name = (updates.name ?? row.name) as string
+        const desc = (updates.description !== undefined
+          ? updates.description
+          : row.description) as string | null | undefined
+        const diff = (updates.difficulty ?? row.difficulty) as string
+        updateData.icon_symbol_key = heuristicRouteIconKey(
+          name,
+          desc ?? undefined,
+          diff
+        )
+      }
+    }
 
     // Update route metadata
     if (Object.keys(updateData).length > 0) {
@@ -181,18 +249,8 @@ export class SupabaseRouteRepository implements RouteRepository {
       return null
     }
 
-    // Luego obtener los puntos
-    const { data: pointsData, error: pointsError } = await this.client
-      .from('route_track_points')
-      .select('*')
-      .eq('route_id', routeId)
-      .order('order_index', { ascending: true })
-
-    if (pointsError) {
-      console.error('Error getting track points:', pointsError)
-    }
-
-    return this.mapToRoute(routeData, pointsData || [])
+    const pointsData = await this.fetchAllTrackPointsForRoute(routeId)
+    return this.mapToRoute(routeData, pointsData)
   }
 
   async getUserRoutes(userId: string): Promise<Route[]> {
@@ -206,15 +264,10 @@ export class SupabaseRouteRepository implements RouteRepository {
       throw new Error(`Failed to get user routes: ${error.message}`)
     }
 
-    const routes: Route[] = []
-    for (const route of data || []) {
-      const fullRoute = await this.getRouteById(route.id)
-      if (fullRoute) {
-        routes.push(fullRoute)
-      }
-    }
-
-    return routes
+    const fullRoutes = await Promise.all(
+      (data || []).map(async (route) => this.getRouteById(route.id))
+    )
+    return fullRoutes.filter((r): r is Route => r != null)
   }
 
   async getPublicRoutes(
@@ -233,15 +286,56 @@ export class SupabaseRouteRepository implements RouteRepository {
       throw new Error(`Failed to get public routes: ${error.message}`)
     }
 
-    const routes: Route[] = []
-    for (const route of data || []) {
-      const fullRoute = await this.getRouteById(route.id)
-      if (fullRoute) {
-        routes.push(fullRoute)
-      }
+    const fullRoutes = await Promise.all(
+      (data || []).map(async (route) => this.getRouteById(route.id))
+    )
+    return fullRoutes.filter((r): r is Route => r != null)
+  }
+
+  async searchPublicRoutesByName(term: string, limit = 40): Promise<Route[]> {
+    const q = term.trim().slice(0, 80).replace(/[%_]/g, '')
+    if (!q) return []
+
+    const { data, error } = await this.client
+      .from('routes')
+      .select('*')
+      .eq('is_public', true)
+      .eq('status', 'active')
+      .ilike('name', `%${q}%`)
+      .order('created_at', { ascending: false })
+      .limit(limit)
+
+    if (error) {
+      throw new Error(`Failed to search public routes: ${error.message}`)
     }
 
-    return routes
+    const fullRoutes = await Promise.all(
+      (data || []).map(async (route) => this.getRouteById(route.id))
+    )
+    return fullRoutes.filter((r): r is Route => r != null)
+  }
+
+  async searchRoutesForRecording(userId: string, term: string, limit = 40): Promise<Route[]> {
+    const q = term.trim().slice(0, 80).replace(/[%_]/g, '')
+    if (!q) return []
+
+    const { data, error } = await this.client
+      .from('routes')
+      .select('*')
+      .eq('status', 'active')
+      .or(`created_by.eq.${userId},is_public.eq.true`)
+      .ilike('name', `%${q}%`)
+      .order('name', { ascending: true })
+      .limit(limit)
+
+    if (error) {
+      throw new Error(`Failed to search routes for recording: ${error.message}`)
+    }
+
+    const fullRoutes = await Promise.all(
+      (data || []).map(async (route) => this.getRouteById(route.id))
+    )
+    return fullRoutes.filter((r): r is Route => r != null)
   }
 
   async deleteRoute(routeId: string): Promise<void> {
@@ -261,6 +355,7 @@ export class SupabaseRouteRepository implements RouteRepository {
       name: data.name,
       description: data.description,
       difficulty: data.difficulty,
+      trackType: (data.track_type as RouteTrackType | undefined) ?? 'trail',
       distanceKm: Number(data.distance_km) || 0,
       elevationGainM: data.elevation_gain_m ? Number(data.elevation_gain_m) : undefined,
       elevationLossM: data.elevation_loss_m ? Number(data.elevation_loss_m) : undefined,
@@ -272,6 +367,11 @@ export class SupabaseRouteRepository implements RouteRepository {
       updatedAt: new Date(data.updated_at),
       isPublic: data.is_public,
       status: data.status,
+      previewMediaUrl: data.preview_media_url ?? null,
+      iconSymbolKey:
+        data.icon_symbol_key != null && String(data.icon_symbol_key).trim() !== ''
+          ? String(data.icon_symbol_key)
+          : null,
     }
   }
 

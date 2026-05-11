@@ -9,14 +9,20 @@ import { GPSTrackPoint } from '@/hooks/useMobileGPSTracker'
 import { MapPoint } from '@/components/routes/RouteMapEditor'
 import { GPSTrackProcessingService } from '@/core/application/CreateRouteUseCase'
 import { SupabaseRouteRepository } from '@/core/infrastructure/repositories/SupabaseRouteRepository'
-import { RouteCreationRequest } from '@/core/domain/Route'
+import { RouteCreationRequest, type RouteTrackType } from '@/core/domain/Route'
 import { GPSPoint } from '@/core/domain/GPSTrack'
+import {
+  applyOsmSnapsToProcessedTrack,
+  defaultSnapTogglesForTrackType,
+} from '@/lib/trackSnapPipeline'
+import { applyOfflineHmmSnapToProcessedTrackIfAvailable } from '@/lib/offlineHmmSnap'
 import {
   Smartphone,
   Globe,
   ArrowLeft,
-  Loader2,
 } from 'lucide-react'
+import { BrandSpinner } from '@/components/ui/BrandLogoLoader'
+import { tryPersistRouteIconFromLocalAi } from '@/lib/refineRouteIconWithLocalAi'
 
 // Verificar si es dispositivo móvil
 function isMobileDevice(): boolean {
@@ -49,6 +55,9 @@ export default function MobileRouteCreatePage() {
   const [description, setDescription] = useState('')
   const [difficulty, setDifficulty] = useState<'Beginner' | 'Intermediate' | 'Expert'>('Intermediate')
   const [isPublic, setIsPublic] = useState(true)
+  const [trackType, setTrackType] = useState<RouteTrackType>('trail')
+  const [useOsmRoadSnap, setUseOsmRoadSnap] = useState(false)
+  const [useOsmTrailSnap, setUseOsmTrailSnap] = useState(false)
 
   // Cargar usuario y detectar dispositivo
   useEffect(() => {
@@ -124,13 +133,40 @@ export default function MobileRouteCreatePage() {
       // Procesar track
       const processingService = new GPSTrackProcessingService()
       const gpsPoints = trackData.trackPoints.map(toGPSPoint)
+      let rawM = 0
+      const R = 6371000
+      for (let i = 1; i < gpsPoints.length; i++) {
+        const a = gpsPoints[i - 1]!
+        const b = gpsPoints[i]!
+        const dLat = ((b.latitude - a.latitude) * Math.PI) / 180
+        const dLng = ((b.longitude - a.longitude) * Math.PI) / 180
+        const h =
+          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos((a.latitude * Math.PI) / 180) *
+            Math.cos((b.latitude * Math.PI) / 180) *
+            Math.sin(dLng / 2) *
+            Math.sin(dLng / 2)
+        const c = 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h))
+        rawM += R * c
+      }
+      const recordedPathKm = rawM / 1000
       const processedTrack = processingService.processTrack(gpsPoints)
+      const snappedTrack = await applyOsmSnapsToProcessedTrack(processingService, processedTrack, {
+        useOsmRoad: useOsmRoadSnap,
+        useOsmTrail: useOsmTrailSnap,
+      })
+      const finalTrack = await applyOfflineHmmSnapToProcessedTrackIfAvailable(
+        processingService,
+        snappedTrack,
+        { maxSnapMeters: 85, mode: 'both' }
+      )
 
       // Validar
       const validation = processingService.validateRoute(
         [trackData.startPoint.latitude, trackData.startPoint.longitude],
         [trackData.endPoint.latitude, trackData.endPoint.longitude],
-        processedTrack.points
+        finalTrack.points,
+        { recordedPathKm }
       )
 
       if (!validation.valid) {
@@ -142,9 +178,10 @@ export default function MobileRouteCreatePage() {
         name: name.trim(),
         description: description.trim() || undefined,
         difficulty,
+        trackType,
         startCoord: [trackData.startPoint.latitude, trackData.startPoint.longitude],
         endCoord: [trackData.endPoint.latitude, trackData.endPoint.longitude],
-        trackPoints: processedTrack.points.map((p) => ({
+        trackPoints: finalTrack.points.map((p) => ({
           latitude: p.latitude,
           longitude: p.longitude,
           altitude: p.altitude,
@@ -155,7 +192,14 @@ export default function MobileRouteCreatePage() {
 
       // Guardar en Supabase
       const routeRepository = new SupabaseRouteRepository()
-      await routeRepository.createRoute(routeData, authUser.id)
+      const createdRoute = await routeRepository.createRoute(routeData, authUser.id)
+
+      void tryPersistRouteIconFromLocalAi({
+        routeId: createdRoute.id,
+        name: routeData.name,
+        description: routeData.description,
+        difficulty: routeData.difficulty,
+      })
 
       // Redirigir al perfil
       router.push('/dashboard/profile')
@@ -170,9 +214,9 @@ export default function MobileRouteCreatePage() {
   // Cargando usuario
   if (!user || useMobileTracker === null) {
     return (
-      <div className="min-h-screen bg-[#1c2327] flex items-center justify-center">
+      <div className="min-h-screen bg-gdh-page flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="animate-spin mx-auto text-amber-500 mb-4" size={40} />
+          <BrandSpinner className="mx-auto mb-4" size={40} />
           <p className="text-gray-400">Cargando...</p>
         </div>
       </div>
@@ -182,7 +226,7 @@ export default function MobileRouteCreatePage() {
   // Mostrar selector de modo
   if (useMobileTracker === null) {
     return (
-      <div className="min-h-screen bg-[#1c2327] text-slate-100 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gdh-page text-slate-100 flex items-center justify-center p-4">
         <div className="max-w-md w-full space-y-6">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-white mb-2">Crear Nueva Ruta</h1>
@@ -247,9 +291,9 @@ export default function MobileRouteCreatePage() {
     const hasTrackData = trackData.startPoint && trackData.endPoint && trackData.trackPoints.length > 0
 
     return (
-      <div className="min-h-screen bg-[#1c2327] text-slate-100">
+      <div className="min-h-screen bg-gdh-page text-slate-100">
         {/* Header */}
-        <header className="bg-slate-900/50 backdrop-blur-sm border-b border-slate-800 sticky top-0 z-50">
+        <header className="sticky top-0 z-50 border-b border-white/10 bg-[#121821]/95 backdrop-blur-md">
           <div className="px-4 py-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <button
@@ -319,6 +363,24 @@ export default function MobileRouteCreatePage() {
               {/* Formulario */}
               <div className="space-y-4">
                 <div>
+                  <label className="block text-sm text-gray-400 mb-2">Tipo de trazado *</label>
+                  <select
+                    value={trackType}
+                    onChange={(e) => {
+                      const t = e.target.value as RouteTrackType
+                      setTrackType(t)
+                      const d = defaultSnapTogglesForTrackType(t)
+                      setUseOsmRoadSnap(d.useOsmRoad)
+                      setUseOsmTrailSnap(d.useOsmTrail)
+                    }}
+                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-white"
+                  >
+                    <option value="trail">Senda, trocha o DH</option>
+                    <option value="pavement">Carretera o pavimento</option>
+                    <option value="mixed">Mixto</option>
+                  </select>
+                </div>
+                <div>
                   <label className="block text-sm text-gray-400 mb-2">
                     Nombre *
                   </label>
@@ -375,6 +437,28 @@ export default function MobileRouteCreatePage() {
                   </div>
                 </div>
 
+                <div className="space-y-2 p-3 bg-slate-800 rounded-lg border border-slate-700">
+                  <p className="text-sm font-medium text-white">Ajuste GPS (OpenStreetMap)</p>
+                  <label className="flex items-start gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={useOsmRoadSnap}
+                      onChange={(e) => setUseOsmRoadSnap(e.target.checked)}
+                      className="mt-1 rounded border-slate-600 text-amber-500"
+                    />
+                    <span className="text-sm text-gray-300">Vía pavimentada</span>
+                  </label>
+                  <label className="flex items-start gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={useOsmTrailSnap}
+                      onChange={(e) => setUseOsmTrailSnap(e.target.checked)}
+                      className="mt-1 rounded border-slate-600 text-amber-500"
+                    />
+                    <span className="text-sm text-gray-300">Senda / camino (path, track…)</span>
+                  </label>
+                </div>
+
                 <div className="flex items-center justify-between p-3 bg-slate-800 rounded-lg">
                   <div>
                     <p className="text-sm font-medium text-white">Visibilidad</p>
@@ -406,7 +490,7 @@ export default function MobileRouteCreatePage() {
                 >
                   {isSaving ? (
                     <>
-                      <Loader2 className="animate-spin" size={20} />
+                      <BrandSpinner size={20} />
                       Guardando...
                     </>
                   ) : (

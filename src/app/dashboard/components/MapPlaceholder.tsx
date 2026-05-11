@@ -3,6 +3,7 @@
 import { MapContainer, TileLayer, Polyline, Marker, Popup } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
+import { APP_MAP_CANVAS_HEX, DARK_MAP_TILE, tileLayerPresetProps } from '@/components/routes/mapTheme'
 
 // Mock Data for a trail
 const startCoord: [number, number] = [-16.409047, -71.537451] // Arequipa, PE example
@@ -20,17 +21,14 @@ const makeIcon = (color: string) => {
 
 export default function MapPlaceholder() {
   return (
-    <div className="w-full h-72">
-      <MapContainer 
-        center={[-16.419047, -71.547451]} 
-        zoom={13} 
-        style={{ height: '100%', width: '100%', background: '#0f172a' }}
+    <div className="w-full h-72 map-dark-ui">
+      <MapContainer
+        center={[-16.419047, -71.547451]}
+        zoom={13}
+        style={{ height: '100%', width: '100%', background: APP_MAP_CANVAS_HEX }}
         zoomControl={false}
       >
-        <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-        />
+        <TileLayer {...tileLayerPresetProps(DARK_MAP_TILE)} />
         
         {/* Draw mock trail line */}
         <Polyline 

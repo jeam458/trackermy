@@ -33,7 +33,7 @@ describe('GPSTrackProcessingService', () => {
     it('should filter out points with poor accuracy', () => {
       const points: GPSPoint[] = [
         { latitude: -12.0464, longitude: -77.0428, accuracy: 5 }, // good
-        { latitude: -12.0465, longitude: -77.0429, accuracy: 50 }, // poor (above 15m threshold)
+        { latitude: -12.0465, longitude: -77.0429, accuracy: 50 }, // poor (above default maxAccuracyThreshold)
         { latitude: -12.0466, longitude: -77.0430, accuracy: 8 }, // good
       ]
 
@@ -177,6 +177,33 @@ describe('GPSTrackProcessingService', () => {
 
       expect(validation.valid).toBe(false)
       expect(validation.errors).toContain('La ruta debe tener al menos 100 metros de longitud')
+    })
+
+    it('permite guardar si el GPS crudo recorrió ≥100m aunque el polyline procesado sea más corto', () => {
+      const start: [number, number] = [-12.0464, -77.0428]
+      const end: [number, number] = [-12.0455, -77.0428]
+      const processed = [
+        {
+          latitude: -12.04635,
+          longitude: -77.0428,
+          orderIndex: 0,
+          isFiltered: false,
+          confidence: 1,
+        },
+        {
+          latitude: -12.04555,
+          longitude: -77.0428,
+          orderIndex: 1,
+          isFiltered: false,
+          confidence: 1,
+        },
+      ] as import('@/core/domain/GPSTrack').ProcessedTrackPoint[]
+
+      const validation = service.validateRoute(start, end, processed, {
+        recordedPathKm: 0.12,
+      })
+      expect(validation.valid).toBe(true)
+      expect(validation.errors).not.toContain('La ruta debe tener al menos 100 metros de longitud')
     })
   })
 

@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "skills": {
+    "cursor-best-practices": {
+      "source": "hktitan/cursor-best-practices",
+      "sourceType": "github",
+      "skillPath": "cursor-best-practices/SKILL.md",
+      "computedHash": "5a291b76d54875c86e84ab5b67015124f80fcdd85591259931fa2ac2b8bb1ae6"
+    },
+    "ignore": {
+      "source": "terrylica/cc-skills",
+      "sourceType": "github",
+      "skillPath": "plugins/statusline-tools/skills/ignore/SKILL.md",
+      "computedHash": "8074c9184a7596ca95d0bb9c2321f152f0f73fe5920a04b8ab958101b364b060"
+    }
+  }
+}

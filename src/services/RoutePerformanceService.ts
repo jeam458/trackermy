@@ -3,6 +3,8 @@
  * Detecta saltos, movimientos bruscos, velocidad y ritmo del ciclista
  */
 
+import { PLAUSIBLE_MAX_MPS } from '@/lib/attemptSpeedDisplay'
+
 export interface GPSPoint {
   latitude: number
   longitude: number
@@ -153,26 +155,38 @@ export class RoutePerformanceService {
       throw new Error('Se requieren al menos 2 puntos para analizar')
     }
 
-    // Calcular métricas básicas
+    // Velocidades por tramo (m/s) y tiempos: no mezclar índices de `point.speed` con el array de puntos
     const totalTime = (points[points.length - 1].timestamp.getTime() - points[0].timestamp.getTime()) / 1000
-    const speeds = points.map(p => p.speed ?? 0).filter(s => s > 0)
-    const allSpeeds = points.map(p => p.speed ?? 0)
-    
-    const movingTime = speeds.length > 0
-      ? speeds.reduce((sum, _, idx) => {
-          if (idx === 0) return 1
-          const timeDiff = (points[idx].timestamp.getTime() - points[idx - 1].timestamp.getTime()) / 1000
-          return sum + timeDiff
-        }, 0)
-      : 0
-    
+    const STATIONARY_MPS = 0.5
+    const segmentSpeeds: number[] = []
+    const reportedSpeeds: number[] = points.map((p) => p.speed).filter((s): s is number => s != null && s > 0)
+    let totalDistance = 0
+    let movingTime = 0
+    for (let i = 1; i < points.length; i++) {
+      const timeDiff = (points[i].timestamp.getTime() - points[i - 1].timestamp.getTime()) / 1000
+      if (timeDiff <= 0) continue
+      const dist = haversineDistance(points[i - 1], points[i])
+      totalDistance += dist
+      const segSp = dist / timeDiff
+      segmentSpeeds.push(segSp)
+      if (segSp > STATIONARY_MPS) {
+        movingTime += timeDiff
+      }
+    }
+
+    // Vel. media = distancia / tiempo (trayecto), no media aritmética de lecturas (difiere con paradas/intervalos)
+    const avgSpeed = totalTime > 0 ? totalDistance / totalTime : 0
     const stoppedTime = totalTime - movingTime
 
-    // Calcular distancia total
-    let totalDistance = 0
-    for (let i = 1; i < points.length; i++) {
-      totalDistance += haversineDistance(points[i - 1], points[i])
-    }
+    // Min/max: preferir tramos; si el GPS reporta cota, úsala para el máx.
+    const minFromSeg = segmentSpeeds.length > 0 ? Math.min(...segmentSpeeds) : 0
+    const maxFromSeg = segmentSpeeds.length > 0 ? Math.max(...segmentSpeeds) : 0
+    const minSpeed = minFromSeg
+    const maxSpeedRaw =
+      reportedSpeeds.length > 0 ? Math.max(maxFromSeg, ...reportedSpeeds) : maxFromSeg
+    const maxSpeed = Math.min(maxSpeedRaw, PLAUSIBLE_MAX_MPS)
+    const medianFromSeg = segmentSpeeds.filter((s) => s > 0)
+    const speedsForRhythm = medianFromSeg.length > 0 ? medianFromSeg : segmentSpeeds
 
     // Calcular elevación
     let elevationGain = 0
@@ -205,8 +219,8 @@ export class RoutePerformanceService {
     const segments = this.calculateSegments(points)
 
     // Calcular scores
-    const rhythmScore = this.calculateRhythmScore(points, speeds)
-    const intensityScore = this.calculateIntensityScore(speeds, elevationGain, totalDistance)
+    const rhythmScore = this.calculateRhythmScore(points, speedsForRhythm)
+    const intensityScore = this.calculateIntensityScore(speedsForRhythm, elevationGain, totalDistance)
     const aggressionScore = this.calculateAggressionScore(jumps, sharpMovements, hardBrakes)
 
     // Score general ponderado
@@ -214,17 +228,17 @@ export class RoutePerformanceService {
       rhythmScore * 0.3 +
       intensityScore * 0.3 +
       aggressionScore * 0.2 +
-      Math.min(100, (speeds.length > 0 ? Math.max(...speeds) : 0) / 20 * 100) * 0.2
+      Math.min(100, maxSpeed / 20 * 100) * 0.2
     )
 
     return {
       totalTime,
       movingTime,
       stoppedTime,
-      minSpeed: allSpeeds.length > 0 ? Math.min(...allSpeeds) : 0,
-      maxSpeed: allSpeeds.length > 0 ? Math.max(...allSpeeds) : 0,
-      avgSpeed: speeds.length > 0 ? speeds.reduce((a, b) => a + b, 0) / speeds.length : 0,
-      medianSpeed: median(speeds),
+      minSpeed,
+      maxSpeed,
+      avgSpeed,
+      medianSpeed: median(medianFromSeg.length > 0 ? medianFromSeg : segmentSpeeds),
       totalDistance,
       elevationGain,
       elevationLoss,
@@ -426,7 +440,12 @@ export class RoutePerformanceService {
       if (currentDistance >= segmentLength || i === points.length - 1) {
         const segmentPoints = points.slice(segmentStart, i + 1)
         const segmentTime = (points[i].timestamp.getTime() - points[segmentStart].timestamp.getTime()) / 1000
-        const segmentSpeeds = segmentPoints.map(p => p.speed ?? 0).filter(s => s > 0)
+        const edgeSpeeds: number[] = []
+        for (let j = segmentStart + 1; j <= i; j++) {
+          const dt = (points[j].timestamp.getTime() - points[j - 1].timestamp.getTime()) / 1000
+          if (dt <= 0) continue
+          edgeSpeeds.push(haversineDistance(points[j - 1], points[j]) / dt)
+        }
 
         let elevationChange = 0
         for (let j = 1; j < segmentPoints.length; j++) {
@@ -437,15 +456,13 @@ export class RoutePerformanceService {
           }
         }
 
-        const avgSpeed = segmentSpeeds.length > 0
-          ? segmentSpeeds.reduce((a, b) => a + b, 0) / segmentSpeeds.length
-          : 0
-        const maxSpeed = segmentSpeeds.length > 0 ? Math.max(...segmentSpeeds) : 0
+        const avgSpeed = segmentTime > 0 ? currentDistance / segmentTime : 0
+        const maxSpeed = edgeSpeeds.length > 0 ? Math.max(...edgeSpeeds) : 0
 
         let type: 'uphill' | 'downhill' | 'flat' | 'technical' = 'flat'
         if (elevationChange > 5) type = 'uphill'
         else if (elevationChange < -5) type = 'downhill'
-        else if (segmentSpeeds.length > 0 && avgSpeed < 2) type = 'technical'
+        else if (edgeSpeeds.length > 0 && avgSpeed < 2) type = 'technical'
 
         segments.push({
           id: segmentId++,

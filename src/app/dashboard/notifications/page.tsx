@@ -8,7 +8,6 @@ import {
   BellOff,
   Check,
   CheckCheck,
-  Loader2,
   MapPin,
   Trophy,
   ArrowLeft,
@@ -18,6 +17,9 @@ import {
   Video,
   Play,
 } from 'lucide-react'
+import { BrandSpinner } from '@/components/ui/BrandLogoLoader'
+import { routeViewUrl } from '@/lib/routeViewNavigation'
+import { toast } from '@/lib/toast'
 
 interface Notification {
   id: string
@@ -180,7 +182,7 @@ export default function NotificationsPage() {
       setProfile(prev => prev ? { ...prev, avatar_url: publicUrl } : null)
     } catch (error) {
       console.error('Error subiendo avatar:', error)
-      alert('Error subiendo la foto')
+      toast.error('Error al subir la foto', 'Comprueba el archivo y la conexión.')
     } finally {
       setUploading(false)
     }
@@ -219,7 +221,7 @@ export default function NotificationsPage() {
       setProfile(prev => prev ? { ...prev, bike_image_url: publicUrl } : null)
     } catch (error) {
       console.error('Error subiendo foto de bici:', error)
-      alert('Error subiendo la foto')
+      toast.error('Error al subir la foto', 'Comprueba el archivo y la conexión.')
     } finally {
       setUploading(false)
     }
@@ -241,24 +243,24 @@ export default function NotificationsPage() {
       .eq('id', profile.id)
 
     if (error) {
-      alert('Error guardando perfil')
+      toast.error('Error al guardar el perfil', error.message || 'Inténtalo de nuevo.')
     } else {
-      alert('¡Perfil guardado!')
+      toast.success('Perfil guardado', 'Los cambios se aplicaron correctamente.')
     }
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#1c2327] flex items-center justify-center">
-        <Loader2 className="animate-spin text-amber-500" size={40} />
+      <div className="gdh-immersive-page min-h-screen flex items-center justify-center">
+        <BrandSpinner size={40} />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#1c2327] text-slate-100">
+    <div className="gdh-immersive-page min-h-screen text-slate-100">
       {/* Header */}
-      <header className="bg-slate-900/50 backdrop-blur-sm border-b border-slate-800 sticky top-0 z-50">
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-[#121821]/95 backdrop-blur-md">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-4">
             <button
@@ -335,7 +337,7 @@ export default function NotificationsPage() {
                   onClick={() => {
                     if (!notif.is_read) markAsRead(notif.id)
                     if (notif.route_id) {
-                      router.push(`/dashboard/routes/${notif.route_id}`)
+                      router.push(routeViewUrl(notif.route_id, 'notifications'))
                     }
                   }}
                   className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
@@ -404,7 +406,7 @@ export default function NotificationsPage() {
                   className="absolute bottom-0 right-0 p-2 bg-amber-500 hover:bg-amber-400 disabled:bg-gray-600 rounded-full transition-colors"
                 >
                   {uploading ? (
-                    <Loader2 className="animate-spin" size={16} />
+                    <BrandSpinner size={16} />
                   ) : (
                     <Camera size={16} className="text-slate-900" />
                   )}
@@ -480,7 +482,7 @@ export default function NotificationsPage() {
                   className="absolute bottom-2 right-2 p-2 bg-amber-500 hover:bg-amber-400 disabled:bg-gray-600 rounded-lg transition-colors"
                 >
                   {uploading ? (
-                    <Loader2 className="animate-spin" size={16} />
+                    <BrandSpinner size={16} />
                   ) : (
                     <Upload size={16} className="text-slate-900" />
                   )}
@@ -543,7 +545,7 @@ export default function NotificationsPage() {
                 className="w-full py-3 bg-slate-700 hover:bg-slate-600 disabled:bg-gray-600 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
               >
                 {uploading ? (
-                  <Loader2 className="animate-spin" size={18} />
+                  <BrandSpinner size={18} />
                 ) : (
                   <>
                     <Upload size={18} />
@@ -557,7 +559,7 @@ export default function NotificationsPage() {
                 accept="video/*"
                 onChange={(e) => {
                   // TODO: Implementar subida de videos
-                  alert('Funcionalidad de videos próximamente!')
+                  toast.info('Próximamente', 'La subida de vídeos estará disponible en una futura versión.')
                 }}
                 className="hidden"
               />

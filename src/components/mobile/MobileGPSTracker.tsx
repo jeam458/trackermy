@@ -9,7 +9,6 @@ import {
   Play,
   Pause,
   Square,
-  Loader2,
   AlertTriangle,
   CheckCircle2,
   Clock,
@@ -25,6 +24,7 @@ import {
   RefreshCw,
   Database,
 } from 'lucide-react'
+import { BrandSpinner } from '@/components/ui/BrandLogoLoader'
 
 // Formatear segundos a MM:SS
 function formatTime(seconds: number): string {
@@ -123,7 +123,7 @@ function ConnectionStatusIndicator({
             >
               <RefreshCw
                 size={12}
-                className={syncStatus === 'syncing' ? 'animate-spin' : ''}
+                className=""
               />
             </button>
           )}
@@ -133,7 +133,7 @@ function ConnectionStatusIndicator({
       {isOnline && syncStatus === 'syncing' && (
         <>
           <span className="text-gray-400">•</span>
-          <Loader2 size={12} className="animate-spin text-blue-400" />
+          <BrandSpinner size={12} />
           <span className="text-blue-400">Sincronizando...</span>
         </>
       )}
@@ -239,7 +239,7 @@ function SetStartPointStep({
       >
         {isLoading ? (
           <>
-            <Loader2 className="animate-spin" size={20} />
+            <BrandSpinner size={20} />
             Obteniendo ubicación...
           </>
         ) : (
@@ -280,7 +280,7 @@ function SetEndPointStep({
       >
         {isLoading ? (
           <>
-            <Loader2 className="animate-spin" size={20} />
+            <BrandSpinner size={20} />
             Obteniendo ubicación...
           </>
         ) : (
@@ -477,7 +477,7 @@ export function MobileGPSTracker({ onComplete, onCancel }: MobileGPSTrackerProps
   }
 
   return (
-    <div className="min-h-screen bg-[#1c2327] text-slate-100">
+    <div className="min-h-screen bg-gdh-page text-slate-100">
       {/* Header */}
       <header className="bg-slate-900/50 backdrop-blur-sm border-b border-slate-800 sticky top-0 z-50">
         <div className="px-4 py-4 space-y-3">

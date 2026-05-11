@@ -8,6 +8,7 @@ import { createClient } from '@/core/infrastructure/supabase/client'
 import { RouteCreationRequest } from '@/core/domain/Route'
 import { SupabaseRouteRepository } from '@/core/infrastructure/repositories/SupabaseRouteRepository'
 import { GPSTrackProcessingService } from '@/core/application/CreateRouteUseCase'
+import type { PerformanceMetrics } from '@/services/RoutePerformanceService'
 
 export type SyncStatus = 'idle' | 'syncing' | 'success' | 'error' | 'waiting'
 
@@ -45,38 +46,36 @@ class SyncManager {
   private callbacks: SyncCallbacks = {}
   private syncInterval: NodeJS.Timeout | null = null
   private isSyncing = false
+  private connectivityListenersAttached = false
   private routeRepository = new SupabaseRouteRepository()
   private processingService = new GPSTrackProcessingService()
 
   // Inicializar gestor de sincronización
   init(callbacks: SyncCallbacks = {}): void {
-    this.callbacks = callbacks
+    this.callbacks = { ...this.callbacks, ...callbacks }
 
-    // Escuchar eventos de conexión
-    if (typeof window !== 'undefined') {
+    if (typeof window === 'undefined') return
+
+    if (!this.connectivityListenersAttached) {
+      this.connectivityListenersAttached = true
       window.addEventListener('online', this.handleOnline)
       window.addEventListener('offline', this.handleOffline)
-
-      // Actualizar estado inicial
-      this.updateState({
-        isOnline: navigator.onLine,
-      })
-
-      // Si está online, intentar sincronizar
+      this.updateState({ isOnline: navigator.onLine })
       if (this.state.isOnline) {
-        this.syncPendingData()
+        void this.syncPendingData()
       }
-
-      // Iniciar intervalo de reintentos automáticos (cada 30 segundos)
       this.startAutoRetry()
+    } else if (this.state.isOnline) {
+      void this.syncPendingData()
     }
   }
 
-  // Limpiar listeners
+  // Limpiar listeners (solo tests o cierre total de app; no llamar al salir de una pantalla)
   destroy(): void {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && this.connectivityListenersAttached) {
       window.removeEventListener('online', this.handleOnline)
       window.removeEventListener('offline', this.handleOffline)
+      this.connectivityListenersAttached = false
     }
 
     if (this.syncInterval) {
@@ -215,11 +214,157 @@ class SyncManager {
     }
   }
 
+  /**
+   * Encola un intento de ruta (cronómetro) en IndexedDB para subirlo cuando haya red.
+   */
+  async queueRouteAttemptOffline(params: {
+    userId: string
+    routeId: string
+    routeName?: string
+    performance: PerformanceMetrics
+    gpsPoints: Array<{
+      latitude: number
+      longitude: number
+      altitude: number | null
+      speed: number | null
+      timestamp: Date
+      accuracy?: number
+    }>
+  }): Promise<void> {
+    if (params.gpsPoints.length < 2) {
+      throw new Error('Se requieren al menos 2 puntos GPS')
+    }
+
+    const sessionId = `attempt-${generateId()}`
+    const first = params.gpsPoints[0]!
+    const last = params.gpsPoints[params.gpsPoints.length - 1]!
+
+    await indexedDBService.saveSession({
+      id: sessionId,
+      userId: params.userId,
+      name: params.routeName || `Intento ${new Date().toLocaleDateString()}`,
+      description: null,
+      difficulty: null,
+      isPublic: true,
+      startPoint: JSON.stringify({ latitude: first.latitude, longitude: first.longitude }),
+      endPoint: JSON.stringify({ latitude: last.latitude, longitude: last.longitude }),
+      status: 'completed',
+      syncAttempts: 0,
+      lastSyncAttempt: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      metadata: JSON.stringify({
+        type: 'route-attempt',
+        routeId: params.routeId,
+        routeName: params.routeName,
+        performance: params.performance,
+      }),
+    })
+
+    const pointsToSave: Omit<OfflineTrackPoint, 'id' | 'createdAt'>[] = params.gpsPoints.map(
+      (p, index) => ({
+        sessionId,
+        latitude: p.latitude,
+        longitude: p.longitude,
+        altitude: p.altitude ?? null,
+        accuracy: p.accuracy ?? null,
+        speed: p.speed ?? 0,
+        heading: null,
+        timestamp: p.timestamp.toISOString(),
+        orderIndex: index,
+        synced: false,
+      })
+    )
+
+    await indexedDBService.savePointsBatch(pointsToSave)
+
+    const pending = await this.getPendingCount()
+    this.updateState({
+      pendingSessions: pending.sessions,
+      pendingPoints: pending.points,
+    })
+
+    if (typeof navigator !== 'undefined' && navigator.onLine && !this.isSyncing) {
+      void this.syncPendingData()
+    }
+  }
+
+  private async syncRouteAttemptSession(
+    session: OfflineSession,
+    userId: string,
+    routeId: string,
+    performance: PerformanceMetrics
+  ): Promise<void> {
+    const offlinePoints = await indexedDBService.getSessionPoints(session.id)
+    if (offlinePoints.length < 2) {
+      throw new Error('Intento offline sin puntos GPS suficientes')
+    }
+
+    const supabase = createClient()
+    const gps_points = offlinePoints.map((p) => ({
+      latitude: p.latitude,
+      longitude: p.longitude,
+      altitude: p.altitude,
+      speed: p.speed,
+      timestamp:
+        typeof p.timestamp === 'string' ? p.timestamp : new Date(p.timestamp).toISOString(),
+    }))
+
+    const { error } = await supabase.from('route_attempts').insert({
+      route_id: routeId,
+      user_id: userId,
+      total_time: performance.totalTime,
+      moving_time: performance.movingTime,
+      stopped_time: performance.stoppedTime,
+      max_speed: performance.maxSpeed,
+      avg_speed: performance.avgSpeed,
+      distance: performance.totalDistance,
+      elevation_gain: performance.elevationGain,
+      elevation_loss: performance.elevationLoss,
+      jumps_count: performance.jumps?.length ?? 0,
+      sharp_movements_count: performance.sharpMovements?.length ?? 0,
+      hard_brakes_count: performance.hardBrakes?.length ?? 0,
+      stops_count: performance.stops?.length ?? 0,
+      rhythm_score: performance.rhythmScore,
+      intensity_score: performance.intensityScore,
+      aggression_score: performance.aggressionScore,
+      overall_score: performance.overallScore,
+      gps_points,
+      is_public: true,
+      completed_at: new Date().toISOString(),
+    })
+
+    if (error) {
+      throw new Error(error.message)
+    }
+
+    await indexedDBService.updateSessionStatus(session.id, 'synced', new Date())
+    await indexedDBService.markSessionPointsAsSynced(session.id)
+  }
+
   // Sincronizar una sesión individual
   private async syncSingleSession(
     session: OfflineSession,
     userId: string
   ): Promise<void> {
+    let meta: {
+      type?: string
+      routeId?: string
+      performance?: PerformanceMetrics
+    } = {}
+    try {
+      if (session.metadata) {
+        meta = JSON.parse(session.metadata) as typeof meta
+      }
+    } catch {
+      meta = {}
+    }
+
+    if (meta.type === 'route-attempt' && meta.routeId && meta.performance) {
+      await this.syncRouteAttemptSession(session, userId, meta.routeId, meta.performance)
+      return
+    }
+
     // Obtener puntos de la sesión
     const offlinePoints = await indexedDBService.getSessionPoints(session.id)
 
@@ -238,7 +383,7 @@ class SyncManager {
       heading: p.heading,
     }))
 
-    // Procesar puntos con filtros GPS
+    // Procesar puntos con filtros GPS (sin snap a carretera por defecto; trocha/DH como al guardar en app)
     const processedTrack = this.processingService.processTrack(gpsPoints)
 
     // Parsear coordenadas
@@ -254,6 +399,7 @@ class SyncManager {
       name: session.name || `Ruta offline ${new Date(session.createdAt).toLocaleDateString()}`,
       description: session.description || 'Grabada sin conexión',
       difficulty: (session.difficulty as any) || 'Intermediate',
+      trackType: 'trail',
       startCoord: [startPoint.latitude, startPoint.longitude],
       endCoord: [endPoint.latitude, endPoint.longitude],
       trackPoints: processedTrack.points.map((p) => ({

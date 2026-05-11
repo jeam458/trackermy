@@ -38,6 +38,14 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
+
+# temporal durante cap sync APK (no debería quedar; por si falla el script)
+src/middleware.cap-bak.ts
 next-env.d.ts
 
 .vercel
+
+# local IDE / agent (no versionar en el repo de la app)
+.cursor/
+.agents/
+.vscode/

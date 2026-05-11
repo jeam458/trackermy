@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useCallback, useMemo, useEffect } from 'react'
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { GPSTrackProcessingService } from '@/core/application/CreateRouteUseCase'
 import { SupabaseRouteRepository } from '@/core/infrastructure/repositories/SupabaseRouteRepository'
 import { RouteCreationRequest } from '@/core/domain/Route'
 import { GPSPoint, ProcessedTrack, TrackQuality } from '@/core/domain/GPSTrack'
 import { createClient } from '@/core/infrastructure/supabase/client'
+import { tryPersistRouteIconFromLocalAi } from '@/lib/refineRouteIconWithLocalAi'
 import { User } from '@/core/domain/User'
 import { MapPoint } from '@/components/routes/RouteMapEditor'
 
@@ -137,30 +138,29 @@ export function useRouteCreator(currentUser: User): UseRouteCreatorReturn {
     setPointSelectionMode(null)
   }, [])
 
-  // Escuchar cambios en startPoint para automáticamente pedir el endPoint
+  const drawStateRef = useRef({
+    pointSelectionMode: null as 'start' | 'end' | 'intermediate' | null,
+    startPoint: null as MapPoint | null,
+    endPoint: null as MapPoint | null,
+  })
   useEffect(() => {
-    if (startPoint && !endPoint) {
-      // Después de poner el inicio, automáticamente pedir el fin
-      setPointSelectionMode('end')
-    } else if (startPoint && endPoint) {
-      // Después de poner el fin, limpiar selección para mostrar panel
-      setPointSelectionMode(null)
-    }
-  }, [startPoint, endPoint])
+    drawStateRef.current = { pointSelectionMode, startPoint, endPoint }
+  }, [pointSelectionMode, startPoint, endPoint])
 
-  // Usar ubicación actual (nuevo)
+  // Agregar punto intermedio
+  const addTrackPoint = useCallback((point: MapPoint) => {
+    setTrackPoints((prev) => [...prev, point])
+  }, [])
+
+  // Usar ubicación actual (respeta modo inicio / meta / intermedio)
   const useCurrentLocation = useCallback(() => {
     if (!navigator.geolocation) {
       setErrors(['Geolocalización no soportada por este dispositivo'])
       return
     }
 
-    // Mostrar mensaje de que está buscando ubicación
-    console.log('Solicitando ubicación...')
-
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        console.log('Ubicación obtenida:', position.coords)
         const point: MapPoint = {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
@@ -168,19 +168,35 @@ export function useRouteCreator(currentUser: User): UseRouteCreatorReturn {
           accuracy: position.coords.accuracy ?? undefined,
         }
 
-        // Si no hay punto de fin, usar como fin
-        if (!endPoint) {
-          setEndPoint(point)
-        } else {
-          // Si ya hay fin, agregar como intermedio
-          addTrackPoint(point)
+        const { pointSelectionMode: mode, startPoint: sp, endPoint: ep } =
+          drawStateRef.current
+
+        if (mode === 'start') {
+          setStartPoint(point)
+          setPointSelectionMode(null)
+          return
         }
-        setPointSelectionMode(null)
+        if (mode === 'end') {
+          setEndPoint(point)
+          setPointSelectionMode(null)
+          return
+        }
+        if (mode === 'intermediate') {
+          addTrackPoint(point)
+          return
+        }
+        if (!sp) {
+          setStartPoint(point)
+          return
+        }
+        if (!ep) {
+          setEndPoint(point)
+          return
+        }
+        addTrackPoint(point)
       },
       (error) => {
-        console.error('Error de geolocalización:', error)
         let errorMsg = 'No se pudo obtener tu ubicación. '
-        
         switch (error.code) {
           case error.PERMISSION_DENIED:
             errorMsg += 'Por favor permite el acceso a tu ubicación en el navegador.'
@@ -194,21 +210,15 @@ export function useRouteCreator(currentUser: User): UseRouteCreatorReturn {
           default:
             errorMsg += 'Error desconocido.'
         }
-        
         setErrors([errorMsg])
       },
       {
         enableHighAccuracy: true,
-        timeout: 15000, // 15 segundos timeout
-        maximumAge: 10000, // Aceptar ubicación de hasta 10 segundos atrás
+        timeout: 15000,
+        maximumAge: 10000,
       }
     )
-  }, [endPoint]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Agregar punto intermedio
-  const addTrackPoint = useCallback((point: MapPoint) => {
-    setTrackPoints((prev) => [...prev, point])
-  }, [])
+  }, [addTrackPoint])
 
   // Eliminar punto
   const removeTrackPoint = useCallback((index: number) => {
@@ -297,11 +307,12 @@ export function useRouteCreator(currentUser: User): UseRouteCreatorReturn {
       // Procesar con los algoritmos
       const result = PROCESSING_SERVICE.processTrack(gpsPoints)
 
-      // Validar
+      const rawKm = getEstimatedDistance()
       const validation = PROCESSING_SERVICE.validateRoute(
         [startPoint!.latitude, startPoint!.longitude],
         [endPoint!.latitude, endPoint!.longitude],
-        result.points
+        result.points,
+        { recordedPathKm: rawKm }
       )
 
       if (!validation.valid) {
@@ -322,7 +333,7 @@ export function useRouteCreator(currentUser: User): UseRouteCreatorReturn {
       setIsProcessing(false)
       return { success: false, errors: [errorMessage] }
     }
-  }, [startPoint, trackPoints, endPoint, toGPSPoint])
+  }, [startPoint, trackPoints, endPoint, toGPSPoint, getEstimatedDistance])
 
   // Guardar ruta
   const saveRoute = useCallback(async () => {
@@ -385,6 +396,7 @@ export function useRouteCreator(currentUser: User): UseRouteCreatorReturn {
         name: name.trim(),
         description: description.trim() || undefined,
         difficulty,
+        trackType: 'trail',
         startCoord: [startPoint!.latitude, startPoint!.longitude],
         endCoord: [endPoint!.latitude, endPoint!.longitude],
         trackPoints: processed.points.map((p) => ({
@@ -402,6 +414,13 @@ export function useRouteCreator(currentUser: User): UseRouteCreatorReturn {
       const route = await ROUTE_REPOSITORY.createRoute(routeData, user.id)
 
       console.log('Ruta guardada exitosamente:', route.id)
+
+      void tryPersistRouteIconFromLocalAi({
+        routeId: route.id,
+        name: routeData.name,
+        description: routeData.description,
+        difficulty: routeData.difficulty,
+      })
 
       setIsSaving(false)
       

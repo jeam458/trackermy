@@ -22,6 +22,8 @@ export interface ProcessedTrackPoint {
   orderIndex: number
   isFiltered: boolean // si fue marcado como ruido
   confidence: number // 0-1, confianza en el punto
+  /** true si se proyectó a la red vial (map-matching) */
+  roadSnapped?: boolean
 }
 
 /**
@@ -56,15 +58,17 @@ export interface GPSFilterConfig {
   douglasPeuckerTolerance: number
   // Radio para outlier detection (metros desde línea base)
   outlierRadius: number
+  /** Si true, el post-proceso no aplica Kalman (p. ej. grabación ya suavizada en vivo). */
+  skipKalmanInPostprocess?: boolean
 }
 
 /**
  * Configuración por defecto optimizada para downhill
  */
 export const DEFAULT_GPS_FILTER_CONFIG: GPSFilterConfig = {
-  minDistanceBetweenPoints: 3, // 3 metros mínimos entre puntos
-  maxAccuracyThreshold: 15, // máximo 15m de precisión GPS
-  maxSpeedKmh: 80, // velocidad máxima razonable downhill
+  minDistanceBetweenPoints: 2, // metros mínimos entre puntos (coherente con grabación en vivo)
+  maxAccuracyThreshold: 25, // descartar solo lecturas muy malas (callejón urbano / bosque)
+  maxSpeedKmh: 120, // DH y saltos; evita saltos espurios sin recortar bajadas reales
   kalmanQ: 0.001, // bajo process noise
   kalmanR: 0.01, // measurement noise
   douglasPeuckerTolerance: 5, // 5 metros tolerancia

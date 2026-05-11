@@ -1,6 +1,5 @@
-import { redirect } from 'next/navigation';
+import { HomeEntryClient } from './HomeEntryClient'
 
 export default function Home() {
-  // Redirigir siempre a la página de login por defecto
-  redirect('/login');
+  return <HomeEntryClient />
 }

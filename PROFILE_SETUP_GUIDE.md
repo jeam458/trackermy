@@ -6,7 +6,7 @@ Para que el perfil guarde los datos (nombre, foto, bicicleta, rutas favoritas), 
 
 ---
 
-## 🎯 Paso 1: Ejecutar el SQL en Supabase
+## 🎯 Paso 1: Aplicar migraciones en Supabase
 
 ### 1. Abre Supabase Dashboard
 - Ve a: https://supabase.com/dashboard
@@ -14,16 +14,15 @@ Para que el perfil guarde los datos (nombre, foto, bicicleta, rutas favoritas), 
 - Click en **"SQL Editor"** (menú lateral)
 - Click en **"+ New Query"**
 
-### 2. Copia y Ejecuta el SQL
+### 2. Ejecuta migraciones (flujo oficial)
 
-Abre este archivo y copia TODO el contenido:
+Desde la raíz del proyecto:
+
+```bash
+supabase db push
 ```
-C:\Users\jeam\Desktop\app bike\supabase\schema-profiles.sql
-```
 
-Pega el SQL en el editor de Supabase y click en **"Run"**.
-
-Debería decir **"Success. No rows returned"**.
+Si no usas CLI, ejecuta en SQL Editor las migraciones de `supabase/migrations` en orden numérico.
 
 ---
 
@@ -121,7 +120,7 @@ npm run dev
 **Causa:** No ejecutaste el SQL del schema
 
 **Solución:**
-1. Ejecuta `schema-profiles.sql` en Supabase SQL Editor
+1. Ejecuta `supabase db push` (o aplica `supabase/migrations` en orden)
 2. Reinicia la app
 
 ### Error: "new row violates row-level security policy"
@@ -129,7 +128,7 @@ npm run dev
 
 **Solución:**
 1. Verifica que el trigger `on_auth_user_created` exista
-2. Re-ejecuta el schema-profiles.sql completo
+2. Re-aplica migraciones (`supabase db push`)
 
 ### El perfil no carga datos
 **Causa:** El perfil no existe en la base de datos

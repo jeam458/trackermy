@@ -4,6 +4,7 @@
  */
 
 import { MapPoint } from '@/components/routes/RouteMapEditor'
+import { closestPointOnSegmentMeters } from '@/lib/pathMapMatch'
 
 export interface NavigationInstruction {
   distance: number // metros hasta la próxima instrucción
@@ -34,12 +35,16 @@ export interface RouteNavigationConfig {
   
   // Cantidad de puntos ahead para mostrar
   pointsAhead?: number // default: 10
+
+  /** Máxima distancia a un segmento OSM cacheado para considerar "sobre red" (metros). */
+  osmOnNetworkMaxMeters?: number // default: 38
 }
 
 const DEFAULT_CONFIG: Required<RouteNavigationConfig> = {
   maxDistanceToRoute: 20,
   instructionAnticipation: 30,
   pointsAhead: 10,
+  osmOnNetworkMaxMeters: 38,
 }
 
 // Calcular distancia Haversine (metros)
@@ -125,13 +130,36 @@ function generateInstructionText(direction: NavigationInstruction['direction'], 
   }
 }
 
+/** Resultado extendido de `checkDeviation` con red OSM opcional. */
+export type RouteDeviationCheck = {
+  isOffRoute: boolean
+  deviation: number
+  nearestPoint: MapPoint | null
+  /** Distancia mínima a segmentos OSM si `setOsmSafetyNetworkSegments` fue usado; si no, null. */
+  deviationFromOsmM: number | null
+  /** Cerca de una vía OSM cacheada (senda/calle). */
+  onOsmNetwork: boolean
+  /** Lejos de la ruta publicada pero aún sobre geometría OSM (p. ej. senda paralela). */
+  isOffPublishedButOnOsm: boolean
+}
+
 export class RouteNavigationService {
   private config: Required<RouteNavigationConfig>
   private routePoints: MapPoint[] = []
   private currentPointIndex: number = 0
+  /** Segmentos OSM (cache offline) como red de seguridad para desvíos. */
+  private osmSafetySegments: Array<{ a: MapPoint; b: MapPoint }> = []
 
   constructor(config?: RouteNavigationConfig) {
     this.config = { ...DEFAULT_CONFIG, ...config }
+  }
+
+  /**
+   * Segmentos `{ a, b }` en el mismo formato que OSM (orden de nodo).
+   * Vacío desactiva la capa OSM en `checkDeviation`.
+   */
+  setOsmSafetyNetworkSegments(segments: Array<{ a: MapPoint; b: MapPoint }> | null | undefined): void {
+    this.osmSafetySegments = segments && segments.length > 0 ? segments : []
   }
 
   // Establecer ruta a seguir
@@ -271,19 +299,33 @@ export class RouteNavigationService {
     }
   }
 
+  private minDistanceToOsmSegments(location: MapPoint): number | null {
+    if (this.osmSafetySegments.length === 0) return null
+    let best = Number.POSITIVE_INFINITY
+    for (const { a, b } of this.osmSafetySegments) {
+      const { distM } = closestPointOnSegmentMeters(a, b, location.latitude, location.longitude)
+      if (distM < best) best = distM
+    }
+    return best === Number.POSITIVE_INFINITY ? null : best
+  }
+
   // Verificar si se salió de la ruta
-  checkDeviation(location: MapPoint): {
-    isOffRoute: boolean
-    deviation: number
-    nearestPoint: MapPoint | null
-  } {
+  checkDeviation(location: MapPoint): RouteDeviationCheck {
     const nearest = this.findNearestPointOnRoute(location)
     const isOffRoute = nearest.distance > this.config.maxDistanceToRoute * 2
+
+    const osmD = this.minDistanceToOsmSegments(location)
+    const osmMax = this.config.osmOnNetworkMaxMeters
+    const onOsmNetwork = osmD != null && osmD <= osmMax
+    const isOffPublishedButOnOsm = isOffRoute && onOsmNetwork
 
     return {
       isOffRoute,
       deviation: nearest.distance,
       nearestPoint: isOffRoute ? this.routePoints[nearest.index] : null,
+      deviationFromOsmM: osmD,
+      onOsmNetwork,
+      isOffPublishedButOnOsm,
     }
   }
 
@@ -315,5 +357,6 @@ export class RouteNavigationService {
   reset(): void {
     this.routePoints = []
     this.currentPointIndex = 0
+    this.osmSafetySegments = []
   }
 }

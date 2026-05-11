@@ -15,12 +15,12 @@ import {
   Trash2,
   CheckCircle2,
   AlertCircle,
-  Loader2,
   TrendingUp,
   Mountain,
   Eye,
   EyeOff,
 } from 'lucide-react'
+import { BrandSpinner } from '@/components/ui/BrandLogoLoader'
 
 // Badge de calidad del track
 function TrackQualityBadge({ quality }: { quality: string | null }) {
@@ -83,6 +83,8 @@ export default function CreateRoutePage() {
   const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
   const [showStats, setShowStats] = useState(false)
+  /** Proyectar clics a vías OSM cacheadas (tras descargar tiles offline en esa zona). */
+  const [lockToNetwork, setLockToNetwork] = useState(false)
 
   // Cargar usuario
   useEffect(() => {
@@ -159,9 +161,9 @@ export default function CreateRoutePage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-[#1c2327] flex items-center justify-center">
+      <div className="min-h-screen bg-gdh-page flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="animate-spin mx-auto text-amber-500 mb-4" size={40} />
+          <BrandSpinner className="mx-auto mb-4" size={40} />
           <p className="text-gray-400">Cargando...</p>
         </div>
       </div>
@@ -171,9 +173,9 @@ export default function CreateRoutePage() {
   const allPointsCount = [startPoint, ...trackPoints, endPoint].filter(Boolean).length
 
   return (
-    <div className="min-h-screen bg-[#1c2327] text-slate-100">
+    <div className="min-h-screen bg-gdh-page text-slate-100">
       {/* Header */}
-      <header className="bg-slate-900/50 backdrop-blur-sm border-b border-slate-800 sticky top-0 z-50">
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-[#121821]/95 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
@@ -232,6 +234,9 @@ export default function CreateRoutePage() {
                 onUseCurrentLocation={useCurrentLocation}
                 center={[-13.5319, -71.9675]} // Cusco
                 zoom={18} // Zoom máximo detalle
+                lockToNetwork={lockToNetwork}
+                lockToNetworkMaxSnapMeters={95}
+                lockToNetworkMode="both"
               />
             </div>
           </div>
@@ -313,6 +318,22 @@ export default function CreateRoutePage() {
                   <p className="text-2xl font-bold text-white">{allPointsCount}</p>
                 </div>
 
+                <label className="flex items-start gap-3 p-3 bg-slate-800 rounded-lg cursor-pointer border border-slate-700 hover:border-slate-600">
+                  <input
+                    type="checkbox"
+                    checked={lockToNetwork}
+                    onChange={(e) => setLockToNetwork(e.target.checked)}
+                    className="mt-1 rounded border-slate-600"
+                  />
+                  <div>
+                    <p className="text-sm font-medium text-white">Pegar a vías (offline)</p>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Alinea cada clic a sendas/calles del cache OSM. Descarga antes la zona en Grabar →
+                      tiles offline.
+                    </p>
+                  </div>
+                </label>
+
                 {canProcess && !processedTrack && (
                   <button
                     onClick={handleProcess}
@@ -321,7 +342,7 @@ export default function CreateRoutePage() {
                   >
                     {isProcessing ? (
                       <>
-                        <Loader2 className="animate-spin" size={20} />
+                        <BrandSpinner size={20} />
                         Procesando...
                       </>
                     ) : (
@@ -467,7 +488,7 @@ export default function CreateRoutePage() {
             >
               {isSaving ? (
                 <>
-                  <Loader2 className="animate-spin" size={24} />
+                  <BrandSpinner size={24} />
                   Guardando...
                 </>
               ) : (

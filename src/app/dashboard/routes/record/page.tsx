@@ -3,7 +3,7 @@
 import { useState, useEffect, useLayoutEffect, useRef, useId, useMemo, useCallback, Suspense } from 'react'
 import { animate } from 'animejs'
 import dynamic from 'next/dynamic'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/core/infrastructure/supabase/client'
 import { User } from '@/core/domain/User'
 import type { Route } from '@/core/domain/Route'
@@ -56,7 +56,6 @@ import {
   Clock,
   TrendingUp,
   Navigation,
-  AlertCircle,
   X,
   Gauge,
   Search,
@@ -78,7 +77,7 @@ const SelectedRoutePreviewMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-32 rounded-xl border border-white/10 bg-[#1a1f24] flex items-center justify-center text-sm text-slate-500">
+      <div className="h-32 rounded-xl border border-white/10 bg-gdh-card flex items-center justify-center text-sm text-slate-500">
         Cargando vista previa del mapa…
       </div>
     ),
@@ -261,6 +260,7 @@ function RecordPresetFromUrl({
 
 export default function RecordRoutePage() {
   const router = useRouter()
+  const pathname = usePathname()
   const countdownGradientId = useId().replace(/:/g, '')
   const recordingTargetRef = useRef<'new' | { routeId: string }>('new')
   const [user, setUser] = useState<User | null>(null)
@@ -291,6 +291,33 @@ export default function RecordRoutePage() {
   const [recordingEntryFromDetail, setRecordingEntryFromDetail] = useState(false)
   /** Mientras la URL lleva `?routeId=` (preset en curso o lista aún cargando). */
   const [urlRecordRouteId, setUrlRecordRouteId] = useState<string | null>(null)
+
+  /** Sync inmediato con ?routeId= antes del modal de entrada (evita condición de carrera con RecordPresetFromUrl). */
+  useLayoutEffect(() => {
+    if (typeof window === 'undefined') return
+    if (!pathname?.includes('/dashboard/routes/record')) return
+    const id = (new URLSearchParams(window.location.search).get('routeId') ?? '').trim()
+    if (!id) return
+    setUrlRecordRouteId(id)
+    setRecordingEntryFromDetail(true)
+    setEntryChoiceModalOpen(false)
+    entryChoiceShownRef.current = true
+    try {
+      window.sessionStorage.setItem(
+        RECORD_DEEP_LINK_CACHE_KEY,
+        JSON.stringify({ id, ts: Date.now() })
+      )
+    } catch {
+      /* noop */
+    }
+  }, [pathname])
+
+  useEffect(() => {
+    if (!urlRecordRouteId) return
+    setEntryChoiceModalOpen(false)
+    entryChoiceShownRef.current = true
+  }, [urlRecordRouteId])
+
   const [recordingPickQuery, setRecordingPickQuery] = useState('')
   const [recordingSearchHits, setRecordingSearchHits] = useState<Route[]>([])
   const [recordingSearchBusy, setRecordingSearchBusy] = useState(false)
@@ -305,8 +332,6 @@ export default function RecordRoutePage() {
   const [mapMaximized, setMapMaximized] = useState(false)
   const [distanceToStartM, setDistanceToStartM] = useState<number | null>(null)
   const [checkingPosition, setCheckingPosition] = useState(false)
-  const [preflightError, setPreflightError] = useState<string | null>(null)
-  const [preflightNeedSettings, setPreflightNeedSettings] = useState(false)
   const [startingArm, setStartingArm] = useState(false)
   /** Copia al detener grabación para el modal (evita leer solo ref en JSX). */
   const [saveContext, setSaveContext] = useState<'new' | { routeId: string }>('new')
@@ -408,6 +433,14 @@ export default function RecordRoutePage() {
     liveKalmanEnabled: true,
     hardRejectAccuracyM: 20,
   })
+
+  useEffect(() => {
+    if (!gpsError) return
+    const body = gpsError.startsWith('Error de GPS') ? gpsError : `Error de GPS: ${gpsError}`
+    toast.error('Error de GPS', `${body} Revisa permisos o abre ajustes de ubicación si hace falta.`, {
+      duration: 10000,
+    })
+  }, [gpsError])
 
   // Usuario: sesión local primero; perfil en segundo plano para no bloquear lista de rutas / mapa.
   useEffect(() => {
@@ -519,16 +552,11 @@ export default function RecordRoutePage() {
           window.sessionStorage.setItem(RECORD_DEEP_LINK_CACHE_KEY, payload)
         }
       }
-      setPreflightError(null)
-      setPreflightNeedSettings(false)
-
       // Desde ficha (?routeId=): la ruta y el mapa deben mostrarse aunque el GPS falle al entrar;
       // el listado exige ubicación antes de elegir (comportamiento anterior).
       if (source === 'list') {
         const loc = await ensureLocationForRecording()
         if (!loc.ok) {
-          setPreflightError(loc.message)
-          setPreflightNeedSettings(!!loc.openSettings)
           toast.warning('Activa tu GPS', loc.message, { duration: 6500 })
           if (loc.openSettings) void openAppLocationSettings()
           return false
@@ -551,13 +579,10 @@ export default function RecordRoutePage() {
       setNewRouteSelectedName(null)
       setOsmMapPath(null)
       setOsmMapError(null)
-      setPreflightError(null)
 
       if (source === 'url') {
         const loc = await ensureLocationForRecording()
         if (!loc.ok) {
-          setPreflightError(loc.message)
-          setPreflightNeedSettings(!!loc.openSettings)
           toast.warning('Activa tu GPS', loc.message, { duration: 6500 })
           if (loc.openSettings) void openAppLocationSettings()
         }
@@ -565,10 +590,6 @@ export default function RecordRoutePage() {
 
       try {
         const pos = await getQuickPosition()
-        if (source === 'url') {
-          setPreflightError(null)
-          setPreflightNeedSettings(false)
-        }
         setMapBootstrapPos([pos.latitude, pos.longitude])
         setMapShowsRiderAvatar(true)
         setMapFlyBump((n) => n + 1)
@@ -611,7 +632,6 @@ export default function RecordRoutePage() {
     setRecordingPickFocused(false)
     setOsmMapPath(null)
     setOsmMapError(null)
-    setPreflightError(null)
     if (typeof window !== 'undefined') {
       window.sessionStorage.removeItem(RECORD_DEEP_LINK_CACHE_KEY)
     }
@@ -826,8 +846,6 @@ export default function RecordRoutePage() {
   }, [mapBootstrapPos, selectedRouteForPreview, refreshOfflineTileRegionsCount])
 
   const refreshMapBootstrapLocation = useCallback(async (): Promise<boolean> => {
-    setPreflightError(null)
-    setPreflightNeedSettings(false)
     try {
       const pos = await getQuickPosition()
       setMapBootstrapPos([pos.latitude, pos.longitude])
@@ -835,22 +853,19 @@ export default function RecordRoutePage() {
       setMapFlyBump((n) => n + 1)
       return true
     } catch {
-      setPreflightError(
-        'No se pudo obtener tu ubicación. Concede permiso de ubicación a la app y vuelve a intentar.'
+      toast.warning(
+        'Sin ubicación',
+        'No se pudo obtener tu ubicación. Concede permiso a la app o abre ajustes de ubicación; también puedes usar «Centrar mapa en mi GPS».',
+        { duration: 8500 }
       )
-      setPreflightNeedSettings(true)
       return false
     }
   }, [])
 
   /** Tramo libre: limpia selección, muestra icono rider y avisa cómo iniciar grabación. */
   const handleNuevaRutaLibre = useCallback(async () => {
-    setPreflightError(null)
-    setPreflightNeedSettings(false)
     const loc = await ensureLocationForRecording()
     if (!loc.ok) {
-      setPreflightError(loc.message)
-      setPreflightNeedSettings(!!loc.openSettings)
       toast.warning('Activa tu GPS', loc.message, { duration: 6500 })
       if (loc.openSettings) void openAppLocationSettings()
       return
@@ -971,12 +986,20 @@ export default function RecordRoutePage() {
     void refreshOfflineTileRegionsCount()
   }, [routeSetupOpen, refreshOfflineTileRegionsCount])
 
-  const refreshDistanceToSelectedRoute = async () => {
+  const resolveRouteForDistance = useCallback((): Route | null => {
+    if (!selectedRouteId) return null
+    return (
+      routes.find((r) => r.id === selectedRouteId) ??
+      (selectedRouteSnapshot?.id === selectedRouteId ? selectedRouteSnapshot : null)
+    )
+  }, [selectedRouteId, routes, selectedRouteSnapshot])
+
+  const refreshDistanceToSelectedRoute = useCallback(async () => {
     if (!selectedRouteId) {
       setDistanceToStartM(null)
       return
     }
-    const route = routes.find((r) => r.id === selectedRouteId)
+    const route = resolveRouteForDistance()
     if (!route) return
     setCheckingPosition(true)
     try {
@@ -991,22 +1014,24 @@ export default function RecordRoutePage() {
       )
     } catch {
       setDistanceToStartM(null)
-      setPreflightError(
-        'No se pudo leer tu posición. Permite ubicación para compararte con el inicio de la ruta.'
+      toast.warning(
+        'Sin posición',
+        'No se pudo leer tu posición. Permite ubicación para compararte con el inicio de la ruta.',
+        { duration: 8500 }
       )
     } finally {
       setCheckingPosition(false)
     }
-  }
+  }, [selectedRouteId, resolveRouteForDistance])
 
   useEffect(() => {
-    if (!selectedRouteId || routes.length === 0) {
+    if (!selectedRouteId) {
       setDistanceToStartM(null)
       return
     }
+    if (!resolveRouteForDistance()) return
     void refreshDistanceToSelectedRoute()
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al cambiar selección o lista
-  }, [selectedRouteId, routes])
+  }, [selectedRouteId, routes, selectedRouteSnapshot, resolveRouteForDistance, refreshDistanceToSelectedRoute])
 
   useEffect(() => {
     if (armCountdown === null) return
@@ -1050,8 +1075,6 @@ export default function RecordRoutePage() {
   const avgSpeed = elapsedTime > 0 && distanceM > 0 ? distanceM / elapsedTime : 0
 
   const handleStart = async () => {
-    setPreflightError(null)
-    setPreflightNeedSettings(false)
     setStartingArm(true)
     try {
       if (selectedRouteId) {
@@ -1059,8 +1082,10 @@ export default function RecordRoutePage() {
           distanceToStartM === null ||
           distanceToStartM > PROXIMITY_START_M
         ) {
-          setPreflightError(
-            `Para grabar sobre una ruta existente debes estar a menos de ${PROXIMITY_START_M} m de su inicio (ahora: ${distanceToStartM != null ? Math.round(distanceToStartM) : 'sin lectura'} m). Cambia a “Nueva ruta” o acércate al punto de partida.`
+          toast.warning(
+            'Muy lejos del partidor',
+            `Para grabar sobre una ruta existente debes estar a menos de ${PROXIMITY_START_M} m de su inicio (ahora: ${distanceToStartM != null ? Math.round(distanceToStartM) : 'sin lectura'} m). Cambia a «Nueva ruta» o acércate al punto de partida.`,
+            { duration: 9000 }
           )
           return
         }
@@ -1071,8 +1096,8 @@ export default function RecordRoutePage() {
 
       const loc = await ensureLocationForRecording()
       if (!loc.ok) {
-        setPreflightError(loc.message)
-        setPreflightNeedSettings(!!loc.openSettings)
+        toast.warning('Activa tu GPS', loc.message, { duration: 6500 })
+        if (loc.openSettings) void openAppLocationSettings()
         return
       }
       setArmCountdown(3)
@@ -1403,7 +1428,7 @@ export default function RecordRoutePage() {
     routeSetupOpen || createRouteModalOpen || showSaveModal || entryChoiceModalOpen
 
   return (
-    <div className="min-h-screen bg-[#121417] text-slate-100 relative flex flex-col">
+    <div className="gdh-immersive-page min-h-screen text-slate-100 relative flex flex-col">
       <Suspense fallback={null}>
         <RecordPresetFromUrl
           routes={routes}
@@ -1457,7 +1482,7 @@ export default function RecordRoutePage() {
         </div>
       )}
 
-      <header className="bg-[#121417]/90 backdrop-blur-sm border-b border-white/5 sticky top-0 z-50">
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-[#121821]/95 backdrop-blur-md">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 px-4 py-4">
           <div className="flex min-w-0 flex-1 items-center gap-4">
             <button
@@ -1559,24 +1584,6 @@ export default function RecordRoutePage() {
           maxOffRouteM={ROUTE_ATTEMPT_MAX_OFF_ROUTE_M}
         />
 
-        {preflightError && !isRecording && (
-          <div className="absolute left-3 right-3 top-16 z-[1095] space-y-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 shadow-xl backdrop-blur-md sm:left-auto sm:right-3 sm:top-24 sm:max-w-md">
-            <div className="flex items-start gap-2">
-              <AlertCircle className="mt-0.5 shrink-0 text-amber-400" size={20} />
-              <p className="text-sm text-amber-100">{preflightError}</p>
-            </div>
-            {preflightNeedSettings && (
-              <button
-                type="button"
-                onClick={() => void openAppLocationSettings()}
-                className="w-full rounded-lg bg-amber-500/20 px-3 py-2 text-sm font-medium text-amber-200 hover:bg-amber-500/30"
-              >
-                Abrir ajustes de la app (ubicación)
-              </button>
-            )}
-          </div>
-        )}
-
         <div
           className={
             mapMaximized
@@ -1631,7 +1638,7 @@ export default function RecordRoutePage() {
                 }}
                 title="Centrar en mi GPS"
                 aria-label="Centrar mapa en mi GPS"
-                className="pointer-events-auto flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-[#1a1f24]/95 text-teal-400 shadow-lg hover:bg-white/10 disabled:pointer-events-none disabled:opacity-40"
+                className="pointer-events-auto flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-gdh-card/95 text-teal-400 shadow-lg hover:bg-white/10 disabled:pointer-events-none disabled:opacity-40"
                 style={{ willChange: 'transform, opacity' }}
               >
                 <Crosshair size={20} aria-hidden strokeWidth={2} />
@@ -1647,7 +1654,7 @@ export default function RecordRoutePage() {
                   : 'Maximizar mapa para ver más detalle'
               }
               title={mapMaximized ? 'Reducir mapa' : 'Maximizar mapa'}
-              className="pointer-events-auto flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-[#1a1f24]/95 text-teal-400 shadow-lg hover:bg-white/10"
+              className="pointer-events-auto flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-gdh-card/95 text-teal-400 shadow-lg hover:bg-white/10"
             >
               {mapMaximized ? (
                 <Minimize2 size={20} aria-hidden strokeWidth={2} />
@@ -1659,7 +1666,7 @@ export default function RecordRoutePage() {
         </div>
 
         {isRecording && user && (
-          <div className="fixed left-3 right-3 bottom-[5.1rem] z-[1055] mx-auto flex w-[min(92vw,420px)] items-center gap-3 rounded-2xl border border-white/10 bg-[#1a1f24]/95 px-3 py-2.5 shadow-xl">
+          <div className="fixed left-3 right-3 bottom-[5.1rem] z-[1055] mx-auto flex w-[min(92vw,420px)] items-center gap-3 rounded-2xl border border-white/10 bg-gdh-card/95 px-3 py-2.5 shadow-xl">
             <div className="w-10 h-10 rounded-full bg-slate-700 overflow-hidden border border-white/10 shrink-0">
               {mapAvatarUrl || user.avatarUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -1757,25 +1764,6 @@ export default function RecordRoutePage() {
                 </p>
               )}
             </div>
-            </div>
-          </div>
-        )}
-
-        {/* Error de GPS */}
-        {gpsError && (
-          <div className="fixed bottom-[11rem] left-3 right-3 top-auto z-[1065] max-h-[40vh] overflow-y-auto rounded-xl border border-red-500/20 bg-red-500/10 p-3 shadow-xl backdrop-blur-sm sm:bottom-auto sm:left-auto sm:right-3 sm:top-[5.5rem] sm:max-w-md">
-            <AlertCircle className="text-red-400 shrink-0" size={24} />
-            <div>
-              <p className="text-sm text-red-200">
-                {gpsError.startsWith('Error de GPS') ? gpsError : `Error de GPS: ${gpsError}`}
-              </p>
-              <button
-                type="button"
-                onClick={() => void openAppLocationSettings()}
-                className="mt-2 text-xs font-medium text-red-300 underline underline-offset-2"
-              >
-                Abrir ajustes de ubicación
-              </button>
             </div>
           </div>
         )}
@@ -2095,7 +2083,7 @@ export default function RecordRoutePage() {
                 type="button"
                 onClick={() => void handleCreateNewRouteDraft()}
                 disabled={!newRouteDraftName.trim()}
-                className="mt-1 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-teal-600 to-cyan-600 py-3 text-sm font-semibold text-white shadow-lg shadow-teal-900/30 hover:from-teal-500 hover:to-cyan-500 disabled:opacity-50"
+                className="mt-1 flex min-h-[3rem] w-full items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-gdh-brand to-gdh-brand-muted px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-teal-900/30 [text-shadow:0_1px_2px_rgba(0,0,0,0.35)] hover:from-gdh-brand-highlight hover:to-gdh-brand disabled:opacity-50"
               >
                 <PlusCircle size={18} />
                 Crear

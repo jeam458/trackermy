@@ -49,7 +49,7 @@ BEGIN
             'new_route',
             '🆕 Nueva Ruta Pública',
             NEW.name || ' ha sido creada por ' || COALESCE(
-                (SELECT user_metadata->>'fullName' FROM auth.users WHERE id = NEW.created_by),
+                (SELECT raw_user_meta_data->>'fullName' FROM auth.users WHERE id = NEW.created_by),
                 'un rider'
             ),
             NEW.id
@@ -88,7 +88,7 @@ BEGIN
         FROM public.routes r
         WHERE r.id = NEW.route_id;
         
-        SELECT COALESCE(au.user_metadata->>'fullName', 'Un rider') INTO rider_name
+        SELECT COALESCE(au.raw_user_meta_data->>'fullName', 'Un rider') INTO rider_name
         FROM auth.users au
         WHERE au.id = NEW.user_id;
         

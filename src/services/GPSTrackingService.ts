@@ -2,9 +2,8 @@
 
 import { GPSTrackPoint } from '@/hooks/useMobileGPSTracker'
 import { MapPoint } from '@/components/routes/RouteMapEditor'
-import { Capacitor, registerPlugin } from '@capacitor/core'
-
-const BackgroundGeolocation = registerPlugin<any>('BackgroundGeolocation')
+import { Capacitor } from '@capacitor/core'
+import { backgroundGeolocation } from '@/services/backgroundGeolocationPlugin'
 
 export interface GPSReading {
   latitude: number
@@ -90,30 +89,6 @@ function evaluateSignalQuality(accuracy: number | null, satellites: number | nul
   return quality
 }
 
-// Filtro de Kalman simplificado para suavizar coordenadas
-class SimpleKalmanFilter {
-  private estimate: number
-  private errorEstimate: number
-  private errorMeasurement: number
-
-  constructor(initialEstimate: number, initialError: number, measurementError: number) {
-    this.estimate = initialEstimate
-    this.errorEstimate = initialError
-    this.errorMeasurement = measurementError
-  }
-
-  update(measurement: number): number {
-    const kalmanGain = this.errorEstimate / (this.errorEstimate + this.errorMeasurement)
-    this.estimate = this.estimate + kalmanGain * (measurement - this.estimate)
-    this.errorEstimate = (1 - kalmanGain) * this.errorEstimate
-    return this.estimate
-  }
-
-  getEstimate(): number {
-    return this.estimate
-  }
-}
-
 export class GPSTrackingService {
   private watchId: number | null = null
   private nativeWatcherId: string | null = null
@@ -126,8 +101,6 @@ export class GPSTrackingService {
     permissionGranted: false,
   }
   
-  private kalmanLat: SimpleKalmanFilter | null = null
-  private kalmanLng: SimpleKalmanFilter | null = null
   private calibration: GPSCalibration = {
     altitudeOffset: 0,
     speedCorrectionFactor: 1.0,
@@ -163,23 +136,19 @@ export class GPSTrackingService {
     this.session.error = null
     this.session.readings = []
 
-    // Inicializar filtros de Kalman
-    this.kalmanLat = null
-    this.kalmanLng = null
-
     if (this.isNative) {
       try {
-        const watcherId = await BackgroundGeolocation.addWatcher(
+        const watcherId = await backgroundGeolocation.addWatcher(
           {
-            backgroundMessage: "Cancel to prevent battery drain.",
-            backgroundTitle: "Tracking You.",
+            backgroundMessage: 'Downhill Tracker sigue registrando tu posición con la pantalla apagada.',
+            backgroundTitle: 'GPS activo — Downhill Tracker',
             requestPermissions: true,
             stale: false,
-            distanceFilter: 1 // Actualizar por cada metro si es posible en descenso
+            distanceFilter: 1,
           },
-          (location: any, error: any) => {
+          (location, error) => {
             if (error) {
-              if (error.code === "NOT_AUTHORIZED") {
+              if (error.code === 'NOT_AUTHORIZED') {
                  this.session.permissionGranted = false
                  onError('Permiso de ubicación denegado.')
               } else {
@@ -189,7 +158,6 @@ export class GPSTrackingService {
             }
 
             if (location) {
-              // Convertir a formato GeolocationPosition para reusar procesador
               const pos = {
                 coords: {
                   latitude: location.latitude,
@@ -282,12 +250,10 @@ export class GPSTrackingService {
       this.watchId = null
     }
     if (this.nativeWatcherId !== null) {
-      BackgroundGeolocation.removeWatcher({ id: this.nativeWatcherId })
+      void backgroundGeolocation.removeWatcher({ id: this.nativeWatcherId })
       this.nativeWatcherId = null
     }
     this.session.isActive = false
-    this.kalmanLat = null
-    this.kalmanLng = null
   }
 
   // Obtener ubicación actual (una sola vez)
@@ -331,19 +297,11 @@ export class GPSTrackingService {
   // Procesar lectura GPS
   private processGPSReading(position: GeolocationPosition): GPSReading {
     const { latitude, longitude, altitude, accuracy, speed, heading } = position.coords
-    
-    let filteredLat = latitude
-    let filteredLng = longitude
 
-    // Aplicar filtro de Kalman si está disponible
-    if (this.kalmanLat && this.kalmanLng) {
-      filteredLat = this.kalmanLat.update(latitude)
-      filteredLng = this.kalmanLng.update(longitude)
-    } else {
-      // Inicializar filtros
-      this.kalmanLat = new SimpleKalmanFilter(latitude, 1, accuracy || 10)
-      this.kalmanLng = new SimpleKalmanFilter(longitude, 1, accuracy || 10)
-    }
+    // Coordenadas **sin** Kalman: el suavizado retrasaba el trazado y acortaba curvas
+    // en bajada; para grabación se preferien fixes crudos (aceptación va por gpsSampleAcceptance).
+    const filteredLat = latitude
+    const filteredLng = longitude
 
     // Aplicar corrección de altitud
     const correctedAltitude = altitude !== null ? altitude + this.calibration.altitudeOffset : null
@@ -368,19 +326,27 @@ export class GPSTrackingService {
     }
   }
 
-  // Verificar permisos
+  // Verificar permisos (solo bloquear si el navegador dice explícitamente "denied")
   private async checkPermission(): Promise<boolean> {
     try {
+      if (this.isNative) {
+        // En WebView de Capacitor, permissions.query('geolocation') suele dar "denied"/"prompt"
+        // antes de que el plugin nativo pueda mostrar el diálogo. addWatcher ya pide permiso.
+        this.session.permissionGranted = true
+        return true
+      }
       if (navigator.permissions) {
         const result = await navigator.permissions.query({ name: 'geolocation' as PermissionName })
+        if (result.state === 'denied') {
+          this.session.permissionGranted = false
+          return false
+        }
         this.session.permissionGranted = result.state === 'granted'
-        return this.session.permissionGranted
+        return true
       }
-      // Si no hay API de permisos, asumir que está concedido
       this.session.permissionGranted = true
       return true
     } catch {
-      // Fallback si no hay soporte de permisos
       this.session.permissionGranted = true
       return true
     }

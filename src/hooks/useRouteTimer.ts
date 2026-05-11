@@ -31,6 +31,9 @@ export interface RouteTimerState {
   
   // Errores
   error: string | null
+
+  /** El intento ya está en IndexedDB (sin red al finalizar); no hace falta volver a insertar al pulsar Guardar. */
+  offlineAttemptQueued: boolean
 }
 
 export interface RouteAttemptData {
@@ -59,6 +62,7 @@ export function useRouteTimer(routeId: string, userId?: string) {
     gpsPoints: [],
     isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
     error: null,
+    offlineAttemptQueued: false,
   })
 
   const watchIdRef = useRef<number | null>(null)
@@ -72,29 +76,39 @@ export function useRouteTimer(routeId: string, userId?: string) {
     if (state.gpsPoints.length < 2) return
 
     const points = state.gpsPoints
-    const speeds = points.map(p => p.speed ?? 0).filter(s => s > 0)
-    
     let distance = 0
+    const segSpeeds: number[] = []
+    const R = 6371000
     for (let i = 1; i < points.length; i++) {
-      const R = 6371000
-      const dLat = ((points[i].latitude - points[i-1].latitude) * Math.PI) / 180
-      const dLng = ((points[i].longitude - points[i-1].longitude) * Math.PI) / 180
-      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-        Math.cos((points[i-1].latitude * Math.PI) / 180) *
-        Math.cos((points[i].latitude * Math.PI) / 180) *
-        Math.sin(dLng/2) * Math.sin(dLng/2)
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
-      distance += R * c
+      const dLat = ((points[i].latitude - points[i - 1].latitude) * Math.PI) / 180
+      const dLng = ((points[i].longitude - points[i - 1].longitude) * Math.PI) / 180
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos((points[i - 1].latitude * Math.PI) / 180) *
+          Math.cos((points[i].latitude * Math.PI) / 180) *
+          Math.sin(dLng / 2) *
+          Math.sin(dLng / 2)
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+      const m = R * c
+      distance += m
+      const dt =
+        (points[i].timestamp.getTime() - points[i - 1].timestamp.getTime()) / 1000
+      if (dt > 0) {
+        segSpeeds.push(m / dt)
+      }
     }
 
     const currentSpeed = points[points.length - 1].speed ?? 0
-    const maxSpeed = speeds.length > 0 ? Math.max(...speeds) : 0
-    const avgSpeed = speeds.length > 0 ? speeds.reduce((a, b) => a + b, 0) / speeds.length : 0
+    const fromDevice = points.map((p) => p.speed).filter((s): s is number => s != null && s > 0)
+    const maxFromSeg = segSpeeds.length > 0 ? Math.max(...segSpeeds) : 0
+    const maxSpeed = fromDevice.length > 0 ? Math.max(maxFromSeg, ...fromDevice) : maxFromSeg
     const altitude = points[points.length - 1].altitude ?? null
 
     const elapsed = startTimeRef.current
       ? (Date.now() - startTimeRef.current.getTime()) / 1000
       : 0
+    // Misma noción que al guardar: distancia / tiempo de sesión, no suma de lecturas
+    const avgSpeed = elapsed > 0 ? distance / elapsed : 0
 
     setState(prev => ({
       ...prev,
@@ -119,7 +133,7 @@ export function useRouteTimer(routeId: string, userId?: string) {
 
     startTimeRef.current = new Date()
     
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
       isRunning: true,
       isPaused: false,
@@ -129,6 +143,7 @@ export function useRouteTimer(routeId: string, userId?: string) {
       pausedTime: 0,
       gpsPoints: [],
       error: null,
+      offlineAttemptQueued: false,
     }))
 
     // Iniciar GPS watch
@@ -244,30 +259,27 @@ export function useRouteTimer(routeId: string, userId?: string) {
       // Analizar rendimiento
       const performance = performanceService.current.analyzePerformance(state.gpsPoints)
 
-      setState(prev => ({
-        ...prev,
-        isFinished: true,
-        isRunning: false,
-        isPaused: false,
-      }))
-
-      // Guardar en IndexedDB si está offline
+      // Sin red: persistir intento + puntos GPS en IndexedDB; SyncManager lo sube al volver online
       const isOnline = navigator.onLine
-      if (!isOnline && userId) {
+      let offlineQueued = false
+      if (!isOnline && userId && indexedDBService.isAvailable()) {
+        const sessionId = `attempt-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+        const first = state.gpsPoints[0]!
+        const last = state.gpsPoints[state.gpsPoints.length - 1]!
         await indexedDBService.saveSession({
-          id: `attempt-${Date.now()}`,
+          id: sessionId,
           userId,
           name: `Intento ${new Date().toLocaleDateString()}`,
           description: null,
           difficulty: null,
           isPublic: true,
           startPoint: JSON.stringify({
-            latitude: state.gpsPoints[0].latitude,
-            longitude: state.gpsPoints[0].longitude,
+            latitude: first.latitude,
+            longitude: first.longitude,
           }),
           endPoint: JSON.stringify({
-            latitude: state.gpsPoints[state.gpsPoints.length - 1].latitude,
-            longitude: state.gpsPoints[state.gpsPoints.length - 1].longitude,
+            latitude: last.latitude,
+            longitude: last.longitude,
           }),
           status: 'completed',
           syncAttempts: 0,
@@ -280,16 +292,41 @@ export function useRouteTimer(routeId: string, userId?: string) {
             performance,
           }),
         })
+        await indexedDBService.savePointsBatch(
+          state.gpsPoints.map((p, index) => ({
+            sessionId,
+            latitude: p.latitude,
+            longitude: p.longitude,
+            altitude: p.altitude ?? null,
+            accuracy: p.accuracy ?? null,
+            speed: p.speed ?? 0,
+            heading: null,
+            timestamp: p.timestamp.toISOString(),
+            orderIndex: index,
+            synced: false,
+          }))
+        )
+        syncManager.init()
+        offlineQueued = true
       }
+
+      setState((prev) => ({
+        ...prev,
+        isFinished: true,
+        isRunning: false,
+        isPaused: false,
+        offlineAttemptQueued: offlineQueued,
+      }))
 
       return performance
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error analizando rendimiento'
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
         error: errorMessage,
         isFinished: true,
         isRunning: false,
+        offlineAttemptQueued: false,
       }))
       return null
     }
@@ -325,6 +362,7 @@ export function useRouteTimer(routeId: string, userId?: string) {
       gpsPoints: [],
       isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
       error: null,
+      offlineAttemptQueued: false,
     })
   }, [])
 

@@ -3,7 +3,12 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/core/infrastructure/supabase/client'
-import { Bike, Mail, Lock, Loader2, AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react'
+import { getOAuthRedirectUrl } from '@/core/infrastructure/auth/oauthRedirect'
+import { isGoogleOAuthRestrictedUserAgent } from '@/core/infrastructure/auth/oauthEmbeddedBrowser'
+import { Capacitor } from '@capacitor/core'
+import { Browser } from '@capacitor/browser'
+import { Bike, Mail, Lock, AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react'
+import { BrandSpinner } from '@/components/ui/BrandLogoLoader'
 
 export default function LoginForm() {
   const router = useRouter()
@@ -15,6 +20,7 @@ export default function LoginForm() {
   const [isLogin, setIsLogin] = useState(true)
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
+  const [googleManualOAuthUrl, setGoogleManualOAuthUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
@@ -77,23 +83,67 @@ export default function LoginForm() {
     }
   }
 
-  // Login con Google
+  /**
+   * Siempre skipBrowserRedirect: nosotros abrimos el URL en navegador “real”.
+   * Así evitamos 403 disallowed_useragent (Google bloquea OAuth dentro de WebView / in-app).
+   */
   const handleGoogleLogin = async () => {
     setGoogleLoading(true)
     setError(null)
+    setSuccess(null)
+    setGoogleManualOAuthUrl(null)
 
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const redirectTo = getOAuthRedirectUrl()
+      const native = Capacitor.isNativePlatform()
+      const restrictedWeb = !native && isGoogleOAuthRestrictedUserAgent()
+
+      const { data, error: oauthErr } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${typeof window !== 'undefined' ? window.location.origin : ''}/auth/callback`,
+          redirectTo,
+          skipBrowserRedirect: true,
         },
       })
 
-      if (error) throw error
+      if (oauthErr) throw oauthErr
+      if (!data?.url) throw new Error('No se pudo iniciar el acceso con Google')
+
+      if (native) {
+        await Browser.open({ url: data.url })
+        return
+      }
+
+      if (restrictedWeb) {
+        setGoogleManualOAuthUrl(data.url)
+        const popup = window.open(data.url, '_blank', 'noopener,noreferrer')
+        if (!popup) {
+          setError(
+            'Google no permite iniciar sesión dentro de Instagram, Facebook o el navegador de la app. Usá “Copiar enlace de Google” y pegalo en Chrome o Safari, o abrí esta página desde el menú ⋮ → “Abrir en navegador”.'
+          )
+        } else {
+          setSuccess(
+            'Se abrió una pestaña con Google. Si ves “Access blocked”, volvé y usá Copiar enlace o abrí el sitio en Chrome/Safari.'
+          )
+        }
+        return
+      }
+
+      window.location.assign(data.url)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error con Google')
+    } finally {
       setGoogleLoading(false)
+    }
+  }
+
+  const copyGoogleOAuthUrl = async () => {
+    if (!googleManualOAuthUrl) return
+    try {
+      await navigator.clipboard.writeText(googleManualOAuthUrl)
+      setSuccess('Enlace copiado. Pegalo en Chrome o Safari e iniciá sesión con Google.')
+    } catch {
+      setError('No se pudo copiar. Mantené apretado el enlace o abrí el sitio en el navegador del sistema.')
     }
   }
 
@@ -119,7 +169,7 @@ export default function LoginForm() {
         className="w-full py-3 bg-white hover:bg-gray-100 disabled:bg-gray-300 text-gray-800 font-semibold rounded-xl transition-colors flex items-center justify-center gap-3 mb-4"
       >
         {googleLoading ? (
-          <Loader2 className="animate-spin" size={20} />
+          <BrandSpinner size={20} />
         ) : (
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
             <path d="M18.1713 8.36791H17.5001V8.33325H10.0001V11.6666H14.7096C14.0225 13.607 12.1763 14.9999 10.0001 14.9999C7.23882 14.9999 5.00007 12.7612 5.00007 9.99992C5.00007 7.23867 7.23882 4.99992 10.0001 4.99992C11.2746 4.99992 12.4342 5.48075 13.3171 6.26617L15.6742 3.909C14.1859 2.52217 12.1951 1.66659 10.0001 1.66659C5.39799 1.66659 1.66675 5.39784 1.66675 9.99992C1.66675 14.602 5.39799 18.3333 10.0001 18.3333C14.6021 18.3333 18.3334 14.602 18.3334 9.99992C18.3334 9.44117 18.2763 8.89575 18.1713 8.36791Z" fill="#FFC107"/>
@@ -131,13 +181,30 @@ export default function LoginForm() {
         {googleLoading ? 'Conectando con Google...' : 'Continuar con Google'}
       </button>
 
+      {googleManualOAuthUrl && (
+        <div className="mb-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-sm text-amber-100/95 space-y-2">
+          <p className="text-xs leading-relaxed">
+            Si Google muestra “Access blocked” o “disallowed_useragent”, es porque este navegador está
+            integrado en una app. Abrí <span className="font-semibold">la misma dirección</span> en Chrome o
+            Safari e intentá de nuevo.
+          </p>
+          <button
+            type="button"
+            onClick={() => void copyGoogleOAuthUrl()}
+            className="w-full py-2 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 font-medium text-xs transition-colors"
+          >
+            Copiar enlace de inicio de sesión con Google
+          </button>
+        </div>
+      )}
+
       {/* Separador */}
       <div className="relative my-6">
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t border-slate-700"></div>
         </div>
         <div className="relative flex justify-center text-sm">
-          <span className="px-4 bg-[#1c2327] text-gray-400">o continúa con email</span>
+          <span className="px-4 bg-gdh-page text-gray-400">o continúa con email</span>
         </div>
       </div>
 
@@ -207,7 +274,7 @@ export default function LoginForm() {
         >
           {loading ? (
             <>
-              <Loader2 className="animate-spin" size={20} />
+              <BrandSpinner size={20} />
               {isLogin ? 'Iniciando sesión...' : 'Creando cuenta...'}
             </>
           ) : (
@@ -237,6 +304,7 @@ export default function LoginForm() {
       <div className="mt-6 p-4 bg-slate-800/50 rounded-xl border border-slate-700">
         <h4 className="text-sm font-semibold text-white mb-2">⚠️ ¿Problemas para acceder?</h4>
         <ul className="text-xs text-gray-400 space-y-1">
+          <li>• Google no permite “Continuar con Google” dentro de Instagram/Facebook: abrí el sitio en Chrome o Safari</li>
           <li>• Si Supabase te bloqueó, espera 15-30 minutos</li>
           <li>• Verifica que tu email esté confirmado</li>
           <li>• Revisa la carpeta de spam</li>

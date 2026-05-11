@@ -2,6 +2,18 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function updateSession(request: NextRequest) {
+  const pathname = request.nextUrl.pathname
+
+  /** Evitar redirect a login sobre assets en `public/` (p. ej. logo del loader). */
+  const isPublicAsset =
+    pathname.startsWith('/brand') ||
+    pathname === '/favicon.ico' ||
+    pathname === '/manifest.webmanifest' ||
+    pathname === '/sw.js'
+  if (isPublicAsset) {
+    return NextResponse.next({ request })
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   })

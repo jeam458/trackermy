@@ -1,8 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { MapPin, X, Check, Loader2 } from 'lucide-react'
+import { MapPin, X, Check } from 'lucide-react'
+import { BrandSpinner } from '@/components/ui/BrandLogoLoader'
 import { RoutePreviewRepository, SimpleRoute } from '@/core/infrastructure/repositories/RoutePreviewRepository'
+import { useLocale } from '@/lib/i18n/LocaleProvider'
+import { interpolate } from '@/messages/interpolate'
 
 export interface Route {
   id: string
@@ -27,30 +30,37 @@ export function RouteSelectionModal({
   selectedRouteIds,
   onToggleRoute,
 }: RouteSelectionModalProps) {
+  const { messages } = useLocale()
+  const rm = messages.profile.routeModal
+  const pr = messages.profile.preferredRoutes
   const [availableRoutes, setAvailableRoutes] = useState<Route[]>([])
+
+  const difficultyLabel = (d: Route['difficulty']) =>
+    d === 'Expert' ? pr.difficultyExpert : d === 'Intermediate' ? pr.difficultyIntermediate : pr.difficultyBeginner
   const [isLoading, setIsLoading] = useState(false)
 
   // Cargar rutas cuando se abre el modal
   useEffect(() => {
     if (isOpen) {
-      loadRoutes()
+      void loadRoutes()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al abrir
   }, [isOpen])
 
   const loadRoutes = async () => {
     setIsLoading(true)
     try {
       const routes = await repository.getPublicRoutes(50)
-      
+
       // Convertir a formato Route
-      const formattedRoutes: Route[] = routes.map(route => ({
+      const formattedRoutes: Route[] = routes.map((route) => ({
         id: route.id,
         name: route.name,
         difficulty: route.difficulty,
         distance: `${route.distanceKm.toFixed(2)} km`,
-        location: 'Cusco, Perú', // Por defecto, todas son de Cusco
+        location: rm.defaultLocation,
       }))
-      
+
       setAvailableRoutes(formattedRoutes)
     } catch (error) {
       console.error('Error loading routes:', error)
@@ -67,9 +77,9 @@ export function RouteSelectionModal({
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-slate-700 bg-[#2A3439]">
           <div>
-            <h3 className="font-bold text-lg text-slate-100">Rutas Cercanas</h3>
+            <h3 className="font-bold text-lg text-slate-100">{rm.title}</h3>
             <p className="text-xs text-slate-400">
-              {isLoading ? 'Cargando...' : `${availableRoutes.length} rutas disponibles`}
+              {isLoading ? rm.loading : interpolate(rm.routesAvailable, { count: availableRoutes.length })}
             </p>
           </div>
           <button
@@ -84,12 +94,12 @@ export function RouteSelectionModal({
         <div className="overflow-y-auto p-4 space-y-3 flex-1">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="animate-spin text-amber-500" size={32} />
+              <BrandSpinner size={32} />
             </div>
           ) : availableRoutes.length === 0 ? (
             <div className="text-center py-12">
               <MapPin className="mx-auto text-slate-600 mb-4" size={48} />
-              <p className="text-slate-400">No hay rutas disponibles</p>
+              <p className="text-slate-400">{rm.empty}</p>
             </div>
           ) : (
             availableRoutes.map((route) => {
@@ -113,7 +123,7 @@ export function RouteSelectionModal({
                         <MapPin size={12} /> {route.location}
                       </span>
                       <span>•</span>
-                      <span>{route.difficulty}</span>
+                      <span>{difficultyLabel(route.difficulty)}</span>
                       <span>•</span>
                       <span>{route.distance}</span>
                     </div>
@@ -141,7 +151,7 @@ export function RouteSelectionModal({
             onClick={onClose}
             className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-[#1e2529] font-bold rounded-xl transition-colors"
           >
-            Listo
+            {rm.done}
           </button>
         </div>
       </div>

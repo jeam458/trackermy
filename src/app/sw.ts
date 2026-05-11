@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
 import { defaultCache } from '@serwist/next/worker'
 import type { PrecacheEntry, SerwistGlobalConfig } from 'serwist'
-import { Serwist, CacheFirst, ExpirationPlugin } from 'serwist'
+import { Serwist, ExpirationPlugin, StaleWhileRevalidate } from 'serwist'
 
 declare global {
   interface WorkerGlobalScope extends SerwistGlobalConfig {
@@ -25,7 +25,7 @@ const serwist = new Serwist({
                url.hostname.includes('stamen-tiles.a.ssl.fastly.net') ||
                url.hostname.includes('tile.openstreetmap.org')
       },
-      handler: new CacheFirst({
+      handler: new StaleWhileRevalidate({
         cacheName: 'offline-map-tiles',
         plugins: [
           new ExpirationPlugin({

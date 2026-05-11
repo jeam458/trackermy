@@ -5,6 +5,11 @@ import { MapPoint } from '@/components/routes/RouteMapEditor'
 import { indexedDBService } from '@/services/IndexedDBService'
 import { syncManager } from '@/services/SyncManager'
 import { GPSTrackingService, GPSReading } from '@/services/GPSTrackingService'
+import {
+  DEFAULT_GPS_RECORDING_ACCEPTANCE_OPTIONS,
+  evaluateGpsRecordingSample,
+  type GpsSegmentState,
+} from '@/lib/gpsSampleAcceptance'
 
 export interface GPSTrackPoint extends MapPoint {
   timestamp: Date
@@ -120,11 +125,20 @@ export function useMobileGPSTracker(config?: TrackingConfig) {
     gpsSignalLost: false,
   })
 
+  useEffect(() => {
+    stepRef.current = state.step
+  }, [state.step])
+
   // Refs para tracking
   const watchIdRef = useRef<number | null>(null)
   const startTimeRef = useRef<Date | null>(null)
   const lastPointRef = useRef<GPSTrackPoint | null>(null)
   const lastValidPointRef = useRef<GPSTrackPoint | null>(null)
+  const segmentStateRef = useRef<GpsSegmentState>({
+    lastSegmentSpeedMps: null,
+    lastSegmentBearingDeg: null,
+  })
+  const stepRef = useRef<TrackingState['step']>('set-start')
   const speedHistoryRef = useRef<number[]>([])
   const stopStartTimeRef = useRef<Date | null>(null)
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null)
@@ -139,16 +153,7 @@ export function useMobileGPSTracker(config?: TrackingConfig) {
     return distance / timeDiff // m/s
   }, [])
 
-  // Verificar si el punto tiene precisión aceptable
-  const isAccurateEnough = useCallback((accuracy: number | undefined): boolean => {
-    return accuracy !== undefined && accuracy <= cfg.maxAccuracyThreshold
-  }, [cfg.maxAccuracyThreshold])
-
-  // Verificar si hay suficiente distancia entre puntos
-  const isFarEnough = useCallback((point1: MapPoint, point2: MapPoint): boolean => {
-    const distance = calculateDistance(point1, point2)
-    return distance >= cfg.minDistanceBetweenPoints
-  }, [cfg.minDistanceBetweenPoints])
+  // Muestreo y filtrado: mismo criterio que /routes/record (evaluateGpsRecordingSample)
 
   // Actualizar métricas en tiempo real
   const updateMetrics = useCallback(() => {
@@ -184,39 +189,70 @@ export function useMobileGPSTracker(config?: TrackingConfig) {
     }
   }, [])
 
-  // Procesar nueva ubicación GPS
-  const processLocationUpdate = useCallback((reading: GPSReading) => {
-    const { latitude, longitude, altitude, accuracy, speed, heading, timestamp } = reading
+  // Procesar nueva ubicación GPS (mismo filtrado que useGPSRecorder)
+  const processLocationUpdate = useCallback(
+    (reading: GPSReading) => {
+      const { latitude, longitude, altitude, accuracy, speed, heading, timestamp } = reading
+      if (stepRef.current !== 'tracking' && stepRef.current !== 'paused') return
 
-    // Verificar precisión
-    if (!isAccurateEnough(accuracy !== null ? accuracy : undefined)) {
-      console.log(`Precisión insuficiente: ${accuracy}m > ${cfg.maxAccuracyThreshold}m`)
-      return
-    }
+      const newPoint: GPSTrackPoint = {
+        latitude,
+        longitude,
+        altitude: altitude ?? undefined,
+        accuracy: accuracy ?? undefined,
+        timestamp,
+        speed: speed ?? 0,
+        heading,
+      }
 
-    const newPoint: GPSTrackPoint = {
-      latitude,
-      longitude,
-      altitude: altitude ?? undefined,
-      accuracy: accuracy ?? undefined,
-      timestamp,
-      speed: speed ?? 0,
-      heading,
-    }
+      const last = lastValidPointRef.current
+      const evalIn = last
+        ? {
+            latitude: last.latitude,
+            longitude: last.longitude,
+            altitude: last.altitude,
+            accuracy: last.accuracy,
+            timestamp: last.timestamp,
+          }
+        : null
+      const evalOut = evaluateGpsRecordingSample(
+        evalIn,
+        {
+          latitude: newPoint.latitude,
+          longitude: newPoint.longitude,
+          altitude: newPoint.altitude,
+          accuracy: newPoint.accuracy,
+          timestamp: newPoint.timestamp,
+        },
+        segmentStateRef.current,
+        DEFAULT_GPS_RECORDING_ACCEPTANCE_OPTIONS
+      )
 
-    setState(prev => {
-      // Si estamos en modo tracking
-      if (prev.step === 'tracking' || prev.step === 'paused') {
-        const lastPoint = lastValidPointRef.current
-        
-        // Si hay un punto anterior, calcular distancia y velocidad
-        if (lastPoint) {
-          const distance = calculateDistance(lastPoint, newPoint)
-          const calculatedSpeed = calculateSpeed(lastPoint, newPoint)
-          
-          // Verificar si estamos detenidos (velocidad muy baja)
+      const timeDiffS =
+        last && newPoint.timestamp && last.timestamp
+          ? (newPoint.timestamp.getTime() - last.timestamp.getTime()) / 1000
+          : 0.001
+      const distS =
+        last != null
+          ? calculateDistance(last, newPoint)
+          : 0
+      const calculatedSpeed = timeDiffS > 0 ? distS / timeDiffS : 0
+
+      if (!evalOut.accept) {
+        if (last) {
+          setState((prev) => {
+            if (prev.step !== 'tracking' && prev.step !== 'paused') return prev
+            return { ...prev, accuracy: newPoint.accuracy ?? null, currentSpeed: calculatedSpeed }
+          })
+        }
+        return
+      }
+
+      setState((prev) => {
+        if (prev.step !== 'tracking' && prev.step !== 'paused') return prev
+
+        if (last) {
           if (calculatedSpeed < cfg.minMovementSpeed) {
-            // Iniciar o actualizar timer de parada
             if (!prev.isStopped) {
               stopStartTimeRef.current = new Date()
               return {
@@ -224,98 +260,77 @@ export function useMobileGPSTracker(config?: TrackingConfig) {
                 isStopped: true,
                 stopDuration: 0,
                 currentSpeed: calculatedSpeed,
-              }
-            } else {
-              // Ya estamos detenidos, actualizar duración
-              const stopDuration = stopStartTimeRef.current
-                ? (new Date().getTime() - stopStartTimeRef.current.getTime())
-                : 0
-              
-              // Si la parada supera el mínimo, pausar tracking
-              if (stopDuration >= cfg.minStopDuration && !prev.isPaused) {
-                return {
-                  ...prev,
-                  isPaused: true,
-                  step: 'paused' as const,
-                  stopDuration,
-                  currentSpeed: calculatedSpeed,
-                }
-              }
-              
-              return {
-                ...prev,
-                stopDuration,
-                currentSpeed: calculatedSpeed,
-              }
-            }
-          } else {
-            // Estamos en movimiento
-            let newState = {
-              ...prev,
-              isStopped: false,
-              stopDuration: 0,
-              currentSpeed: calculatedSpeed,
-            }
-            
-            // Si estábamos pausados, reanudar
-            if (prev.isPaused) {
-              stopStartTimeRef.current = null
-              newState = {
-                ...newState,
-                isPaused: false,
-                step: 'tracking' as const,
-              }
-            }
-            
-            // Verificar si hay suficiente distancia para agregar punto
-            if (isFarEnough(lastPoint, newPoint)) {
-              // Actualizar historial de velocidad
-              speedHistoryRef.current.push(calculatedSpeed)
-              
-              // Mantener solo últimas lecturas dentro de la ventana
-              const windowStart = Date.now() - cfg.speedAveragingWindow
-              speedHistoryRef.current = speedHistoryRef.current.filter((_, idx) => {
-                // Simplificación: mantener últimas 10 lecturas
-                return idx > speedHistoryRef.current.length - 10
-              })
-              
-              // Calcular velocidad máxima
-              const maxSpeed = Math.max(prev.maxSpeed, calculatedSpeed)
-              
-              // Agregar punto al track
-              lastValidPointRef.current = newPoint
-              
-              return {
-                ...newState,
-                trackPoints: [...prev.trackPoints, newPoint],
-                distanceTraveled: prev.distanceTraveled + distance,
-                pointsCount: prev.pointsCount + 1,
-                maxSpeed,
                 accuracy: newPoint.accuracy ?? null,
               }
             }
-            
+            const stopDuration = stopStartTimeRef.current
+              ? new Date().getTime() - stopStartTimeRef.current.getTime()
+              : 0
+            if (stopDuration >= cfg.minStopDuration && !prev.isPaused) {
+              return {
+                ...prev,
+                isPaused: true,
+                step: 'paused' as const,
+                stopDuration,
+                currentSpeed: calculatedSpeed,
+                accuracy: newPoint.accuracy ?? null,
+              }
+            }
             return {
-              ...newState,
+              ...prev,
+              stopDuration,
+              currentSpeed: calculatedSpeed,
               accuracy: newPoint.accuracy ?? null,
             }
           }
-        } else {
-          // Primer punto del tracking
-          lastValidPointRef.current = newPoint
-          return {
-            ...prev,
-            trackPoints: [newPoint],
-            pointsCount: 1,
-            accuracy: newPoint.accuracy ?? null,
-            currentSpeed: newPoint.speed ?? 0,
-          }
-        }
-      }
 
-      return prev
-    })
-  }, [isAccurateEnough, calculateSpeed, isFarEnough, cfg])
+          let newState = {
+            ...prev,
+            isStopped: false,
+            stopDuration: 0,
+            currentSpeed: calculatedSpeed,
+            accuracy: newPoint.accuracy ?? null,
+          }
+          if (prev.isPaused) {
+            stopStartTimeRef.current = null
+            newState = { ...newState, isPaused: false, step: 'tracking' as const }
+          }
+
+          if (calculatedSpeed >= cfg.minMovementSpeed) {
+            const distance = distS
+            speedHistoryRef.current.push(calculatedSpeed)
+            speedHistoryRef.current = speedHistoryRef.current.filter(
+              (_, idx) => idx > speedHistoryRef.current.length - 10
+            )
+            const maxSpeedN = Math.max(prev.maxSpeed, calculatedSpeed)
+            lastValidPointRef.current = newPoint
+            segmentStateRef.current = evalOut.nextSegment
+            return {
+              ...newState,
+              trackPoints: [...prev.trackPoints, newPoint],
+              distanceTraveled: prev.distanceTraveled + distance,
+              pointsCount: prev.pointsCount + 1,
+              maxSpeed: maxSpeedN,
+            }
+          }
+
+          return newState
+        }
+
+        // Primer punto aceptado del tramo
+        lastValidPointRef.current = newPoint
+        segmentStateRef.current = evalOut.nextSegment
+        return {
+          ...prev,
+          trackPoints: [newPoint],
+          pointsCount: 1,
+          accuracy: newPoint.accuracy ?? null,
+          currentSpeed: newPoint.speed ?? 0,
+        }
+      })
+    },
+    [cfg]
+  )
 
   // Iniciar watch de posición GPS
   const startGPSWatch = useCallback(() => {
@@ -430,7 +445,9 @@ export function useMobileGPSTracker(config?: TrackingConfig) {
           error: null,
         }))
 
-        // Iniciar tracking automáticamente
+        // Iniciar tracking automáticamente (track en blanco, mismo filtrado que record)
+        lastValidPointRef.current = null
+        segmentStateRef.current = { lastSegmentSpeedMps: null, lastSegmentBearingDeg: null }
         startTimeRef.current = new Date()
         startGPSWatch()
         startMetricsTimer()
@@ -561,6 +578,7 @@ export function useMobileGPSTracker(config?: TrackingConfig) {
     startTimeRef.current = null
     lastPointRef.current = null
     lastValidPointRef.current = null
+    segmentStateRef.current = { lastSegmentSpeedMps: null, lastSegmentBearingDeg: null }
     speedHistoryRef.current = []
     stopStartTimeRef.current = null
     
@@ -642,7 +660,6 @@ export function useMobileGPSTracker(config?: TrackingConfig) {
     window.addEventListener('offline', handleOffline)
 
     return () => {
-      syncManager.destroy()
       window.removeEventListener('online', handleOnline)
       window.removeEventListener('offline', handleOffline)
     }

@@ -1,4 +1,12 @@
-import { TrophyIcon, Camera } from 'lucide-react'
+import { Crown, Camera } from 'lucide-react'
+import { BrandSpinner } from '@/components/ui/BrandLogoLoader'
+import { useLocale } from '@/lib/i18n/LocaleProvider'
+
+const DEFAULT_AVATAR =
+  'data:image/svg+xml,' +
+  encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none"><rect fill="#334155" width="64" height="64"/><circle cx="32" cy="24" r="10" fill="#94a3b8"/><path fill="#94a3b8" d="M14 58c2-12 12-18 18-18s16 6 18 18"/></svg>`
+  )
 
 interface UserHeaderProps {
   name: string
@@ -9,6 +17,8 @@ interface UserHeaderProps {
   onNameChange?: (name: string) => void
   onBioChange?: (bio: string) => void
   onAvatarClick?: () => void
+  /** Subida del avatar en curso */
+  uploadingAvatar?: boolean
 }
 
 export function UserHeader({
@@ -20,35 +30,47 @@ export function UserHeader({
   onNameChange,
   onBioChange,
   onAvatarClick,
+  uploadingAvatar = false,
 }: UserHeaderProps) {
+  const { messages } = useLocale()
+  const t = messages.profile.userHeader
+
   return (
-    <section className="flex flex-col items-center">
-      <div className="relative mt-4">
-        {/* Decorative background ring for avatar matching the mockup */}
-        <div className="absolute -inset-1 rounded-full bg-gradient-to-tr from-indigo-500 via-purple-500 to-sky-400 opacity-70 blur-sm"></div>
-        
-        <div 
-          className={`relative w-28 h-28 rounded-full border-[3px] border-[#2A3439] bg-slate-700 shadow-xl overflow-hidden ${
-            isEditing ? 'cursor-pointer group' : ''
-          }`}
+    <section className="flex flex-col items-center px-1">
+      <div className="relative mt-2">
+        <div
+          className={`rounded-full p-[3px] bg-gradient-to-tr from-indigo-400 via-violet-500 to-sky-400 shadow-[0_0_24px_rgba(99,102,241,0.35)] ${isEditing ? 'cursor-pointer group' : ''}`}
           onClick={isEditing ? onAvatarClick : undefined}
+          role={isEditing ? 'button' : undefined}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={avatarUrl}
-            alt={`Avatar of ${name}`}
-            className="w-full h-full object-cover transition-opacity duration-200 group-hover:opacity-50"
-          />
-          {isEditing && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
-              <Camera size={28} className="text-white drop-shadow-md" />
+          <div className="rounded-full bg-gdh-canvas-2 p-[2px]">
+            <div className="relative w-[7.25rem] h-[7.25rem] rounded-full overflow-hidden bg-slate-700">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={avatarUrl?.trim() ? avatarUrl : DEFAULT_AVATAR}
+                alt=""
+                className="w-full h-full object-cover transition-opacity duration-200 group-hover:opacity-85"
+              />
+              {isEditing && !uploadingAvatar && (
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/35 opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
+                  <Camera size={26} className="text-white drop-shadow-md" aria-hidden />
+                </div>
+              )}
+              {isEditing && uploadingAvatar && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/55 rounded-full">
+                  <BrandSpinner size={26} />
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
 
-        {hasCrown && !isEditing && (
-          <div className="absolute -bottom-2 -right-2 bg-[#d4af37] rounded-full p-1.5 border-[3px] border-[#2A3439] shadow-md z-10">
-            <TrophyIcon size={16} className="text-[#2A3439]" fill="currentColor" />
+        {hasCrown && (
+          <div
+            className="absolute -bottom-1 -right-1 flex h-9 w-9 items-center justify-center rounded-full border-[3px] border-gdh-canvas-2 bg-gradient-to-br from-amber-300 via-amber-400 to-amber-600 shadow-lg z-10"
+            aria-hidden
+          >
+            <Crown size={17} className="text-amber-950 fill-amber-950 drop-shadow-sm" strokeWidth={1.75} />
           </div>
         )}
       </div>
@@ -58,23 +80,23 @@ export function UserHeader({
           type="text"
           value={name}
           onChange={(e) => onNameChange?.(e.target.value)}
-          className="mt-6 text-2xl font-semibold text-center text-slate-100 bg-slate-800/50 border border-slate-600 rounded-lg px-3 py-1 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 w-full max-w-[250px] transition-colors"
-          placeholder="Tu nombre"
+          className="mt-7 text-[1.35rem] font-semibold text-center text-white bg-[#1e2529] border border-white/10 rounded-xl px-4 py-2 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/30 w-full max-w-[min(100%,320px)] transition-colors"
+          placeholder={t.namePlaceholder}
         />
       ) : (
-        <h2 className="mt-6 text-2xl font-semibold text-slate-100 tracking-wide">{name}</h2>
+        <h2 className="mt-7 text-[1.35rem] font-semibold text-white tracking-tight text-center">{name}</h2>
       )}
 
       {isEditing ? (
         <textarea
           value={bio}
           onChange={(e) => onBioChange?.(e.target.value)}
-          className="mt-3 text-center text-sm text-slate-300 bg-slate-800/50 border border-slate-600 rounded-lg px-3 py-2 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 w-full max-w-[320px] resize-none h-20 transition-colors"
-          placeholder="Escribe algo sobre ti..."
+          className="mt-3 text-center text-sm text-slate-300 bg-[#1e2529] border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/30 w-full max-w-[min(100%,340px)] resize-none min-h-[5rem] leading-relaxed"
+          placeholder={t.bioPlaceholder}
         />
       ) : (
-        <p className="mt-2 text-center text-sm text-slate-400 max-w-[300px] leading-relaxed">
-          {bio}
+        <p className="mt-2.5 text-center text-[0.9375rem] text-slate-400 max-w-[min(100%,320px)] leading-relaxed">
+          {bio || <span className="text-slate-600">{t.noBio}</span>}
         </p>
       )}
     </section>

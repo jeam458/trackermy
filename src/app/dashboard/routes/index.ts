@@ -19,6 +19,7 @@ export { GPSTrackProcessingService } from '@/core/application/CreateRouteUseCase
 // Dominio
 export type {
   Route,
+  RouteTrackType,
   RouteStatus,
   RouteTrackPoint,
   RouteCreationRequest,

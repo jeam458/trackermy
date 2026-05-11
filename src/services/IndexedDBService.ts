@@ -292,18 +292,26 @@ class IndexedDBService {
   }
 
   // Obtener puntos pendientes de sincronización
+  // Nota: no usamos el índice `synced` con IDBKeyRange.only(false): en IndexedDB las
+  // claves válidas no incluyen boolean; eso rompe en runtime y en los tipos de TS.
   async getPendingPoints(): Promise<OfflineTrackPoint[]> {
     const db = await this.init()
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(STORE_POINTS, 'readonly')
       const store = transaction.objectStore(STORE_POINTS)
-      const index = store.index('synced')
-      const request = index.getAll(IDBKeyRange.only(false))
+      const pending: OfflineTrackPoint[] = []
+      const request = store.openCursor()
 
       request.onsuccess = () => {
-        const points = request.result || []
-        points.sort((a, b) => a.orderIndex - b.orderIndex)
-        resolve(points)
+        const cursor = request.result as IDBCursorWithValue | null
+        if (!cursor) {
+          pending.sort((a, b) => a.orderIndex - b.orderIndex)
+          resolve(pending)
+          return
+        }
+        const p = cursor.value as OfflineTrackPoint
+        if (!p.synced) pending.push(p)
+        cursor.continue()
       }
       request.onerror = () => reject(request.error)
     })

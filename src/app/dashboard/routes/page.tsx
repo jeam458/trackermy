@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
+import { useState, useEffect, useMemo, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { createClient } from '@/core/infrastructure/supabase/client'
 import { SupabaseRouteRepository } from '@/core/infrastructure/repositories/SupabaseRouteRepository'
@@ -9,6 +10,7 @@ import { Route } from '@/core/domain/Route'
 import {
   Plus,
   MapPin,
+  Map,
   TrendingUp,
   Mountain,
   Clock,
@@ -17,9 +19,30 @@ import {
   Trash2,
   Eye,
   EyeOff,
-  Loader2,
-  Navigation,
+  X,
 } from 'lucide-react'
+import { BrandLogoLoader } from '@/components/ui/BrandLogoLoader'
+import { DashboardAppTopBar } from '@/app/dashboard/components/DashboardAppTopBar'
+import { getAuthUserOrNull } from '@/lib/authSession'
+import { routeViewUrl } from '@/lib/routeViewNavigation'
+import { routePreviewIsVideo } from '@/lib/routePreviewMedia'
+import { fetchSampledPreviewPointsByRouteIds, thumbnailTrackPoints } from '@/lib/routeListPreviewTrack'
+import { RouteTraceThumbnail } from '@/components/routes/RouteTraceThumbnail'
+
+const SelectedRoutePreviewMap = dynamic(
+  () =>
+    import('@/components/routes/SelectedRoutePreviewMap').then((m) => ({
+      default: m.SelectedRoutePreviewMap,
+    })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-40 rounded-xl border border-slate-700 bg-slate-900/80 flex items-center justify-center text-sm text-slate-500">
+        Cargando mapa del trazado…
+      </div>
+    ),
+  }
+)
 
 function DifficultyBadge({ difficulty }: { difficulty: string }) {
   const config: Record<string, { color: string; label: string; icon: string }> = {
@@ -41,20 +64,47 @@ function RouteCard({
   route,
   onDelete,
   onToggleVisibility,
+  onMapPreview,
+  mapPreviewOpen,
+  mapPreviewLoading,
 }: {
   route: Route
   onDelete: (id: string) => void
   onToggleVisibility: (id: string, isPublic: boolean) => void
+  onMapPreview: (r: Route) => void | Promise<void>
+  mapPreviewOpen: boolean
+  mapPreviewLoading: boolean
 }) {
   const [showMenu, setShowMenu] = useState(false)
 
   return (
-    <div className="bg-slate-900/50 rounded-xl border border-slate-800 overflow-hidden hover:border-slate-700 transition-colors">
-      {/* Header con imagen o mapa placeholder */}
-      <div className="h-32 bg-gradient-to-br from-amber-500/20 to-slate-800 relative">
-        <div className="absolute inset-0 flex items-center justify-center">
-          <MapPin className="text-amber-500/50" size={48} />
-        </div>
+    <div className="gdh-immersive-card rounded-xl overflow-hidden transition-colors">
+      {/* Header con vista previa (imagen / GIF / clip) o placeholder */}
+      <div className="h-32 bg-gradient-to-br from-amber-500/20 to-slate-800 relative overflow-hidden">
+        {route.previewMediaUrl ? (
+          routePreviewIsVideo(route.previewMediaUrl) ? (
+            <video
+              src={route.previewMediaUrl}
+              className="absolute inset-0 w-full h-full object-cover"
+              muted
+              loop
+              playsInline
+              autoPlay
+              preload="metadata"
+            />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={route.previewMediaUrl}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          )
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <RouteTraceThumbnail trackPoints={thumbnailTrackPoints(route)} />
+          </div>
+        )}
         
         {/* Badge de visibilidad */}
         <div className="absolute top-3 right-3">
@@ -103,16 +153,14 @@ function RouteCard({
                   {route.isPublic ? <EyeOff size={16} /> : <Eye size={16} />}
                   {route.isPublic ? 'Hacer privada' : 'Hacer pública'}
                 </button>
-                <button
-                  onClick={() => {
-                    // TODO: Implementar edición
-                    setShowMenu(false)
-                  }}
+                <Link
+                  href={`/dashboard/routes/edit?id=${encodeURIComponent(route.id)}`}
                   className="w-full px-4 py-2 text-left text-sm hover:bg-slate-700 flex items-center gap-2"
+                  onClick={() => setShowMenu(false)}
                 >
                   <Edit2 size={16} />
                   Editar
-                </button>
+                </Link>
                 <button
                   onClick={() => {
                     onDelete(route.id)
@@ -159,9 +207,30 @@ function RouteCard({
           </div>
         </div>
 
+        <button
+          type="button"
+          onClick={() => void onMapPreview(route)}
+          disabled={mapPreviewLoading}
+          aria-expanded={mapPreviewOpen}
+          className={`w-full py-2 text-center text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2 ${
+            mapPreviewOpen
+              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+              : 'bg-slate-800 hover:bg-slate-700 text-slate-100'
+          } ${mapPreviewLoading ? 'opacity-60 pointer-events-none' : ''}`}
+        >
+          <Map size={16} />
+          {mapPreviewLoading
+            ? 'Abriendo mapa…'
+            : mapPreviewOpen
+            ? 'Vista previa activa'
+            : thumbnailTrackPoints(route).length >= 2
+              ? 'Vista previa en mapa'
+              : 'Cargar vista previa'}
+        </button>
+
         {/* Ver ruta en mapa */}
         <Link
-          href={`/dashboard/routes/${route.id}`}
+          href={routeViewUrl(route.id, 'routes')}
           className="block w-full py-2 bg-slate-800 hover:bg-slate-700 text-center text-sm font-medium rounded-lg transition-colors"
         >
           Ver detalles
@@ -172,37 +241,111 @@ function RouteCard({
 }
 
 export default function RoutesPage() {
-  const router = useRouter()
   const [user, setUser] = useState<{ id: string } | null>(null)
   const [routes, setRoutes] = useState<Route[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [mapPreviewRoute, setMapPreviewRoute] = useState<Route | null>(null)
+  const [mapPreviewPortalReady, setMapPreviewPortalReady] = useState(false)
+  const [mapPreviewLoadingRouteId, setMapPreviewLoadingRouteId] = useState<string | null>(null)
+  const hasLoadedRoutesRef = useRef(false)
 
-  const repository = new SupabaseRouteRepository()
+  const repository = useMemo(() => new SupabaseRouteRepository(), [])
+  const supabase = useMemo(() => createClient(), [])
 
-  // Cargar usuario
-  useEffect(() => {
-    const loadUser = async () => {
-      const supabase = createClient()
-      const { data: { user: supaUser } } = await supabase.auth.getUser()
-
-      if (supaUser) {
-        setUser({ id: supaUser.id })
-      }
+  const handleMapPreviewToggle = async (r: Route) => {
+    if (mapPreviewRoute?.id === r.id) {
+      setMapPreviewRoute(null)
+      return
     }
+    setMapPreviewLoadingRouteId(r.id)
+    try {
+      const full = await repository.getRouteById(r.id)
+      if (full && full.trackPoints.length >= 2) {
+        setMapPreviewRoute(full)
+      }
+    } finally {
+      setMapPreviewLoadingRouteId(null)
+    }
+  }
 
-    loadUser()
+  useEffect(() => {
+    setMapPreviewPortalReady(true)
+  }, [])
+
+  useEffect(() => {
+    if (!mapPreviewRoute) return
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMapPreviewRoute(null)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.body.style.overflow = prevOverflow
+      window.removeEventListener('keydown', onKeyDown)
+    }
+  }, [mapPreviewRoute])
+
+  // Cargar usuario (sesión local primero → menos espera que getUser solo)
+  useEffect(() => {
+    void (async () => {
+      const supaUser = await getAuthUserOrNull()
+      if (supaUser) setUser({ id: supaUser.id })
+    })()
   }, [])
 
   // Cargar rutas
   useEffect(() => {
     if (!user) return
+    if (hasLoadedRoutesRef.current) return
+    hasLoadedRoutesRef.current = true
 
     const loadRoutes = async () => {
       try {
         setIsLoading(true)
-        const userRoutes = await repository.getUserRoutes(user.id)
-        setRoutes(userRoutes)
+        const { data, error } = await supabase
+          .from('routes')
+          .select(
+            'id, name, description, difficulty, track_type, distance_km, elevation_gain_m, elevation_loss_m, start_lat, start_lng, end_lat, end_lng, created_by, created_at, updated_at, is_public, status, preview_media_url, icon_symbol_key'
+          )
+          .eq('created_by', user.id)
+          .order('created_at', { ascending: false })
+        if (error) throw error
+        const lightRoutes: Route[] = (data || []).map((r) => ({
+          id: String(r.id),
+          name: String(r.name),
+          description: (r.description as string | null) ?? undefined,
+          difficulty: (r.difficulty as Route['difficulty']) ?? 'Beginner',
+          trackType: (r.track_type as Route['trackType']) ?? 'trail',
+          distanceKm: Number(r.distance_km) || 0,
+          elevationGainM: r.elevation_gain_m != null ? Number(r.elevation_gain_m) : undefined,
+          elevationLossM: r.elevation_loss_m != null ? Number(r.elevation_loss_m) : undefined,
+          startCoord: [Number(r.start_lat), Number(r.start_lng)],
+          endCoord: [Number(r.end_lat), Number(r.end_lng)],
+          trackPoints: [],
+          createdBy: String(r.created_by),
+          createdAt: new Date(String(r.created_at)),
+          updatedAt: new Date(String(r.updated_at)),
+          isPublic: Boolean(r.is_public),
+          status: (r.status as Route['status']) ?? 'active',
+          previewMediaUrl: (r.preview_media_url as string | null) ?? null,
+          iconSymbolKey:
+            r.icon_symbol_key != null && String(r.icon_symbol_key).trim() !== ''
+              ? String(r.icon_symbol_key)
+              : null,
+        }))
+        let mergedRoutes = lightRoutes
+        try {
+          const previewMap = await fetchSampledPreviewPointsByRouteIds(supabase, lightRoutes.map((x) => x.id))
+          mergedRoutes = lightRoutes.map((route) => ({
+            ...route,
+            trackPoints: previewMap.get(route.id) ?? [],
+          }))
+        } catch (prevErr) {
+          console.error('Vista previa listado (muestreada):', prevErr)
+        }
+        setRoutes(mergedRoutes)
         setError(null)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Error cargando rutas')
@@ -221,6 +364,7 @@ export default function RoutesPage() {
     try {
       await repository.deleteRoute(routeId)
       setRoutes((prev) => prev.filter((r) => r.id !== routeId))
+      setMapPreviewRoute((prev) => (prev?.id === routeId ? null : prev))
     } catch (err) {
       alert('Error eliminando la ruta')
     }
@@ -240,55 +384,48 @@ export default function RoutesPage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-[#1c2327] flex items-center justify-center">
+      <div className="min-h-screen bg-gdh-page flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="animate-spin mx-auto text-amber-500 mb-4" size={40} />
-          <p className="text-gray-400">Cargando...</p>
+          <BrandLogoLoader label="Cargando rutas..." compact />
         </div>
       </div>
     )
   }
 
-  return (
-    <div className="min-h-screen bg-[#1c2327] text-slate-100">
-      {/* Header */}
-      <header className="bg-slate-900/50 backdrop-blur-sm border-b border-slate-800 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-white">Mis Rutas</h1>
-              <p className="text-sm text-gray-400 mt-1">
-                {routes.length} {routes.length === 1 ? 'ruta' : 'rutas'} creadas
-              </p>
-            </div>
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gdh-page flex items-center justify-center">
+        <BrandLogoLoader label="Cargando rutas..." compact />
+      </div>
+    )
+  }
 
-            <div className="flex items-center gap-2">
-              <Link
-                href="/dashboard/routes/record"
-                className="px-4 py-2 bg-green-500 hover:bg-green-400 text-slate-900 font-medium rounded-lg transition-colors flex items-center gap-2"
-              >
-                <Navigation size={18} />
-                Grabar
-              </Link>
-              <Link
-                href="/dashboard/routes/create"
-                className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-900 font-medium rounded-lg transition-colors flex items-center gap-2"
-              >
-                <Plus size={18} />
-                Crear Ruta
-              </Link>
-            </div>
+  return (
+    <div className="gdh-immersive-page text-slate-100 pb-28">
+      <DashboardAppTopBar
+        contentMaxWidth="7xl"
+        center={
+          <div className="w-full min-w-0 text-left">
+            <h1 className="text-2xl font-bold text-white">Mis Rutas</h1>
+            <p className="mt-1 text-sm text-slate-400">
+              {routes.length} {routes.length === 1 ? 'ruta' : 'rutas'} creadas
+            </p>
           </div>
-        </div>
-      </header>
+        }
+        trailing={
+          <Link
+            href="/dashboard/routes/create"
+            className="inline-flex items-center gap-2 rounded-xl border border-teal-400/30 bg-teal-500/20 px-4 py-2.5 font-semibold text-teal-100 transition-colors hover:bg-teal-500/30"
+          >
+            <Plus size={18} aria-hidden />
+            Crear Ruta
+          </Link>
+        }
+      />
 
       {/* Contenido */}
       <main className="max-w-7xl mx-auto p-4">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="animate-spin text-amber-500" size={40} />
-          </div>
-        ) : error ? (
+        {error ? (
           <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 text-center">
             <p className="text-red-400">{error}</p>
           </div>
@@ -301,34 +438,73 @@ export default function RoutesPage() {
             <p className="text-gray-400 mb-6">
               Crea tu primera ruta dibujándola en el mapa o grabándola en tiempo real
             </p>
-            <div className="flex items-center justify-center gap-3">
+            <div className="flex items-center justify-center">
               <Link
                 href="/dashboard/routes/create"
-                className="px-6 py-3 bg-amber-500 hover:bg-amber-400 text-slate-900 font-medium rounded-lg transition-colors flex items-center gap-2"
+                className="px-6 py-3 rounded-xl border border-teal-400/30 bg-teal-500/20 text-teal-100 hover:bg-teal-500/30 transition-colors flex items-center gap-2 font-semibold"
               >
                 <Plus size={20} />
                 Crear Ruta
               </Link>
-              <Link
-                href="/dashboard/routes/record"
-                className="px-6 py-3 bg-green-500 hover:bg-green-400 text-slate-900 font-medium rounded-lg transition-colors flex items-center gap-2"
-              >
-                <Navigation size={20} />
-                Grabar Ruta
-              </Link>
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {routes.map((route) => (
-              <RouteCard
-                key={route.id}
-                route={route}
-                onDelete={handleDelete}
-                onToggleVisibility={handleToggleVisibility}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {routes.map((route) => (
+                <RouteCard
+                  key={route.id}
+                  route={route}
+                  onDelete={handleDelete}
+                  onToggleVisibility={handleToggleVisibility}
+                  onMapPreview={handleMapPreviewToggle}
+                  mapPreviewOpen={mapPreviewRoute?.id === route.id}
+                  mapPreviewLoading={mapPreviewLoadingRouteId === route.id}
+                />
+              ))}
+            </div>
+            {mapPreviewPortalReady &&
+              mapPreviewRoute &&
+              mapPreviewRoute.trackPoints.length >= 2 &&
+              createPortal(
+                <div
+                  className="fixed inset-0 z-[2147483645] flex items-center justify-center bg-black/70 p-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-sm sm:p-6"
+                  role="presentation"
+                  onClick={() => setMapPreviewRoute(null)}
+                >
+                  <div
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="route-map-preview-title"
+                    className="relative w-full max-w-2xl max-h-[min(85dvh,720px)] overflow-y-auto rounded-2xl border border-slate-600/80 bg-gdh-card p-4 shadow-2xl"
+                    style={{ zIndex: 2147483646 }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div className="min-w-0">
+                        <h2
+                          id="route-map-preview-title"
+                          className="text-lg font-semibold text-white truncate"
+                        >
+                          Vista previa: {mapPreviewRoute.name}
+                        </h2>
+                        <p className="text-sm text-slate-400">Trazado sobre mapa</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setMapPreviewRoute(null)}
+                        className="shrink-0 p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+                        aria-label="Cerrar vista previa"
+                      >
+                        <X size={18} />
+                      </button>
+                    </div>
+                    <SelectedRoutePreviewMap route={mapPreviewRoute} />
+                  </div>
+                </div>,
+                document.body
+              )}
+          </>
         )}
       </main>
     </div>

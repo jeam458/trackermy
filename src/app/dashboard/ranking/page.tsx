@@ -1,73 +1,118 @@
-import { ArrowLeft, Star, Crown } from 'lucide-react'
+'use client'
+
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { ArrowLeft, ChevronRight, Trophy } from 'lucide-react'
+import { BrandSpinner } from '@/components/ui/BrandLogoLoader'
+import { DashboardAppTopBar } from '@/app/dashboard/components/DashboardAppTopBar'
+import { createClient } from '@/core/infrastructure/supabase/client'
+
+type RankingRoute = {
+  id: string
+  name: string
+  distanceKm: number
+  difficulty: 'Beginner' | 'Intermediate' | 'Expert'
+}
 
 export default function RankingPage() {
-  const rankings = [
-    { pos: 1, name: 'Carlos Gomez', time: '2:38', avatar: 'Carlos', change: 0, isCurrent: true },
-    { pos: 2, name: 'Jully Kiviera', time: '2:27', avatar: 'Jully', change: -1, isCurrent: false },
-    { pos: 3, name: 'John Williams', time: '2:16', avatar: 'John', change: 1, isCurrent: false },
-    { pos: 4, name: 'Maria S.', time: '2:40', avatar: 'Maria', change: 2, isCurrent: false },
-    { pos: 5, name: 'Alex P.', time: '2:50', avatar: 'Alex', change: -2, isCurrent: false },
-  ]
+  const [routes, setRoutes] = useState<RankingRoute[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const supabase = createClient()
+        const { data, error } = await supabase
+          .from('routes')
+          .select('id, name, distance_km, difficulty')
+          .eq('is_public', true)
+          .eq('status', 'active')
+          .order('created_at', { ascending: false })
+          .limit(40)
+        if (error) throw error
+        if (!cancelled) {
+          setRoutes(
+            (data || []).map((r) => ({
+              id: String(r.id),
+              name: String(r.name),
+              distanceKm: Number(r.distance_km) || 0,
+              difficulty: (r.difficulty as RankingRoute['difficulty']) || 'Beginner',
+            }))
+          )
+        }
+      } catch (e) {
+        console.error(e)
+        if (!cancelled) setRoutes([])
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   return (
-    <div className="p-4 space-y-6 pt-12 pb-24">
-      <header className="flex items-center gap-4">
-        <Link href="/dashboard" className="text-slate-400 hover:text-white transition">
-          <ArrowLeft size={24} />
-        </Link>
-        <div className="flex-1">
-          <h1 className="text-lg font-medium text-slate-300">Ranking Semanal</h1>
-          <h2 className="text-2xl font-bold tracking-tight">La Bestia Dorada</h2>
-        </div>
-        <div className="text-right">
-          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Finaliza en</p>
-          <p className="font-bold text-lg">3 DÍAS</p>
-        </div>
-      </header>
-
-      {/* Top 1 Highlight */}
-      <section className="bg-gradient-to-br from-indigo-500/20 via-purple-500/10 to-sky-500/20 border border-indigo-500/30 p-6 rounded-[2rem] relative overflow-hidden flex flex-col items-center justify-center text-center shadow-[0_0_30px_rgba(99,102,241,0.1)]">
-        <div className="absolute top-4 left-4 font-black text-4xl text-white/90 italic drop-shadow-md">
-          #1
-        </div>
-        <div className="absolute top-4 right-4 text-amber-400">
-           <Star size={24} fill="currentColor" />
-        </div>
-        
-        <div className="relative mt-2">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img 
-            src="https://api.dicebear.com/7.x/notionists/svg?seed=Carlos" 
-            alt="Carlos" 
-            className="w-20 h-20 rounded-full border-4 border-indigo-500/50 bg-slate-800 shadow-xl"
-          />
-          <div className="absolute -bottom-2 -right-2 bg-amber-500 p-1.5 rounded-full border-2 border-slate-900 shadow-lg">
-            <Crown size={16} className="text-slate-900" />
+    <div className="gdh-immersive-page min-h-screen pb-28 text-slate-100">
+      <DashboardAppTopBar
+        leading={
+          <Link
+            href="/dashboard"
+            className="rounded-xl p-2 text-slate-400 transition hover:bg-white/5 hover:text-white"
+            aria-label="Volver"
+          >
+            <ArrowLeft size={22} aria-hidden />
+          </Link>
+        }
+        center={
+          <div className="w-full min-w-0 text-left">
+            <h1 className="gdh-immersive-title text-xl font-bold tracking-tight text-white">Rankings</h1>
+            <p className="mt-0.5 text-sm text-slate-500">Elegí una ruta pública para ver posiciones y tiempos.</p>
           </div>
-        </div>
-        
-        <h3 className="mt-4 text-xl font-bold">Carlos Gomez</h3>
-        <p className="text-3xl font-black tracking-tighter mt-1 text-slate-200">2:38</p>
-      </section>
+        }
+      />
 
-      {/* List */}
-      <section className="bg-slate-800/50 border border-slate-700 rounded-3xl overflow-hidden shadow-lg">
-        {rankings.slice(1).map((rank) => (
-          <div key={rank.pos} className="flex items-center gap-4 p-4 border-b border-slate-700/50 last:border-0 hover:bg-slate-800/80 transition-colors">
-            <span className="font-bold text-slate-500 w-6 text-right">#{rank.pos}</span>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={`https://api.dicebear.com/7.x/notionists/svg?seed=${rank.avatar}`} alt={rank.name} className="w-10 h-10 bg-slate-700 rounded-full border border-slate-600" />
-            <div className="flex-1">
-              <h4 className="font-semibold text-sm">{rank.name}</h4>
-              <p className="text-slate-400 text-xs font-medium">{rank.time}</p>
-            </div>
-            <div className={`flex flex-col items-end text-xs font-bold ${rank.change > 0 ? 'text-emerald-400' : rank.change < 0 ? 'text-red-400' : 'text-slate-500'}`}>
-               {rank.change > 0 ? '↑' : rank.change < 0 ? '↓' : '-'} {Math.abs(rank.change) || ''}
-            </div>
-          </div>
-        ))}
-      </section>
+      <div className="mx-auto max-w-lg space-y-6 px-4 pt-4">
+      {loading ? (
+        <div className="flex items-center justify-center gap-2 py-16 text-slate-400">
+          <BrandSpinner className="shrink-0" size={22} />
+          Cargando rutas…
+        </div>
+      ) : routes.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-white/10 bg-slate-900/40 px-5 py-10 text-center gdh-immersive-panel">
+          <Trophy className="mx-auto text-slate-600 mb-3" size={40} />
+          <p className="text-slate-300 font-medium">No hay rutas públicas aún</p>
+          <p className="text-sm text-slate-500 mt-2">Cuando haya rutas publicadas, podrás abrir su ranking aquí.</p>
+          <Link
+            href="/dashboard/routes"
+            className="inline-block mt-5 text-sm font-semibold text-teal-400 hover:text-teal-300"
+          >
+            Ir a mis rutas
+          </Link>
+        </div>
+      ) : (
+        <ul className="space-y-2">
+          {routes.map((r) => (
+            <li key={r.id}>
+              <Link
+                href={`/dashboard/routes/route-ranking?id=${encodeURIComponent(r.id)}`}
+                className="gdh-immersive-card flex items-center gap-3 p-4 rounded-2xl transition-colors group"
+              >
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-teal-500/15 text-teal-400">
+                  <Trophy size={22} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-white truncate group-hover:text-teal-300 transition-colors">{r.name}</p>
+                  <p className="text-xs text-slate-500">{r.distanceKm.toFixed(2)} km · {r.difficulty}</p>
+                </div>
+                <ChevronRight size={20} className="text-slate-600 group-hover:text-teal-400/80 shrink-0" />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+      </div>
     </div>
   )
 }

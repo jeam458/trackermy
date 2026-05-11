@@ -33,8 +33,10 @@ export class GPSTrackProcessingService {
     // 3. Filtrar por velocidad imposible (outliers de movimiento)
     points = this.filterByImpossibleSpeed(points)
 
-    // 4. Aplicar filtro Kalman simplificado para suavizado
-    points = this.applyKalmanFilter(points)
+    // 4. Aplicar filtro Kalman simplificado para suavizado (omitir si ya se aplicó en grabación en vivo)
+    if (!this.config.skipKalmanInPostprocess) {
+      points = this.applyKalmanFilter(points)
+    }
 
     // 5. Eliminar puntos muy cercanos (redundantes)
     points = this.filterClosePoints(points)
@@ -54,6 +56,25 @@ export class GPSTrackProcessingService {
       points,
       originalCount,
       filteredCount,
+      distanceKm,
+      elevationGainM: elevationGain,
+      elevationLossM: elevationLoss,
+      quality,
+    }
+  }
+
+  /**
+   * Tras un post-proceso en cliente (p. ej. proyección a vía con OSM), recalcula distancia, elevación y calidad
+   * sin re-ejecutar el pipeline de filtrado.
+   */
+  rebuildProcessedTrack(base: ProcessedTrack, newPoints: ProcessedTrackPoint[]): ProcessedTrack {
+    const distanceKm = this.calculateDistance(newPoints)
+    const { elevationGain, elevationLoss } = this.calculateElevation(newPoints)
+    const quality = this.calculateQuality(base.originalCount, base.filteredCount, newPoints)
+    return {
+      points: newPoints,
+      originalCount: base.originalCount,
+      filteredCount: base.filteredCount,
       distanceKm,
       elevationGainM: elevationGain,
       elevationLossM: elevationLoss,
@@ -445,11 +466,13 @@ export class GPSTrackProcessingService {
 
   /**
    * Valida que una ruta tenga puntos suficientes y coherentes
+   * @param options.recordedPathKm — distancia del GPS crudo (km); evita rechazar rutas válidas cuando el procesamiento acorta mucho el polyline
    */
   validateRoute(
     startCoord: [number, number],
     endCoord: [number, number],
-    trackPoints: ProcessedTrackPoint[]
+    trackPoints: ProcessedTrackPoint[],
+    options?: { recordedPathKm?: number }
   ): { valid: boolean; errors: string[] } {
     const errors: string[] = []
 
@@ -468,36 +491,23 @@ export class GPSTrackProcessingService {
       errors.push('Se requieren al menos 2 puntos para crear una ruta')
     }
 
-    // Validar que el primer punto esté cerca del inicio
-    if (trackPoints.length > 0 && startCoord) {
-      const distStart = this.haversineDistance(
-        startCoord[0],
-        startCoord[1],
-        trackPoints[0].latitude,
-        trackPoints[0].longitude
-      )
-      if (distStart > 50) {
-        errors.push('El primer punto del track debe estar cerca del punto de partida (< 50m)')
-      }
-    }
+    // No exigimos coincidencia inicio/fin con el track procesado: el suavizado puede
+    // desplazar extremos; el cierre al "parar" y las coords elegidas en el mapa no deben bloquear el guardado.
 
-    // Validar que el último punto esté cerca del fin
-    if (trackPoints.length > 0 && endCoord) {
-      const lastPoint = trackPoints[trackPoints.length - 1]
-      const distEnd = this.haversineDistance(
-        endCoord[0],
-        endCoord[1],
-        lastPoint.latitude,
-        lastPoint.longitude
-      )
-      if (distEnd > 50) {
-        errors.push('El último punto del track debe estar cerca del punto de llegada (< 50m)')
-      }
-    }
-
-    // Validar distancia mínima de ruta
-    const totalDistance = this.calculateDistance(trackPoints)
-    if (totalDistance < 0.1) {
+    // Distancia mínima: el procesamiento (DP, filtros) puede dejar un polyline más corto que el recorrido real
+    const polylineKm = this.calculateDistance(trackPoints)
+    const chordKm =
+      startCoord && endCoord
+        ? this.haversineDistance(
+            startCoord[0],
+            startCoord[1],
+            endCoord[0],
+            endCoord[1]
+          ) / 1000
+        : 0
+    const recordedKm = options?.recordedPathKm ?? 0
+    const effectiveKm = Math.max(polylineKm, chordKm, recordedKm)
+    if (effectiveKm < 0.1) {
       errors.push('La ruta debe tener al menos 100 metros de longitud')
     }
 

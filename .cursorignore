@@ -1,0 +1,11 @@
+# Si abres solo trackermy como raíz en Cursor.
+node_modules/
+.next/
+out/
+build/
+coverage/
+.vercel/
+.venv/
+android/.gradle/
+android/app/build/
+android/build/

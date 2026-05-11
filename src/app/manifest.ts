@@ -1,5 +1,7 @@
 import type { MetadataRoute } from 'next'
- 
+
+export const dynamic = 'force-static'
+
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'Downhill Tracker',
@@ -7,8 +9,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: 'Track your downhill trails, speed, and time.',
     start_url: '/',
     display: 'standalone',
-    background_color: '#0f172a', // Slate 900
-    theme_color: '#0f172a',
+    background_color: '#0b0f14',
+    theme_color: '#121820',
     icons: [
       {
         src: '/icon512_maskable.png',
