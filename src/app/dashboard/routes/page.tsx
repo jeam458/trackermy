@@ -386,7 +386,7 @@ export default function RoutesPage() {
     return (
       <div className="min-h-screen bg-gdh-page flex items-center justify-center">
         <div className="text-center">
-          <BrandLogoLoader label="Cargando rutas..." compact />
+          <BrandLogoLoader label="Cargando rutas..." compact showRing />
         </div>
       </div>
     )
@@ -395,7 +395,7 @@ export default function RoutesPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gdh-page flex items-center justify-center">
-        <BrandLogoLoader label="Cargando rutas..." compact />
+        <BrandLogoLoader label="Cargando rutas..." compact showRing />
       </div>
     )
   }

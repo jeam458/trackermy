@@ -340,7 +340,7 @@ function AttemptReplayInner() {
     return (
       <MobileScreen>
         <div className="min-h-[50vh] flex items-center justify-center">
-          <BrandLogoLoader label="Cargando intento..." compact />
+          <BrandLogoLoader label="Cargando intento..." compact showRing />
         </div>
       </MobileScreen>
     )
@@ -594,7 +594,7 @@ export default function AttemptReplayPage() {
       fallback={
         <MobileScreen>
           <div className="min-h-[40vh] flex items-center justify-center text-slate-400">
-            <BrandLogoLoader label="Cargando replay..." compact />
+            <BrandLogoLoader label="Cargando replay..." compact showRing />
           </div>
         </MobileScreen>
       }

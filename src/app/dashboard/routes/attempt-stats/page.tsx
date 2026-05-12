@@ -439,7 +439,7 @@ function AttemptStatsInner() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gdh-page flex items-center justify-center">
-        <BrandLogoLoader label="Cargando estadísticas..." compact />
+        <BrandLogoLoader label="Cargando estadísticas..." compact showRing />
       </div>
     )
   }
@@ -735,7 +735,7 @@ export default function AttemptStatsPage() {
     <Suspense
       fallback={
         <div className="min-h-screen bg-gdh-page flex items-center justify-center">
-          <BrandLogoLoader label="Cargando estadísticas..." compact />
+          <BrandLogoLoader label="Cargando estadísticas..." compact showRing />
         </div>
       }
     >

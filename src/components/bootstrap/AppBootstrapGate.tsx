@@ -43,7 +43,7 @@ export function AppBootstrapGate({ children }: { children: React.ReactNode }) {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(14,116,144,0.18),transparent_58%)]" />
         <div className="relative z-10 w-full max-w-xl rounded-3xl border border-cyan-400/25 bg-[#0b1727]/82 p-6 shadow-2xl backdrop-blur-md">
           <div className="flex flex-col items-center text-center">
-            <BrandLogoLoader label={status.message || 'Preparando recursos...'} compact />
+            <BrandLogoLoader label={status.message || 'Preparando recursos...'} compact showRing />
           </div>
           <p className="mt-4 text-center text-lg font-semibold text-cyan-100">
             Preparando IA local y datos offline

@@ -303,7 +303,7 @@ function RouteRankingContent() {
   if (loading && ranking.length === 0) {
     return (
       <div className="min-h-screen bg-gdh-page flex items-center justify-center">
-        <BrandLogoLoader label="Cargando ranking..." compact />
+        <BrandLogoLoader label="Cargando ranking..." compact showRing />
       </div>
     )
   }
@@ -464,7 +464,7 @@ export default function RouteRankingPage() {
     <Suspense
       fallback={
         <div className="min-h-screen bg-gdh-page flex items-center justify-center">
-          <BrandLogoLoader label="Cargando ranking..." compact />
+          <BrandLogoLoader label="Cargando ranking..." compact showRing />
         </div>
       }
     >

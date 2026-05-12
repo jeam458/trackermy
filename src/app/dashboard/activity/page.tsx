@@ -418,7 +418,7 @@ export default function ActivityPage() {
   if (loading) {
     return (
       <div className="gdh-immersive-page min-h-screen text-slate-100 pb-24 flex items-center justify-center">
-        <BrandLogoLoader label={messages.activity.loadingLabel} compact />
+        <BrandLogoLoader label={messages.activity.loadingLabel} compact showRing />
       </div>
     )
   }

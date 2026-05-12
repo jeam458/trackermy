@@ -36,7 +36,7 @@ export default function LoginPage() {
   if (checking) {
     return (
       <div className={`min-h-screen flex items-center justify-center bg-slate-900 ${styles.loginPage}`}>
-        <BrandLogoLoader label="Validando sesión…" />
+        <BrandLogoLoader label="Validando sesión…" showRing />
       </div>
     )
   }

@@ -408,7 +408,7 @@ function RouteDashboardContent() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gdh-page flex items-center justify-center">
-        <BrandLogoLoader label="Cargando ruta..." compact />
+        <BrandLogoLoader label="Cargando ruta..." compact showRing />
       </div>
     )
   }
@@ -698,7 +698,7 @@ export default function RouteDashboardPage() {
     <Suspense
       fallback={
         <div className="min-h-screen bg-gdh-page flex items-center justify-center">
-          <BrandLogoLoader label="Cargando ruta..." compact />
+          <BrandLogoLoader label="Cargando ruta..." compact showRing />
         </div>
       }
     >

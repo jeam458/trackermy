@@ -12,7 +12,7 @@ type Props = {
 export function PageLoadingShimmer({ label = 'Cargando…' }: Props) {
   return (
     <div className="min-h-screen bg-gdh-canvas-2 flex flex-col items-center justify-center px-6 pb-24">
-      <BrandLogoLoader label={label} compact />
+      <BrandLogoLoader label={label} compact showRing />
     </div>
   )
 }
