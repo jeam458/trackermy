@@ -1,0 +1,24 @@
+---
+description: Sistema UI centralizado y componentes base reutilizables
+alwaysApply: true
+---
+
+# UI System Rule
+
+- Centraliza estilos reutilizables en `src/components/ui/` (tokens, clases base o wrappers).
+- Evita copiar bloques largos de clases Tailwind en múltiples pantallas.
+- Si una UI se repite 2+ veces, crea componente base y pasa datos por props.
+- Prioriza composición: layout base + secciones + cards de dominio.
+- Mantén consistencia visual con una sola fuente de verdad (`mobileStyles` o equivalente).
+- No mezclar lógica de datos con reglas de estilo cuando pueda separarse.
+
+## Patrón mínimo esperado
+
+```tsx
+<MobileScreen>
+  <MobileHeaderShell>...</MobileHeaderShell>
+  <MobileMain>
+    <DomainCard data={...} />
+  </MobileMain>
+</MobileScreen>
+```
