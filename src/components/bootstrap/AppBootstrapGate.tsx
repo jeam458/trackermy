@@ -39,17 +39,13 @@ export function AppBootstrapGate({ children }: { children: React.ReactNode }) {
         : null
 
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(14,116,144,0.18),transparent_58%)]" />
-        <div className="relative z-10 w-full max-w-xl rounded-3xl border border-cyan-400/25 bg-[#0b1727]/82 p-6 shadow-2xl backdrop-blur-md">
-          <div className="flex flex-col items-center text-center">
-            <BrandLogoLoader label={status.message || 'Preparando recursos...'} compact showRing />
-          </div>
-          <p className="mt-4 text-center text-lg font-semibold text-cyan-100">
-            Preparando IA local y datos offline
-          </p>
+      <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-900">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(14,116,144,0.18),transparent_58%)]" />
+        <div className="relative z-10 flex w-full max-w-xl flex-col items-center px-6 text-center">
+          <BrandLogoLoader label={status.message || 'Preparando recursos...'} compact showRing />
+          <p className="mt-4 text-lg font-semibold text-cyan-100">Preparando IA local y datos offline</p>
           {progress != null ? (
-            <div className="mt-4 h-2 overflow-hidden rounded-full bg-cyan-950/70">
+            <div className="mt-4 h-2 w-full max-w-sm overflow-hidden rounded-full bg-cyan-950/70">
               <div
                 className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-teal-400 transition-all duration-300"
                 style={{ width: `${progress}%` }}
@@ -57,19 +53,15 @@ export function AppBootstrapGate({ children }: { children: React.ReactNode }) {
             </div>
           ) : null}
           {status.modelId ? (
-            <p className="mt-2 text-center text-xs text-cyan-200/80">
-              Modelo local: {status.modelId}
-            </p>
+            <p className="mt-2 text-center text-xs text-cyan-200/80">Modelo local: {status.modelId}</p>
           ) : null}
           {status.modelLoadNote ? (
-            <p className="mt-2 text-center text-[11px] leading-snug text-amber-200/90 max-h-24 overflow-y-auto">
+            <p className="mt-2 max-h-24 overflow-y-auto text-center text-[11px] leading-snug text-amber-200/90">
               {status.modelLoadNote}
             </p>
           ) : null}
           {status.stage === 'error' ? (
-            <p className="mt-2 text-center text-xs text-rose-300">
-              Error: {status.error || 'falló bootstrap inicial'}
-            </p>
+            <p className="mt-2 text-center text-xs text-rose-300">Error: {status.error || 'falló bootstrap inicial'}</p>
           ) : null}
         </div>
       </div>

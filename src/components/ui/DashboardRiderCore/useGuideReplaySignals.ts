@@ -15,14 +15,23 @@ import {
 } from '@/lib/pet/guidePetBridge'
 import type { GuideContext, GuideGpsHint, GuideSessionReplaySignal, GuideUiEvent } from '@/lib/guide-ai/types'
 import { generateGuideReactionWithLightLlm } from '@/lib/guide-ai/lightweightGuideLlm'
+import { buildGuideInteractionSessionHint } from '@/lib/guide-ai/guideSessionHint'
 import { buildAffectiveAugmentForLlm } from './helpers'
 import type { GuideWorldStateController } from '@/lib/affective'
 import { mapReactionMoodToToastType } from '@/lib/guide-ai/guideDashboardReactiveTurn'
 import type { RiderGuidePayload } from '@/lib/riderGuide'
 import type { SupabaseGuideDataProvider } from '@/lib/guide-ai/providers/SupabaseGuideDataProvider'
 import type { McpSupabaseGuideProvider } from '@/lib/guide-ai/providers/McpSupabaseGuideProvider'
+import {
+  isGuideCoachSpeechBusy,
+  waitForGuideCoachSpeechEnd,
+} from '@/lib/voice/guideCoachSpeech'
+import { getGuideTtsEnabled } from '@/lib/voice/guideTtsPref'
 
 type Provider = SupabaseGuideDataProvider | McpSupabaseGuideProvider
+
+/** Tramos narrados por tiempo de pista (~20 s): entre tramos se acumula telemetría sin WebLLM. */
+const REPLAY_COACH_SEGMENT_SEC = 20
 
 interface UseGuideReplaySignalsParams {
   pathname: string
@@ -39,6 +48,7 @@ interface UseGuideReplaySignalsParams {
   affectiveWorldRef: MutableRefObject<GuideWorldStateController>
   lastSpokenAtRef: MutableRefObject<number>
   spokenTitlesRef: MutableRefObject<string[]>
+  viewEnteredAtRef: MutableRefObject<number>
 }
 
 export function useGuideReplaySignals(params: UseGuideReplaySignalsParams) {
@@ -57,13 +67,19 @@ export function useGuideReplaySignals(params: UseGuideReplaySignalsParams) {
     affectiveWorldRef,
     lastSpokenAtRef,
     spokenTitlesRef,
+    viewEnteredAtRef,
   } = params
 
   const sessionReplaySignalsRef = useRef<GuideSessionReplaySignal[]>([])
   const replayStructuralAtRef = useRef(0)
   const lastReplayLlmAtRef = useRef(0)
-  const lastReplayCoachLlmAtRef = useRef(0)
   const replayCoachInFlightRef = useRef(false)
+  const lastReplayCoachSegmentBucketRef = useRef(-1)
+
+  useEffect(() => {
+    lastReplayCoachSegmentBucketRef.current = -1
+    sessionReplaySignalsRef.current = []
+  }, [pathname, contextualRouteId, contextualAttemptId])
 
   useEffect(() => {
     const onReplay = (ev: Event) => {
@@ -89,6 +105,11 @@ export function useGuideReplaySignals(params: UseGuideReplaySignalsParams) {
       }
       replayStructuralAtRef.current = Date.now()
 
+      if (raw.action === 'seek') {
+        const b = Math.floor(raw.elapsed_sec / REPLAY_COACH_SEGMENT_SEC)
+        lastReplayCoachSegmentBucketRef.current = Math.max(-1, b - 1)
+      }
+
       publishGuidePetMood({
         petMood: inferPetMoodFromReplayAction(
           raw.action,
@@ -103,6 +124,7 @@ export function useGuideReplaySignals(params: UseGuideReplaySignalsParams) {
 
       void (async () => {
         try {
+          if (getGuideTtsEnabled()) await waitForGuideCoachSpeechEnd()
           const snap = pageGuideContextRef.current
           const sameSession =
             snap &&
@@ -145,6 +167,11 @@ export function useGuideReplaySignals(params: UseGuideReplaySignalsParams) {
               executeMcpTools: false,
               sessionReplaySignals: trace,
               affectiveAugment: buildAffectiveAugmentForLlm(affectiveWorldRef.current, ctx),
+              sessionHint: buildGuideInteractionSessionHint({
+                viewEnteredAtMs: viewEnteredAtRef.current,
+                recentCoachTitlesLower: spokenTitlesRef.current,
+                lastTriggerType: 'click',
+              }),
             }),
           )
           setExternalEvent({
@@ -226,14 +253,34 @@ export function useGuideReplaySignals(params: UseGuideReplaySignalsParams) {
         raw.elapsed_sec < 5
       )
         return
-      const tickNow = Date.now()
-      if (tickNow - lastReplayCoachLlmAtRef.current < 11_000) return
       if (typeof document !== 'undefined' && document.hidden) return
       if (replayCoachInFlightRef.current) return
+      if (getGuideTtsEnabled() && isGuideCoachSpeechBusy()) return
+
+      const segmentBucket = Math.floor(raw.elapsed_sec / REPLAY_COACH_SEGMENT_SEC)
+      if (segmentBucket <= lastReplayCoachSegmentBucketRef.current) return
+
+      replayCoachInFlightRef.current = true
+      const bucketCaptured = segmentBucket
 
       void (async () => {
-        replayCoachInFlightRef.current = true
         try {
+          if (getGuideTtsEnabled()) await waitForGuideCoachSpeechEnd()
+
+          const tail = sessionReplaySignalsRef.current.at(-1)
+          if (
+            !tail ||
+            tail.action !== 'tick' ||
+            typeof tail.elapsed_sec !== 'number' ||
+            !Number.isFinite(tail.elapsed_sec)
+          )
+            return
+          const tailBucket = Math.floor(tail.elapsed_sec / REPLAY_COACH_SEGMENT_SEC)
+          if (tailBucket < bucketCaptured) {
+            lastReplayCoachSegmentBucketRef.current = tailBucket
+            return
+          }
+
           const snap = pageGuideContextRef.current
           const sameSession =
             snap &&
@@ -277,20 +324,23 @@ export function useGuideReplaySignals(params: UseGuideReplaySignalsParams) {
               executeMcpTools: false,
               sessionReplaySignals: trace.length ? trace : undefined,
               affectiveAugment: buildAffectiveAugmentForLlm(affectiveWorldRef.current, ctx),
+              sessionHint: buildGuideInteractionSessionHint({
+                viewEnteredAtMs: viewEnteredAtRef.current,
+                recentCoachTitlesLower: spokenTitlesRef.current,
+                lastTriggerType: 'data-refresh',
+              }),
             }),
           )
-          lastReplayCoachLlmAtRef.current = Date.now()
-          const elapsedCoach =
-            typeof raw.elapsed_sec === 'number' && Number.isFinite(raw.elapsed_sec)
-              ? raw.elapsed_sec
-              : 0
-          const timeBucket = Math.floor(elapsedCoach / 14)
           const subKey =
             reaction.subtitle.trim().toLowerCase().slice(0, 64) ||
             reaction.title.trim().toLowerCase().slice(0, 48)
-          const key = `replay_coach:${timeBucket}:${subKey}`
-          if (!subKey || spokenTitlesRef.current.includes(key)) return
+          const key = `replay_coach:seg:${bucketCaptured}:${subKey}`
+          if (!subKey || spokenTitlesRef.current.includes(key)) {
+            lastReplayCoachSegmentBucketRef.current = bucketCaptured
+            return
+          }
           spokenTitlesRef.current = [...spokenTitlesRef.current.slice(-9), key]
+          lastReplayCoachSegmentBucketRef.current = bucketCaptured
           lastSpokenAtRef.current = Date.now()
           setExternalEvent({
             mood: reaction.mood,
@@ -302,7 +352,7 @@ export function useGuideReplaySignals(params: UseGuideReplaySignalsParams) {
           })
           setMessageVisible(true)
         } catch {
-          lastReplayCoachLlmAtRef.current = Date.now()
+          lastReplayCoachSegmentBucketRef.current = bucketCaptured
         } finally {
           replayCoachInFlightRef.current = false
         }

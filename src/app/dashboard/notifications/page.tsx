@@ -18,8 +18,15 @@ import {
   Play,
 } from 'lucide-react'
 import { BrandSpinner } from '@/components/ui/BrandLogoLoader'
+import {
+  DashboardAppTopBar,
+  DashboardAppTopBarHeading,
+  DASHBOARD_APP_TOP_BAR_ICON_BUTTON_CLASS,
+  DashboardCoachHeaderSlot,
+} from '@/app/dashboard/components/DashboardAppTopBar'
 import { routeViewUrl } from '@/lib/routeViewNavigation'
 import { toast } from '@/lib/toast'
+import { cn } from '@/lib/utils'
 
 interface Notification {
   id: string
@@ -259,54 +266,57 @@ export default function NotificationsPage() {
 
   return (
     <div className="gdh-immersive-page min-h-screen text-slate-100">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-[#121821]/95 backdrop-blur-md">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between mb-4">
-            <button
-              onClick={() => router.back()}
-              className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
-            >
-              <ArrowLeft size={20} />
-            </button>
-            <h1 className="text-xl font-bold">
-              {activeTab === 'notifications' ? 'Notificaciones' : 'Mi Perfil'}
-            </h1>
-            <div className="w-10" />
-          </div>
-
-          {/* Tabs */}
-          <div className="flex gap-2">
-            <button
-              onClick={() => setActiveTab('notifications')}
-              className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
-                activeTab === 'notifications'
-                  ? 'bg-amber-500 text-slate-900'
-                  : 'bg-slate-800 text-gray-400 hover:bg-slate-700'
-              }`}
-            >
-              <Bell size={18} />
-              Notificaciones
-              {unreadCount > 0 && (
-                <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-                  {unreadCount}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab('profile')}
-              className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
-                activeTab === 'profile'
-                  ? 'bg-amber-500 text-slate-900'
-                  : 'bg-slate-800 text-gray-400 hover:bg-slate-700'
-              }`}
-            >
-              <Camera size={18} />
-              Perfil
-            </button>
-          </div>
+      <DashboardAppTopBar
+        contentMaxWidth="4xl"
+        leading={
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className={cn(DASHBOARD_APP_TOP_BAR_ICON_BUTTON_CLASS)}
+            aria-label="Volver"
+          >
+            <ArrowLeft size={20} aria-hidden />
+          </button>
+        }
+        center={
+          <DashboardAppTopBarHeading
+            title={activeTab === 'notifications' ? 'Notificaciones' : 'Mi Perfil'}
+          />
+        }
+        trailing={<DashboardCoachHeaderSlot />}
+      >
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setActiveTab('notifications')}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+              activeTab === 'notifications'
+                ? 'bg-amber-500 text-slate-900'
+                : 'bg-slate-800 text-gray-400 hover:bg-slate-700'
+            }`}
+          >
+            <Bell size={18} />
+            Notificaciones
+            {unreadCount > 0 && (
+              <span className="rounded-full bg-red-500 px-2 py-0.5 text-xs text-white">
+                {unreadCount}
+              </span>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('profile')}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+              activeTab === 'profile'
+                ? 'bg-amber-500 text-slate-900'
+                : 'bg-slate-800 text-gray-400 hover:bg-slate-700'
+            }`}
+          >
+            <Camera size={18} />
+            Perfil
+          </button>
         </div>
-      </header>
+      </DashboardAppTopBar>
 
       <main className="max-w-4xl mx-auto p-4">
         {/* Tab: Notificaciones */}

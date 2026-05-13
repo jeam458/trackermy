@@ -3,9 +3,17 @@
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/core/infrastructure/supabase/client'
-import { ArrowLeft, Star, ChevronRight, MessageCircle, Heart, Sparkles, Route, Trophy } from 'lucide-react'
+import { Star, ChevronRight, MessageCircle, Heart, Sparkles, Route, Trophy, Menu } from 'lucide-react'
 import { BrandLogoLoader } from '@/components/ui/BrandLogoLoader'
-import { DashboardAppTopBar } from '@/app/dashboard/components/DashboardAppTopBar'
+import { AnimeIconButton } from '@/components/ui/AnimeIconButton'
+import {
+  DashboardAppTopBar,
+  DashboardAppTopBarHeading,
+  DASHBOARD_APP_TOP_BAR_ICON_BUTTON_CLASS,
+  DashboardCoachHeaderSlot,
+} from '@/app/dashboard/components/DashboardAppTopBar'
+import { useDashboardSidebar } from '@/lib/dashboard/DashboardSidebarContext'
+import { cn } from '@/lib/utils'
 import { ActivityCalendarMonth, type ActivityCalendarEntry } from '@/components/activity/ActivityCalendarMonth'
 import { ActivityWeekStrip } from '@/components/activity/ActivityWeekStrip'
 import {
@@ -188,6 +196,7 @@ function ActivityTrendChart({ points }: { points: TrendPoint[] }) {
 
 export default function ActivityPage() {
   const { messages, locale } = useLocale()
+  const { openSidebar } = useDashboardSidebar()
   const [loading, setLoading] = useState(true)
   const [allAttempts, setAllAttempts] = useState<AttemptRow[]>([])
   const [selectedWeekStart, setSelectedWeekStart] = useState(() => mondayStartLocal(new Date()))
@@ -427,21 +436,28 @@ export default function ActivityPage() {
     <div className="gdh-immersive-page min-h-screen text-slate-100 pb-24">
       <DashboardAppTopBar
         leading={
-          <Link href="/dashboard" className="rounded-xl p-2 text-slate-400 hover:bg-white/5 hover:text-white">
-            <ArrowLeft size={22} aria-hidden />
-          </Link>
+          <AnimeIconButton
+            label="Menú"
+            onClick={() => openSidebar()}
+            className={cn(DASHBOARD_APP_TOP_BAR_ICON_BUTTON_CLASS)}
+          >
+            <Menu size={22} aria-hidden />
+          </AnimeIconButton>
         }
         center={
-          <div className="w-full min-w-0 text-left">
-            <h1 className="gdh-immersive-title text-3xl font-bold tracking-tight text-white sm:text-4xl">
-              {messages.activity.pageTitle}
-            </h1>
-            <p className="mt-1 text-sm text-gdh-muted">{messages.activity.pageSubtitle}</p>
-            <p className="mt-1 text-xs font-medium text-teal-300/90">
-              {interpolate(messages.activity.weekKmSummary, { km: derived.weeklyKm.toFixed(2) })}
-            </p>
-          </div>
+          <DashboardAppTopBarHeading
+            title={messages.activity.pageTitle}
+            subtitle={
+              <>
+                <p>{messages.activity.pageSubtitle}</p>
+                <p className="font-medium text-teal-300/90">
+                  {interpolate(messages.activity.weekKmSummary, { km: derived.weeklyKm.toFixed(2) })}
+                </p>
+              </>
+            }
+          />
         }
+        trailing={<DashboardCoachHeaderSlot />}
       />
 
       <div className="p-4 space-y-5 max-w-lg mx-auto">

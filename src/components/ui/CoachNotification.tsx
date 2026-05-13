@@ -21,6 +21,13 @@ interface CoachNotificationProps {
   hideForVoice: boolean
   onSetMessageVisible: (visible: boolean) => void
   isSidebar?: boolean
+  /** Orbe más pequeño (cabecera Descubrir). */
+  density?: 'default' | 'header'
+  /**
+   * `overOrb`: burbuja encima del orbe (dock inferior).
+   * `underOrb`: burbuja debajo del orbe (cabecera; no tapa el título).
+   */
+  bubbleLayout?: 'overOrb' | 'underOrb'
 }
 
 export function CoachNotification({
@@ -41,6 +48,8 @@ export function CoachNotification({
   hideForVoice,
   onSetMessageVisible,
   isSidebar = false,
+  density = 'default',
+  bubbleLayout = 'overOrb',
 }: CoachNotificationProps) {
   // Determine bubble skin based on toast type
   const bubbleSkinClass = useMemo(() => {
@@ -83,31 +92,51 @@ export function CoachNotification({
     return 'text-slate-300'
   }, [externalEventSource, externalEventToastType])
 
-  // Si no se debe mostrar la burbuja y no hay voz, no renderizar nada (o sr-only)
-  if (!showMessageBubble && !hideForVoice) {
-    return null
-  }
+  const showBubble = showMessageBubble && !hideForVoice
 
-  // Si está oculto por voz y no es toast, retornar span sr-only para accesibilidad
-  if (hideForVoice && externalEventSource !== 'toast') {
-    return (
-      <span className="sr-only">
-        {activeTitle}. {activeSubtitle}
-      </span>
-    )
-  }
+  const upwardCaretClass = useMemo(() => {
+    if (externalEventSource === 'toast' && externalEventToastType) {
+      switch (externalEventToastType) {
+        case 'success':
+          return 'border-emerald-400/35 bg-[#0a1614]/95'
+        case 'error':
+          return 'border-rose-400/40 bg-[#160d11]/95'
+        case 'warning':
+          return 'border-amber-400/38 bg-[#16120b]/95'
+        default:
+          return 'border-sky-400/38 bg-[#0c141f]/95'
+      }
+    }
+    return 'border-white/10 bg-[#121b27]/90'
+  }, [externalEventSource, externalEventToastType])
+
+  const bubbleOuterClass =
+    bubbleLayout === 'underOrb'
+      ? 'absolute top-full right-0 left-auto z-[45] mt-1.5 w-[min(220px,calc(100vw-1.25rem))] max-w-[min(220px,calc(100vw-1.25rem))]'
+      : 'absolute bottom-full left-0 mb-1.5 w-[224px] max-w-[calc(100vw-1rem)]'
+
+  const orbSize = isSidebar ? 68 : density === 'header' ? 40 : 62
 
   return (
-    <>
-      {/* Message Bubble */}
-      {showMessageBubble && !hideForVoice ? (
+    <div className="relative shrink-0">
+      {hideForVoice && externalEventSource !== 'toast' ? (
+        <span className="sr-only">
+          {activeTitle}. {activeSubtitle}
+        </span>
+      ) : null}
+
+      {/* Burbuja: solo cuando hay mensaje visible (el pet/orbe sigue mostrándose siempre) */}
+      {showBubble ? (
         <div
           key={`bubble-${mood}-${activeTitle}-${externalEventToastType ?? ''}`}
-          className="absolute bottom-full left-0 mb-1.5 w-[224px] max-w-[calc(100vw-1rem)]"
+          className={bubbleOuterClass}
         >
           <div className={bubbleSkinClass}>
-            <div className="relative flex flex-col items-center text-center">
-              {/* Caret triangular */}
+            {bubbleLayout === 'underOrb' ? (
+              <div
+                className={`absolute -top-[6px] left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border-r border-b ${upwardCaretClass}`}
+              />
+            ) : (
               <div
                 className={`absolute ${
                   glanceDir === 'above'
@@ -118,21 +147,24 @@ export function CoachNotification({
                     ? externalEventToastType === 'success'
                       ? 'border-emerald-400/35 bg-[#0a1614]/95'
                       : externalEventToastType === 'error'
-                      ? 'border-rose-400/40 bg-[#160d11]/95'
-                      : externalEventToastType === 'warning'
-                      ? 'border-amber-400/38 bg-[#16120b]/95'
-                      : 'border-sky-400/38 bg-[#0c141f]/95'
+                        ? 'border-rose-400/40 bg-[#160d11]/95'
+                        : externalEventToastType === 'warning'
+                          ? 'border-amber-400/38 bg-[#16120b]/95'
+                          : 'border-sky-400/38 bg-[#0c141f]/95'
                     : 'border-white/10 bg-[#121b27]/90'
                 }`}
               />
-              <p className={`text-[11px] font-semibold ${textClass}`}>{activeTitle}</p>
-              <p className={`mt-0.5 text-[10px] ${subtitleClass}`}>{activeSubtitle}</p>
+            )}
+            <div className="relative max-h-[min(240px,38vh)] overflow-y-auto overscroll-contain px-0.5 pt-1">
+              <div className="flex flex-col items-center text-center">
+                <p className={`text-[11px] font-semibold ${textClass}`}>{activeTitle}</p>
+                <p className={`mt-0.5 text-[10px] ${subtitleClass}`}>{activeSubtitle}</p>
+              </div>
             </div>
           </div>
         </div>
       ) : null}
 
-      {/* Pet Orb */}
       <PetOrb
         mood={mood}
         externalEventSource={externalEventSource}
@@ -144,9 +176,9 @@ export function CoachNotification({
         petAiMindState={petAiMindState}
         toastGlanceKey={toastGlanceKey}
         toastGlanceDirection={glanceDir}
-        size={isSidebar ? 68 : 62}
+        size={orbSize}
         isSidebar={isSidebar}
       />
-    </>
+    </div>
   )
 }

@@ -10,6 +10,7 @@ import {
   COACHING_CONTEXT_RULES,
   CONTEXT_REACTION_SKILL,
   HUMAN_INTERACTION_PRINCIPLES,
+  GUIDE_NATURAL_INTERACTION_FLOW,
   PET_CONNECTIVITY_VOICE,
   PET_INTERACTIVE_ANALYSIS_CONTRACT,
   PET_VISUAL_BRIDGE,
@@ -19,7 +20,7 @@ import {
 import { buildCoachKnowledgeEvidenceFromNodes, COACH_KNOWLEDGE_NODES } from '@/lib/guide-ai/coachKnowledgeTree'
 import { buildReplayCoachSnapshot } from '@/lib/guide-ai/guideReplayCoachSnapshot'
 import { coachVosFirstName } from '@/lib/guide-ai/riderCoachDisplayName'
-import type { GuideContext, GuideSessionReplaySignal, GuideUiEvent } from '@/lib/guide-ai/types'
+import type { GuideContext, GuideInteractionSessionHint, GuideSessionReplaySignal, GuideUiEvent } from '@/lib/guide-ai/types'
 
 export function interactionHint(pathname: string, event: Pick<GuideUiEvent, 'type' | 'label'>): string {
   if (event.label?.startsWith('system:gps_')) {
@@ -32,7 +33,7 @@ export function interactionHint(pathname: string, event: Pick<GuideUiEvent, 'typ
     return 'Red de vuelta: breve reconocimiento + qué se actualiza (sync, ranking, datos frescos). pet_mood alineado (happy/guide según intensidad del dato).'
   }
   if (event.label === 'interactive:replay_coach_tick') {
-    return 'Coach en vivo en replay: leé replay_coach_snapshot + coach_knowledge_evidence (árbol curado, versionado) + session_recent_replay + attempt_summary + activity_summary + replay_summary. Narrá el tramo y enlazá como máximo UNA idea del nodo bibliográfico al dato del rider; respetá evidence_strength y citation_label_es. curated_reference_hint_es = heurística local; coach_knowledge_evidence = marco probado/sintetizado. Sin inventar papers ni URLs.'
+    return 'Coach en vivo en replay: leé replay_coach_snapshot + coach_knowledge_evidence + session_recent_replay + attempt_summary. Título: frase corta de cabina (≤56 chars) con intención técnica (pendiente, caja, frenos, mirada, cadencia) — prohibido usar solo el nombre de la ruta, “X · coach” o repetir route_name como título entero. Subtítulo: 2–3 frases en tuteo que narren el tramo con datos del snapshot (gps_vertical_mode, gps_grade_pct_est, uphill_pedaling_likely, speed_vs_personal_avg, coaching_lens, sector_phase); hasta ~220 caracteres; una acción concreta por mensaje.'
   }
   if (event.label?.startsWith('interactive:replay_followup_')) {
     return 'Seguís en replay: otro ángulo (tramo distinto, ritmo vs altitud, hábito de mirada/freno). Datos solo del JSON o session_recent_replay; pet_mood coherente; no genérico.'
@@ -94,8 +95,10 @@ export function buildGuideNarrationFullPrompt(input: {
    * La UI actualiza el controlador; el modelo solo lee este JSON.
    */
   affectiveAugment?: Record<string, unknown> | null
+  /** Memoria breve de la vista (cliente): ritmo y anti-repetición. */
+  sessionHint?: GuideInteractionSessionHint | null
 }): string {
-  const { context, event, executeMcpTools, sessionReplaySignals, affectiveAugment } = input
+  const { context, event, executeMcpTools, sessionReplaySignals, affectiveAugment, sessionHint } = input
   const localHour = new Date().getHours()
   const pLower = context.pathname.toLowerCase()
   const routeDetailHard =
@@ -137,7 +140,7 @@ export function buildGuideNarrationFullPrompt(input: {
 
   const replayCoachHard =
     pLower.includes('attempt-replay') && event.label === 'interactive:replay_coach_tick'
-      ? 'interactive:replay_coach_tick: PLAY con telemetría. Obligatorio usar replay_coach_snapshot: sector_phase, speed_vs_personal_avg, training_volume_es. Desnivel: priorizá gps_vertical_mode, gps_grade_pct_est y uphill_pedaling_likely (ventana ~40 m sobre el track) sobre solo Δ altitud entre ticks. Si uphill_pedaling_likely, reconocé subida con pedaleo sin tratarlo como bajada DH. Respetá coaching_lens. coach_knowledge_evidence: una idea como máximo. Sin tool_requests salvo executeMcpTools true.'
+      ? 'interactive:replay_coach_tick: PLAY con telemetría. Obligatorio usar replay_coach_snapshot. Título (≤56 chars): imperativo o lectura de terreno (ej. “Plano largo · soltá freno”, “Rampa · caja más suave”, “Bajada · un frenaje antes del ápice”) — nunca solo el nombre de la ruta ni “coach”. Subtítulo (~80–220 chars): narrá con v, pendiente %, subida/bajada/plano, vs tu media del intento; mencioná cadencia/caja/postura cuando encaje coaching_lens; max una idea de coach_knowledge_evidence. Sin tool_requests salvo executeMcpTools true.'
       : ''
 
   const replayCoachSnapshot =
@@ -219,6 +222,13 @@ export function buildGuideNarrationFullPrompt(input: {
       coach_knowledge_evidence: coachKnowledgeEvidence,
       rider_coaching_spectrum: context.riderCoachingSpectrum ?? null,
       maintenance_hints: context.maintenanceHints ?? null,
+      guide_interaction_session: sessionHint
+        ? {
+            seconds_on_screen: sessionHint.secondsOnScreen,
+            recent_coach_titles: sessionHint.recentCoachTitles,
+            last_trigger_type: sessionHint.lastTriggerType,
+          }
+        : null,
     })}`,
     `Evento UI: ${event.type}${event.label ? ` · ${event.label}` : ''}`,
     `Hint de interacción: ${interactionHint(context.pathname, { type: event.type, label: event.label })}`,
@@ -270,6 +280,7 @@ export function buildGuideNarrationFullPrompt(input: {
     `[TURNOS_INTERACTIVOS_IA]\n${PET_INTERACTIVE_ANALYSIS_CONTRACT}`,
     `[SKILL_REACCION_CONTEXTO]\n${CONTEXT_REACTION_SKILL}`,
     `[INTERACCION_HUMANA]\n${HUMAN_INTERACTION_PRINCIPLES}`,
+    `[FLUJO_NATURAL_INTERACION]\n${GUIDE_NATURAL_INTERACTION_FLOW}`,
     `[PERFIL_VOZ]\n${getGuideVoiceProfileAddon()}`,
     `[PANTALLA]\n${getScreenKindOutputHints(context.screenKind ?? inferScreenKind(context.pathname))}`,
     `[REGLAS_CONTEXTO_COACH]\n${COACHING_CONTEXT_RULES}`,

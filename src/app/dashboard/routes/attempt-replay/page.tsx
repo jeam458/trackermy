@@ -17,6 +17,7 @@ import { gpsStartEndFromAttemptJson } from '@/lib/rankingGps'
 import { normalizeRouteViewFrom, routeViewUrl } from '@/lib/routeViewNavigation'
 import { optimizeMediaBeforeUpload } from '@/lib/mediaUploadOptimizer'
 import { toast } from '@/lib/toast'
+import { DashboardCoachHeaderSlot } from '@/app/dashboard/components/DashboardAppTopBar'
 
 const AttemptReplayViewer = dynamic(
   () =>
@@ -483,15 +484,18 @@ function AttemptReplayInner() {
             </>
           }
           trailing={
-            statsHref ? (
-              <Link
-                href={statsHref}
-                className="inline-flex items-center gap-2 rounded-lg border border-sky-400/40 bg-sky-400/10 px-3 py-1.5 text-xs font-semibold text-sky-300 hover:bg-sky-400/15"
-              >
-                <BarChart3 size={14} aria-hidden />
-                Ver estadísticas
-              </Link>
-            ) : null
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <DashboardCoachHeaderSlot />
+              {statsHref ? (
+                <Link
+                  href={statsHref}
+                  className="inline-flex items-center gap-2 rounded-lg border border-sky-400/40 bg-sky-400/10 px-3 py-1.5 text-xs font-semibold text-sky-300 hover:bg-sky-400/15"
+                >
+                  <BarChart3 size={14} aria-hidden />
+                  Ver estadísticas
+                </Link>
+              ) : null}
+            </div>
           }
         />
 

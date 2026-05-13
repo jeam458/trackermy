@@ -2,9 +2,17 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, ChevronRight, Trophy } from 'lucide-react'
+import { ChevronRight, Trophy, Menu } from 'lucide-react'
 import { BrandSpinner } from '@/components/ui/BrandLogoLoader'
-import { DashboardAppTopBar } from '@/app/dashboard/components/DashboardAppTopBar'
+import { AnimeIconButton } from '@/components/ui/AnimeIconButton'
+import {
+  DashboardAppTopBar,
+  DashboardAppTopBarHeading,
+  DASHBOARD_APP_TOP_BAR_ICON_BUTTON_CLASS,
+  DashboardCoachHeaderSlot,
+} from '@/app/dashboard/components/DashboardAppTopBar'
+import { useDashboardSidebar } from '@/lib/dashboard/DashboardSidebarContext'
+import { cn } from '@/lib/utils'
 import { createClient } from '@/core/infrastructure/supabase/client'
 
 type RankingRoute = {
@@ -15,6 +23,7 @@ type RankingRoute = {
 }
 
 export default function RankingPage() {
+  const { openSidebar } = useDashboardSidebar()
   const [routes, setRoutes] = useState<RankingRoute[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -57,20 +66,21 @@ export default function RankingPage() {
     <div className="gdh-immersive-page min-h-screen pb-28 text-slate-100">
       <DashboardAppTopBar
         leading={
-          <Link
-            href="/dashboard"
-            className="rounded-xl p-2 text-slate-400 transition hover:bg-white/5 hover:text-white"
-            aria-label="Volver"
+          <AnimeIconButton
+            label="Menú"
+            onClick={() => openSidebar()}
+            className={cn(DASHBOARD_APP_TOP_BAR_ICON_BUTTON_CLASS)}
           >
-            <ArrowLeft size={22} aria-hidden />
-          </Link>
+            <Menu size={22} aria-hidden />
+          </AnimeIconButton>
         }
         center={
-          <div className="w-full min-w-0 text-left">
-            <h1 className="gdh-immersive-title text-xl font-bold tracking-tight text-white">Rankings</h1>
-            <p className="mt-0.5 text-sm text-slate-500">Elegí una ruta pública para ver posiciones y tiempos.</p>
-          </div>
+          <DashboardAppTopBarHeading
+            title="Rankings"
+            subtitle="Elegí una ruta pública para ver posiciones y tiempos."
+          />
         }
+        trailing={<DashboardCoachHeaderSlot />}
       />
 
       <div className="mx-auto max-w-lg space-y-6 px-4 pt-4">

@@ -28,12 +28,15 @@ export function useDashboardVoiceCoach() {
   const { locale, messages } = useLocale()
   const v = messages.voice
 
-  const hidden =
+  /** Panel TTS oculto solo en grabación (dock propio). En replay el panel sigue para parlante. */
+  const hidden = pathname.startsWith('/dashboard/routes/record')
+  /** Atajos por voz y mic desactivados en grabación y replay (mapa / vídeo). */
+  const commandsDisabled =
     pathname.startsWith('/dashboard/routes/record') || pathname.startsWith('/dashboard/routes/attempt-replay')
 
   const { supported, listening, interim, error, start, stop, setOnFinal } = useDashboardVoiceRecognition(locale)
   const [shortcuts, setShortcuts] = useState<VoiceShortcutRow[]>([])
-  const [learnMode, setLearnMode] = useState(false)
+  const [learnMode, setLearnMode] = useState(true)
   const [coachVoiceRead, setCoachVoiceRead] = useState(false)
   const [lastHeard, setLastHeard] = useState('')
   const [pendingLearn, setPendingLearn] = useState<{ transcript: string; path: string } | null>(null)
@@ -43,9 +46,9 @@ export function useDashboardVoiceCoach() {
   }, [])
 
   useEffect(() => {
-    if (hidden) return
+    if (commandsDisabled) return
     reloadShortcuts()
-  }, [hidden, reloadShortcuts])
+  }, [commandsDisabled, reloadShortcuts])
 
   useEffect(() => {
     setCoachVoiceRead(getGuideTtsEnabled())
@@ -63,7 +66,7 @@ export function useDashboardVoiceCoach() {
 
   const onFinal = useCallback(
     (transcript: string) => {
-      if (hidden) return
+      if (commandsDisabled) return
       const clean = sanitizeTranscriptForDisplay(transcript)
       setLastHeard(clean)
       const hit = resolveVoiceNavigation(clean, locale, shortcuts)
@@ -101,13 +104,13 @@ export function useDashboardVoiceCoach() {
         setPendingLearn(null)
       }
     },
-    [hidden, locale, pathname, router, shortcuts, learnMode, v]
+    [commandsDisabled, locale, pathname, router, shortcuts, learnMode, v]
   )
 
   useEffect(() => {
-    if (hidden) return
+    if (commandsDisabled) return
     setOnFinal(onFinal)
-  }, [hidden, setOnFinal, onFinal])
+  }, [commandsDisabled, setOnFinal, onFinal])
 
   const savePendingShortcut = useCallback(async () => {
     if (!pendingLearn) return
@@ -132,10 +135,10 @@ export function useDashboardVoiceCoach() {
   }, [pendingLearn, locale, reloadShortcuts, v])
 
   const toggleListen = useCallback(() => {
-    if (hidden || !supported) return
+    if (commandsDisabled || !supported) return
     if (listening) stop()
     else void start()
-  }, [hidden, supported, listening, stop, start])
+  }, [commandsDisabled, supported, listening, stop, start])
 
   return {
     hidden,

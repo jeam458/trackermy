@@ -10,6 +10,17 @@ export type GuideUiEvent = {
   timestamp: number
 }
 
+/**
+ * Memoria breve de la vista actual (solo cliente → prompt del guía).
+ * Ayuda a evitar saludos repetidos y a calibrar ritmo según tiempo en pantalla.
+ */
+export type GuideInteractionSessionHint = {
+  secondsOnScreen: number
+  /** Títulos recientes de burbuja (normalmente en minúsculas para dedupe). */
+  recentCoachTitles: string[]
+  lastTriggerType: GuideUiEventType
+}
+
 /** Señal estructurada de replay (CustomEvent → cola de sesión en el prompt). */
 export type GuideSessionReplaySignal = {
   kind: 'replay_signal'

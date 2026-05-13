@@ -4,7 +4,7 @@
  * Evita duplicar armado de `GuideUiEvent` y mapeo a toast en cada `useEffect`.
  */
 import { generateGuideReactionWithLightLlm } from '@/lib/guide-ai/lightweightGuideLlm'
-import type { GuideContext, GuideReaction, GuideSessionReplaySignal, GuideUiEvent } from '@/lib/guide-ai/types'
+import type { GuideContext, GuideInteractionSessionHint, GuideReaction, GuideSessionReplaySignal, GuideUiEvent } from '@/lib/guide-ai/types'
 import type { RiderGuideMood, RiderGuideToastType } from '@/lib/riderGuide'
 
 export type DashboardReactiveLabel =
@@ -43,6 +43,7 @@ export async function executeDashboardReactiveGuideTurn(input: {
   executeMcpTools?: boolean
   sessionReplaySignals?: GuideSessionReplaySignal[] | null
   affectiveAugment?: Record<string, unknown> | null
+  sessionHint?: GuideInteractionSessionHint | null
 }): Promise<GuideReaction> {
   const event = buildDashboardReactiveEvent(input.pathname, input.label)
   return generateGuideReactionWithLightLlm({
@@ -51,5 +52,6 @@ export async function executeDashboardReactiveGuideTurn(input: {
     executeMcpTools: input.executeMcpTools ?? false,
     sessionReplaySignals: input.sessionReplaySignals ?? undefined,
     affectiveAugment: input.affectiveAugment ?? undefined,
+    sessionHint: input.sessionHint ?? undefined,
   })
 }

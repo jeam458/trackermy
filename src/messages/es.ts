@@ -87,8 +87,9 @@ export const es = {
     routes: 'Rutas',
     ranking: 'Ranking',
     profile: 'Perfil',
-    recordFab: 'Grabar',
-    recordFabAria: 'Grabar bajada: ruta libre, nueva ruta o ruta existente',
+    recordFab: 'Recorrer',
+    recordFabAria:
+      'Recorrer: en el detalle de una ruta inicia la grabación de esa ruta; en otras pantallas elige ruta libre, nueva o existente',
   },
 
   voice: voiceMessages,

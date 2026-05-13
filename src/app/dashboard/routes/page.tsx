@@ -20,9 +20,18 @@ import {
   Eye,
   EyeOff,
   X,
+  Menu,
 } from 'lucide-react'
 import { BrandLogoLoader } from '@/components/ui/BrandLogoLoader'
-import { DashboardAppTopBar } from '@/app/dashboard/components/DashboardAppTopBar'
+import { AnimeIconButton } from '@/components/ui/AnimeIconButton'
+import {
+  DashboardAppTopBar,
+  DashboardAppTopBarHeading,
+  DASHBOARD_APP_TOP_BAR_ICON_BUTTON_CLASS,
+  DashboardCoachHeaderSlot,
+} from '@/app/dashboard/components/DashboardAppTopBar'
+import { useDashboardSidebar } from '@/lib/dashboard/DashboardSidebarContext'
+import { cn } from '@/lib/utils'
 import { getAuthUserOrNull } from '@/lib/authSession'
 import { routeViewUrl } from '@/lib/routeViewNavigation'
 import { routePreviewIsVideo } from '@/lib/routePreviewMedia'
@@ -241,6 +250,7 @@ function RouteCard({
 }
 
 export default function RoutesPage() {
+  const { openSidebar } = useDashboardSidebar()
   const [user, setUser] = useState<{ id: string } | null>(null)
   const [routes, setRoutes] = useState<Route[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -403,23 +413,32 @@ export default function RoutesPage() {
   return (
     <div className="gdh-immersive-page text-slate-100 pb-28">
       <DashboardAppTopBar
-        contentMaxWidth="7xl"
+        leading={
+          <AnimeIconButton
+            label="Menú"
+            onClick={() => openSidebar()}
+            className={cn(DASHBOARD_APP_TOP_BAR_ICON_BUTTON_CLASS)}
+          >
+            <Menu size={22} aria-hidden />
+          </AnimeIconButton>
+        }
         center={
-          <div className="w-full min-w-0 text-left">
-            <h1 className="text-2xl font-bold text-white">Mis Rutas</h1>
-            <p className="mt-1 text-sm text-slate-400">
-              {routes.length} {routes.length === 1 ? 'ruta' : 'rutas'} creadas
-            </p>
-          </div>
+          <DashboardAppTopBarHeading
+            title="Mis Rutas"
+            subtitle={`${routes.length} ${routes.length === 1 ? 'ruta' : 'rutas'} creadas`}
+          />
         }
         trailing={
-          <Link
-            href="/dashboard/routes/create"
-            className="inline-flex items-center gap-2 rounded-xl border border-teal-400/30 bg-teal-500/20 px-4 py-2.5 font-semibold text-teal-100 transition-colors hover:bg-teal-500/30"
-          >
-            <Plus size={18} aria-hidden />
-            Crear Ruta
-          </Link>
+          <div className="flex min-w-0 shrink-0 items-center justify-end gap-1.5">
+            <DashboardCoachHeaderSlot />
+            <Link
+              href="/dashboard/routes/create"
+              className="inline-flex max-w-[10.5rem] items-center gap-1.5 truncate rounded-xl border border-teal-400/30 bg-teal-500/15 px-3 py-2 text-sm font-semibold text-teal-100 transition-colors hover:bg-teal-500/25 sm:max-w-none sm:gap-2"
+            >
+              <Plus size={18} aria-hidden className="shrink-0" />
+              <span className="truncate">Crear Ruta</span>
+            </Link>
+          </div>
         }
       />
 

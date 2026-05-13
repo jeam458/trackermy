@@ -56,7 +56,13 @@ import { RecordingStatsPanel } from './components/RecordingStatsPanel'
 import { RouteSetupPanel } from './components/RouteSetupPanel'
 import { CreateRouteModal } from './components/CreateRouteModal'
 import { DASHBOARD_BOTTOM_NAV_Z_INDEX } from '@/app/dashboard/components/DashboardBottomNav'
+import {
+  DashboardAppTopBar,
+  DashboardAppTopBarHeading,
+  DASHBOARD_APP_TOP_BAR_ICON_BUTTON_CLASS,
+} from '@/app/dashboard/components/DashboardAppTopBar'
 import { RECORD_SCREEN_ENTRY_QUERY } from '@/lib/recordScreenEntry'
+import { cn } from '@/lib/utils'
 import { downloadTileRegion, listOfflineTileRegions } from '@/lib/tileOfflineCache'
 import {
   PlusCircle,
@@ -1474,22 +1480,28 @@ export default function RecordRoutePage() {
         <CountdownOverlay countdown={armCountdown} gradientId={countdownGradientId} />
       )}
 
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-[#121821]/95 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 px-4 py-4">
-          <div className="flex min-w-0 flex-1 items-center gap-4">
-            <button
-              onClick={() => router.back()}
-              className="shrink-0 p-2 hover:bg-slate-800 rounded-lg transition-colors"
-            >
-              <X size={20} />
-            </button>
-            <div className="min-w-0">
-              <h1 className="truncate text-xl font-bold text-white">Grabar Bajada</h1>
-              <p className="text-sm text-gray-400 hidden sm:block">GPS en primer plano (mejor en app nativa)</p>
-            </div>
-          </div>
-
-          <div className="flex shrink-0 items-center gap-2">
+      <DashboardAppTopBar
+        contentMaxWidth="7xl"
+        leading={
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className={cn(DASHBOARD_APP_TOP_BAR_ICON_BUTTON_CLASS)}
+            aria-label="Cerrar"
+          >
+            <X size={20} aria-hidden />
+          </button>
+        }
+        center={
+          <DashboardAppTopBarHeading
+            title="Grabar Bajada"
+            subtitle={
+              <span className="hidden sm:inline">GPS en primer plano (mejor en app nativa)</span>
+            }
+          />
+        }
+        trailing={
+          <div className="flex max-w-[min(100%,12rem)] shrink-0 flex-wrap items-center justify-end gap-2 sm:max-w-none">
             {!isRecording && (
               <>
                 <button
@@ -1497,10 +1509,10 @@ export default function RecordRoutePage() {
                   onClick={() => {
                     void handleNuevaRutaLibre()
                   }}
-                  className="flex items-center gap-2 rounded-xl border border-cyan-500/35 bg-cyan-500/10 px-3 py-2 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-500/15 sm:px-4 sm:text-sm"
+                  className="flex max-w-[48%] flex-1 items-center justify-center gap-1 rounded-xl border border-cyan-500/35 bg-cyan-500/10 px-2 py-2 text-[11px] font-semibold text-cyan-100 transition hover:bg-cyan-500/15 sm:max-w-none sm:flex-initial sm:gap-2 sm:px-4 sm:text-sm"
                 >
-                  <Navigation size={18} className="shrink-0 text-cyan-300" aria-hidden />
-                  <span className="max-w-[9rem] truncate sm:max-w-none">Ruta libre</span>
+                  <Navigation size={16} className="shrink-0 text-cyan-300 sm:h-[18px] sm:w-[18px]" aria-hidden />
+                  <span className="truncate sm:max-w-none">Ruta libre</span>
                 </button>
                 <button
                   type="button"
@@ -1509,10 +1521,10 @@ export default function RecordRoutePage() {
                     setNewRouteDraftDescription(routeDescription)
                     setCreateRouteModalOpen(true)
                   }}
-                  className="flex items-center gap-2 rounded-xl border border-teal-500/35 bg-teal-500/10 px-3 py-2 text-xs font-semibold text-teal-100 transition hover:bg-teal-500/15 sm:px-4 sm:text-sm"
+                  className="flex max-w-[48%] flex-1 items-center justify-center gap-1 rounded-xl border border-teal-500/35 bg-teal-500/10 px-2 py-2 text-[11px] font-semibold text-teal-100 transition hover:bg-teal-500/15 sm:max-w-none sm:flex-initial sm:gap-2 sm:px-4 sm:text-sm"
                 >
-                  <PlusCircle size={18} className="shrink-0 text-teal-400" aria-hidden />
-                  <span className="max-w-[9rem] truncate sm:max-w-none">
+                  <PlusCircle size={16} className="shrink-0 text-teal-400 sm:h-[18px] sm:w-[18px]" aria-hidden />
+                  <span className="truncate sm:max-w-none">
                     <span className="sm:hidden">Nueva</span>
                     <span className="hidden sm:inline">Nueva ruta</span>
                   </span>
@@ -1522,14 +1534,12 @@ export default function RecordRoutePage() {
             {isRecording && (
               <div className="flex items-center gap-2">
                 <div className="h-3 w-3 animate-pulse rounded-full bg-red-500" />
-                <span className="text-sm text-red-400">
-                  {isPaused ? 'Pausado' : 'Grabando'}
-                </span>
+                <span className="text-sm text-red-400">{isPaused ? 'Pausado' : 'Grabando'}</span>
               </div>
             )}
           </div>
-        </div>
-      </header>
+        }
+      />
 
       <RecordRouteSelectionPanel
         isRecording={isRecording}

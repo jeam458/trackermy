@@ -117,6 +117,19 @@ export function DashboardBottomNav() {
 
   if (!mounted) return null
 
+  const openRecordChoiceOrStartRouteView = () => {
+    const p = pathname.replace(/\/$/, '')
+    if (p.startsWith('/dashboard/routes/view') && typeof window !== 'undefined') {
+      const u = new URL(window.location.href)
+      const routeId = u.searchParams.get('id') || u.searchParams.get('routeId')
+      if (routeId) {
+        router.push(`/dashboard/routes/record?routeId=${encodeURIComponent(routeId)}`)
+        return
+      }
+    }
+    setRecordChoiceOpen(true)
+  }
+
   const renderTab = (
     href: string,
     label: string,
@@ -174,7 +187,7 @@ export function DashboardBottomNav() {
             aria-label={messages.nav.recordFabAria}
             whileTap={{ scale: 0.92 }}
             whileHover={{ y: -2 }}
-            onClick={() => setRecordChoiceOpen(true)}
+            onClick={openRecordChoiceOrStartRouteView}
             className="-mt-7 mb-0.5 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-gdh-brand to-teal-600 text-white shadow-lg shadow-teal-950/50 ring-2 ring-white/25 ring-offset-2 ring-offset-[#14181f]"
           >
             <Play className="h-7 w-7 translate-x-0.5" fill="currentColor" strokeWidth={0} aria-hidden />

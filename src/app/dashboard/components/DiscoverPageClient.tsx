@@ -19,7 +19,9 @@ import { BrandSpinner } from '@/components/ui/BrandLogoLoader'
 import { routeViewUrl } from '@/lib/routeViewNavigation'
 import {
   DASHBOARD_APP_TOP_BAR_SHELL_CLASS,
+  DashboardAppTopBarHeading,
   DashboardAppTopBarInner,
+  DashboardCoachHeaderSlot,
 } from '@/app/dashboard/components/DashboardAppTopBar'
 
 const repoRef = { current: new SupabaseRouteRepository() }
@@ -395,17 +397,18 @@ export default function DiscoverPageClient() {
               <Menu size={22} />
             </AnimeIconButton>
           }
-          center={
-            <h1 className="text-[1.7rem] font-extrabold leading-none tracking-tight text-white">Descubrir Rutas</h1>
-          }
+          center={<DashboardAppTopBarHeading title="Descubrir Rutas" />}
           trailing={
-            <AnimeIconButton
-              label="Buscar rutas"
-              onClick={() => setShowSearch((s) => !s)}
-              className={`rounded-xl p-2.5 transition-colors ${showSearch ? 'bg-teal-500/20 text-teal-400' : 'text-slate-400 hover:bg-white/5'}`}
-            >
-              <Search size={22} />
-            </AnimeIconButton>
+            <div className="flex min-w-0 shrink-0 items-center justify-end gap-1">
+              <DashboardCoachHeaderSlot />
+              <AnimeIconButton
+                label="Buscar rutas"
+                onClick={() => setShowSearch((s) => !s)}
+                className={`shrink-0 rounded-xl p-2.5 transition-colors ${showSearch ? 'bg-teal-500/20 text-teal-400' : 'text-slate-400 hover:bg-white/5'}`}
+              >
+                <Search size={22} />
+              </AnimeIconButton>
+            </div>
           }
         >
           {showSearch ? (

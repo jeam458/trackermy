@@ -1,91 +1,92 @@
-import { Mic, MicOff, Volume2, Sparkles, BookmarkPlus, Hand } from 'lucide-react'
+'use client'
 
-interface VoiceControlPanelProps {
-  voiceCoach: any
-  onToggleTools: () => void
-  coachToolsOpen: boolean
+import { Volume2, BookmarkPlus } from 'lucide-react'
+import { cn } from '@/lib/utils'
+
+/** Subconjunto del retorno de `useDashboardVoiceCoach` usado en UI. */
+export type VoiceCoachUi = {
+  hidden: boolean
+  supported: boolean
+  listening: boolean
+  toggleListen: () => void
+  learnMode: boolean
+  setLearnMode: (v: boolean) => void
+  coachVoiceRead: boolean
+  setCoachVoiceRead: (v: boolean) => void
+  pendingLearn: { transcript: string; path: string } | null
+  savePendingShortcut: () => void | Promise<void>
+  voice: {
+    listen: string
+    stop: string
+    learnMode: string
+    saveShortcut: string
+    coachVoiceReadHint: string
+  }
 }
 
-export function VoiceControlPanel({
-  voiceCoach,
-  onToggleTools,
-  coachToolsOpen
-}: VoiceControlPanelProps) {
+type VoiceControlPanelProps = {
+  voiceCoach: VoiceCoachUi
+  /** Cabecera: botón TTS algo más pequeño (misma fila que el dock). */
+  density?: 'default' | 'header'
+}
+
+/** Contenedor compartido pet + voz (alineación vertical y “una sola pieza”). */
+export const COACH_DOCK_CLUSTER_CLASS =
+  'flex items-center gap-2 rounded-[1.35rem] border border-white/[0.09] bg-[#0a0f16]/90 px-2 py-1.5 shadow-[0_12px_40px_rgba(0,0,0,0.38)] backdrop-blur-md ring-1 ring-inset ring-white/[0.04]'
+
+/** Variante compacta para slot en cabecera (una sola fila). */
+export const COACH_HEADER_CLUSTER_CLASS =
+  'flex items-center gap-0.5 rounded-xl border border-white/[0.08] bg-[#0a0f16]/92 px-0.5 py-0 shadow-md backdrop-blur-md ring-1 ring-inset ring-white/[0.03]'
+
+const iconBtnDefault =
+  'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-[#121821]/90 text-slate-200 shadow-sm transition-colors hover:border-white/18 hover:bg-white/[0.07] disabled:cursor-not-allowed disabled:opacity-40'
+
+const iconBtnHeader =
+  'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-[#121821]/90 text-slate-200 shadow-sm transition-colors hover:border-white/18 hover:bg-white/[0.07] disabled:cursor-not-allowed disabled:opacity-40'
+
+/**
+ * Solo lectura TTS del coach (y guardar atajo si el flujo dejó algo pendiente).
+ * Sin micrófono ni toggle de aprendizaje en UI: aprendizaje queda activo por defecto en el hook.
+ */
+export function VoiceControlPanel({ voiceCoach, density = 'default' }: VoiceControlPanelProps) {
   if (voiceCoach.hidden) return null
+
+  const iconBtn = density === 'header' ? iconBtnHeader : iconBtnDefault
+  const iconClass = density === 'header' ? 'h-3.5 w-3.5' : 'h-4 w-4'
 
   return (
     <div
-      className={`pointer-events-auto fixed z-[45] top-[max(5.5rem,calc(env(safe-area-inset-top)+5rem))] ${
-        coachToolsOpen ? 'right-3' : 'left-3'
-      }`}
+      className="flex flex-row items-center justify-center gap-1"
+      role="toolbar"
+      aria-label="Lectura en voz del coach"
     >
       <button
         type="button"
-        onClick={onToggleTools}
-        className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/12 bg-[#121821]/95 text-teal-200 shadow-lg hover:bg-white/10"
-        aria-expanded={coachToolsOpen}
-        aria-label="Herramientas de voz y aprendizaje del coach"
-        title="Voz y aprendizaje"
+        onClick={() => voiceCoach.setCoachVoiceRead(!voiceCoach.coachVoiceRead)}
+        className={cn(
+          iconBtn,
+          voiceCoach.coachVoiceRead
+            ? 'border-sky-400/45 bg-sky-500/15 text-sky-100'
+            : 'text-slate-400',
+        )}
+        aria-pressed={voiceCoach.coachVoiceRead}
+        aria-label={voiceCoach.voice.coachVoiceReadHint}
+        title={voiceCoach.voice.coachVoiceReadHint}
       >
-        <Hand className="h-5 w-5" aria-hidden />
+        <Volume2 className={iconClass} aria-hidden />
       </button>
-      {coachToolsOpen ? (
-        <div className={`absolute top-[calc(100%+0.5rem)] ${coachToolsOpen ? 'right-0' : 'left-0'}`}>
-          <VoiceControlToolsPanel voiceCoach={voiceCoach} />
-        </div>
-      ) : null}
-    </div>
-  )
-}
 
-function VoiceControlToolsPanel({ voiceCoach }: { voiceCoach: any }) {
-  return (
-    <div className="flex w-56 flex-col gap-2.5 rounded-2xl border border-white/12 bg-[#121821]/97 p-3 shadow-[0_16px_40px_rgba(0,0,0,0.45)] backdrop-blur-md">
-      <button
-        type="button"
-        onClick={voiceCoach.toggleListen}
-        disabled={!voiceCoach.supported}
-        className="flex h-10 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-600/90 text-sm font-medium text-white shadow-md hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-40"
-        aria-pressed={voiceCoach.listening}
-      >
-        {voiceCoach.listening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-        {voiceCoach.listening ? voiceCoach.voice.stop : voiceCoach.voice.listen}
-      </button>
-      <label className="flex cursor-pointer items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-200">
-        <span className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-amber-200/90" aria-hidden />
-          {voiceCoach.voice.learnMode}
-        </span>
-        <input
-          type="checkbox"
-          checked={voiceCoach.learnMode}
-          onChange={(e) => voiceCoach.setLearnMode(e.target.checked)}
-          className="h-4 w-4 accent-amber-400"
-        />
-      </label>
       {voiceCoach.pendingLearn ? (
         <button
           type="button"
-          onClick={() => voiceCoach.savePendingShortcut()}
-          className="flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-slate-600 bg-slate-800/90 text-sm font-medium text-amber-200 hover:bg-slate-700"
+          onClick={() => void voiceCoach.savePendingShortcut()}
+          className={cn(iconBtn, 'border-amber-500/40 bg-amber-500/10 text-amber-100')}
           title={voiceCoach.voice.saveShortcut}
+          aria-label={voiceCoach.voice.saveShortcut}
         >
-          <BookmarkPlus className="h-4 w-4" />
-          {voiceCoach.voice.saveShortcut}
+          <BookmarkPlus className={iconClass} aria-hidden />
         </button>
       ) : null}
-      <label className="flex cursor-pointer items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-200">
-        <span className="flex items-center gap-2">
-          <Volume2 className="h-4 w-4 text-sky-200/90" aria-hidden />
-          {voiceCoach.voice.coachVoiceReadHint}
-        </span>
-        <input
-          type="checkbox"
-          checked={voiceCoach.coachVoiceRead}
-          onChange={(e) => voiceCoach.setCoachVoiceRead(e.target.checked)}
-          className="h-4 w-4 accent-sky-400"
-        />
-      </label>
     </div>
   )
 }

@@ -22,7 +22,14 @@ import {
   ArrowLeft,
 } from 'lucide-react'
 import { BrandSpinner } from '@/components/ui/BrandLogoLoader'
+import {
+  DashboardAppTopBar,
+  DashboardAppTopBarHeading,
+  DASHBOARD_APP_TOP_BAR_ICON_BUTTON_CLASS,
+  DashboardCoachHeaderSlot,
+} from '@/app/dashboard/components/DashboardAppTopBar'
 import { tryPersistRouteIconFromLocalAi } from '@/lib/refineRouteIconWithLocalAi'
+import { cn } from '@/lib/utils'
 
 // Verificar si es dispositivo móvil
 function isMobileDevice(): boolean {
@@ -293,24 +300,27 @@ export default function MobileRouteCreatePage() {
     return (
       <div className="min-h-screen bg-gdh-page text-slate-100">
         {/* Header */}
-        <header className="sticky top-0 z-50 border-b border-white/10 bg-[#121821]/95 backdrop-blur-md">
-          <div className="px-4 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => router.back()}
-                className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
-              >
-                <ArrowLeft size={20} />
-              </button>
-              <div>
-                <h1 className="text-lg font-bold text-white">Crear Ruta (Móvil)</h1>
-                <p className="text-xs text-gray-400">
-                  {hasTrackData ? 'Completa la información' : 'Graba tu ruta con GPS'}
-                </p>
-              </div>
-            </div>
-          </div>
-        </header>
+        <DashboardAppTopBar
+          leading={
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className={cn(DASHBOARD_APP_TOP_BAR_ICON_BUTTON_CLASS)}
+              aria-label="Volver"
+            >
+              <ArrowLeft size={20} aria-hidden />
+            </button>
+          }
+          center={
+            <DashboardAppTopBarHeading
+              title="Crear Ruta (Móvil)"
+              subtitle={
+                hasTrackData ? 'Completa la información' : 'Graba tu ruta con GPS'
+              }
+            />
+          }
+          trailing={<DashboardCoachHeaderSlot />}
+        />
 
         <main className="p-4 max-w-lg mx-auto space-y-4">
           {/* Errores */}

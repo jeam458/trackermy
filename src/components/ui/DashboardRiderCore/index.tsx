@@ -4,8 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { usePetVisibility } from '@/hooks/usePetVisibility'
-import { VoiceControlPanel } from '@/components/ui/VoiceControlPanel'
+import { VoiceControlPanel, COACH_DOCK_CLUSTER_CLASS, COACH_HEADER_CLUSTER_CLASS } from '@/components/ui/VoiceControlPanel'
 import { RouteViewCoachCluster } from '@/components/ui/RouteViewCoachCluster'
+import { CoachNotification } from '@/components/ui/CoachNotification'
 import { SidebarPetContent } from '@/components/ui/SidebarPetContent'
 import { RecordDockCoach } from '@/components/ui/RecordDockCoach'
 import type { PetAiMindState } from '@/components/pet/GuardDhPetAtlas'
@@ -33,6 +34,7 @@ import {
   mapReactionMoodToToastType,
 } from '@/lib/guide-ai/guideDashboardReactiveTurn'
 import { generateGuideReactionWithLightLlm, warmupGuideLlmEngine } from '@/lib/guide-ai/lightweightGuideLlm'
+import { buildGuideInteractionSessionHint } from '@/lib/guide-ai/guideSessionHint'
 import type { GuideContext, GuideGpsHint, GuideUiEvent } from '@/lib/guide-ai/types'
 import { GDH_VOICE_NAVIGATE_EVENT } from '@/lib/voice/voiceCoachEvents'
 import { cancelGuideCoachSpeech, speakGuideCoachMessage } from '@/lib/voice/guideCoachSpeech'
@@ -55,8 +57,9 @@ import {
   GUIDE_MAP_CANVAS_COACH_THROTTLE_MS,
 } from '@/lib/affective/config/guideUiTiming'
 import type { GuidePetMood } from '@/lib/pet/guidePetBridge'
-import { SIDEBAR_PET_SLOT_ID, MIN_GUIDE_THINKING_MS, type RiderMood, type RiderSignal } from './types'
+import { SIDEBAR_PET_SLOT_ID, MIN_GUIDE_THINKING_MS, type RiderMood, type RiderSignal, DASHBOARD_COACH_HEADER_SLOT_ID } from './types'
 import { buildAffectiveAugmentForLlm } from './helpers'
+import { isDashboardCoachHeaderSlotRoute } from '@/lib/dashboard/discoverCoachPaths'
 import { useGuideReplaySignals } from './useGuideReplaySignals'
 
 export function DashboardRiderCore() {
@@ -85,8 +88,13 @@ export function DashboardRiderCore() {
   const voiceCoach = useDashboardVoiceCoach()
   const { openSidebar, open: sidebarOpen } = useDashboardSidebar()
   const [sidebarPetSlot, setSidebarPetSlot] = useState<HTMLElement | null>(null)
-  const [coachToolsOpen, setCoachToolsOpen] = useState(false)
-  const coachToolsWrapRef = useRef<HTMLDivElement>(null)
+  const wantsHeaderCoach = useMemo(() => isDashboardCoachHeaderSlotRoute(pathname), [pathname])
+  const [headerCoachSlotEl, setHeaderCoachSlotEl] = useState<HTMLElement | null>(null)
+  const coachSearchKey = searchParams?.toString() ?? ''
+  const coachHeaderNavKey = useMemo(
+    () => `${pathname ?? ''}?${coachSearchKey}`,
+    [pathname, coachSearchKey],
+  )
 
   useEffect(() => {
     if (!sidebarOpen) {
@@ -112,25 +120,60 @@ export function DashboardRiderCore() {
   }, [sidebarOpen])
 
   useEffect(() => {
-    if (!coachToolsOpen) return
-    const onDown = (e: MouseEvent) => {
-      const el = coachToolsWrapRef.current
-      if (el && !el.contains(e.target as Node)) setCoachToolsOpen(false)
+    if (!wantsHeaderCoach || sidebarOpen || voiceCoach.hidden) {
+      setHeaderCoachSlotEl(null)
+      return
     }
-    document.addEventListener('mousedown', onDown)
-    return () => document.removeEventListener('mousedown', onDown)
-  }, [coachToolsOpen])
 
-  useEffect(() => {
-    setCoachToolsOpen(false)
-  }, [pathname])
+    let cancelled = false
 
-   const petMood = useGuidePetStore((s) => s.petMood)
+    const tryAttach = (): boolean => {
+      if (cancelled) return true
+      const el = document.getElementById(DASHBOARD_COACH_HEADER_SLOT_ID)
+      if (el?.isConnected) {
+        setHeaderCoachSlotEl(el)
+        return true
+      }
+      return false
+    }
+
+    if (tryAttach()) {
+      return () => {
+        cancelled = true
+        setHeaderCoachSlotEl(null)
+      }
+    }
+
+    const obs = new MutationObserver(() => {
+      if (tryAttach()) obs.disconnect()
+    })
+    obs.observe(document.documentElement, { childList: true, subtree: true })
+
+    let attempts = 0
+    const rafLoop = () => {
+      if (cancelled) return
+      if (tryAttach()) {
+        obs.disconnect()
+        return
+      }
+      attempts += 1
+      if (attempts < 64) requestAnimationFrame(rafLoop)
+    }
+    requestAnimationFrame(() => requestAnimationFrame(rafLoop))
+
+    return () => {
+      cancelled = true
+      obs.disconnect()
+      setHeaderCoachSlotEl(null)
+    }
+  }, [wantsHeaderCoach, sidebarOpen, voiceCoach.hidden, coachHeaderNavKey])
+
+  const petMood = useGuidePetStore((s) => s.petMood)
    /** Snapshot de pantalla para turnos extra sin nuevo getContext / MCP. */
    const pageGuideContextRef = useRef<GuideContext | null>(null)
    
    // Pet visibility logic
-   const { visible: petVisible, position: petPosition } = usePetVisibility()
+   const { visible: petVisible } = usePetVisibility()
 
   const runLlmReaction = useCallback(async <T,>(fn: () => Promise<T>): Promise<T> => {
     setGuideLlmThinking(true)
@@ -199,6 +242,7 @@ export function DashboardRiderCore() {
   const lastNetworkLlmNoticeRef = useRef(0)
   const lastNetworkNoAuthNoticeRef = useRef(0)
   const followupTimersRef = useRef<number[]>([])
+  const viewEnteredAtRef = useRef<number>(Date.now())
   const currentViewKeyRef = useRef<string>('')
   const spokenTitlesRef = useRef<string[]>([])
   const lastSpokenAtRef = useRef<number>(0)
@@ -238,6 +282,7 @@ export function DashboardRiderCore() {
     affectiveWorldRef,
     lastSpokenAtRef,
     spokenTitlesRef,
+    viewEnteredAtRef,
   })
 
   const clearFollowupTimers = () => {
@@ -253,6 +298,7 @@ export function DashboardRiderCore() {
     const t = window.setTimeout(() => setIsLoadingPulse(false), 820)
     clearFollowupTimers()
     spokenTitlesRef.current = []
+    viewEnteredAtRef.current = Date.now()
     affectiveWorldRef.current.reset()
     didPulseGeoFixRef.current = false
     lastMapCanvasCoachAtRef.current = 0
@@ -462,6 +508,11 @@ export function DashboardRiderCore() {
             label,
             executeMcpTools: false,
             affectiveAugment: buildAffectiveAugmentForLlm(affectiveWorldRef.current, ctx),
+            sessionHint: buildGuideInteractionSessionHint({
+              viewEnteredAtMs: viewEnteredAtRef.current,
+              recentCoachTitlesLower: spokenTitlesRef.current,
+              lastTriggerType: 'data-refresh',
+            }),
           })
         )
         if (cancelled) return
@@ -584,6 +635,11 @@ export function DashboardRiderCore() {
             label,
             executeMcpTools: false,
             affectiveAugment: buildAffectiveAugmentForLlm(affectiveWorldRef.current, ctx),
+            sessionHint: buildGuideInteractionSessionHint({
+              viewEnteredAtMs: viewEnteredAtRef.current,
+              recentCoachTitlesLower: spokenTitlesRef.current,
+              lastTriggerType: 'data-refresh',
+            }),
           })
         )
         if (cancelled) return
@@ -693,6 +749,11 @@ export function DashboardRiderCore() {
                 ? [...sessionReplaySignalsRef.current]
                 : undefined,
             affectiveAugment: buildAffectiveAugmentForLlm(affectiveWorldRef.current, ctx),
+            sessionHint: buildGuideInteractionSessionHint({
+              viewEnteredAtMs: viewEnteredAtRef.current,
+              recentCoachTitlesLower: spokenTitlesRef.current,
+              lastTriggerType: 'navigation',
+            }),
           })
         )
         if (cancelled) return
@@ -781,6 +842,11 @@ export function DashboardRiderCore() {
                           ? [...sessionReplaySignalsRef.current]
                           : undefined,
                       affectiveAugment: buildAffectiveAugmentForLlm(affectiveWorldRef.current, snap),
+                      sessionHint: buildGuideInteractionSessionHint({
+                        viewEnteredAtMs: viewEnteredAtRef.current,
+                        recentCoachTitlesLower: spokenTitlesRef.current,
+                        lastTriggerType: 'data-refresh',
+                      }),
                     })
                   )
                   const key = nextReaction.title.trim().toLowerCase()
@@ -909,7 +975,7 @@ export function DashboardRiderCore() {
         try {
           const clickKey = `${pathname}|${clickLabel}`
           const last = lastClickReactionRef.current
-          if (last && last.key === clickKey && Date.now() - last.at < 4000) return
+          if (last && last.key === clickKey && Date.now() - last.at < 6500) return
           lastClickReactionRef.current = { key: clickKey, at: Date.now() }
 
           const snap = pageGuideContextRef.current
@@ -946,6 +1012,11 @@ export function DashboardRiderCore() {
                   ? [...sessionReplaySignalsRef.current]
                   : undefined,
               affectiveAugment: buildAffectiveAugmentForLlm(affectiveWorldRef.current, ctx),
+              sessionHint: buildGuideInteractionSessionHint({
+                viewEnteredAtMs: viewEnteredAtRef.current,
+                recentCoachTitlesLower: spokenTitlesRef.current,
+                lastTriggerType: 'click',
+              }),
             })
           )
           setExternalEvent({
@@ -1037,6 +1108,11 @@ export function DashboardRiderCore() {
               event: guideEvent,
               executeMcpTools: false,
               affectiveAugment: buildAffectiveAugmentForLlm(affectiveWorldRef.current, ctx),
+              sessionHint: buildGuideInteractionSessionHint({
+                viewEnteredAtMs: viewEnteredAtRef.current,
+                recentCoachTitlesLower: spokenTitlesRef.current,
+                lastTriggerType: 'click',
+              }),
             })
           )
           if (cancelled) return
@@ -1130,24 +1206,19 @@ export function DashboardRiderCore() {
   const recordBottomDock = pathname.includes('/dashboard/routes/record')
   /** Ficha de ruta: dock inferior izquierdo para no tapar título, edición ni mapa. */
   const routeViewCoachDock = pathname.includes('/dashboard/routes/view')
+  /** Resto del dashboard: dock inferior (no compite con cabeceras sticky ni con el FAB del nav). */
+  const floatingMainCoachDock = !recordBottomDock && !routeViewCoachDock
 
-  const anchor = useMemo(() => {
-    if (recordBottomDock) return 'left'
-    if (pathname === '/dashboard') return 'left'
-    if (pathname.includes('/dashboard/routes/view')) return 'left'
-    return 'left'
-   }, [pathname, recordBottomDock])
+  /** Con ancla inferior la burbuja abre hacia arriba. */
+  const glanceDir: 'above' | 'below' =
+    recordBottomDock || routeViewCoachDock || floatingMainCoachDock ? 'above' : 'below'
 
-   const glanceDir =
-     recordBottomDock || routeViewCoachDock ? ('above' as const) : ('below' as const)
-
-   const outerLayoutClass = recordBottomDock
-     ? 'pointer-events-none fixed z-[26] bottom-[max(7.25rem,calc(env(safe-area-inset-bottom)+6.25rem))] left-3 sm:left-4'
-     : routeViewCoachDock
-       ? 'pointer-events-none fixed z-[26] bottom-[max(10.75rem,calc(env(safe-area-inset-bottom)+9.5rem))] left-3 sm:left-4'
-       : `pointer-events-none fixed z-[26] top-2 mt-[max(0.1rem,env(safe-area-inset-top))] ${
-           anchor === 'left' ? 'left-3' : 'right-3'
-          }`
+  const recordCoachShellClass =
+    'pointer-events-none fixed z-[44] bottom-[max(7.25rem,calc(env(safe-area-inset-bottom)+6.25rem))] left-3 sm:left-4'
+  const routeViewCoachShellClass =
+    'pointer-events-none fixed z-[44] bottom-[max(10.75rem,calc(env(safe-area-inset-bottom)+9.5rem))] left-3 sm:left-4'
+  const floatingCoachShellClass =
+    'pointer-events-none fixed z-[44] left-3 bottom-[max(6.5rem,calc(env(safe-area-inset-bottom)+5.25rem))] sm:left-4'
 
    const hideCoachBubbleForVoice =
       guideTtsEnabled &&
@@ -1157,13 +1228,15 @@ export function DashboardRiderCore() {
      !isLoadingPulse
      const showRouteViewMenu = pathname.includes('/dashboard/routes/view')
 
+  const coachPetVisible = petVisible && !sidebarOpen
+
    const commonCoachNotificationProps = {
      mood,
      externalEventSource: externalEvent?.source,
      externalEventToastType: externalEvent?.toastType,
      guideLlmThinking,
      petMood: (petMood ?? 'neutral') as GuidePetMood,
-     petVisible,
+     petVisible: coachPetVisible,
      petEmotion,
      petAiMindState,
      toastGlanceKey,
@@ -1177,49 +1250,84 @@ export function DashboardRiderCore() {
 
    if (recordBottomDock) {
      return (
-       <div className={outerLayoutClass}>
+       <div className={recordCoachShellClass}>
          <RecordDockCoach {...commonCoachNotificationProps} />
        </div>
      )
    }
 
-   if (routeViewCoachDock) {
-     return (
-       <div className={outerLayoutClass}>
-         <RouteViewCoachCluster
-           {...commonCoachNotificationProps}
-           showRouteViewMenu={showRouteViewMenu}
-           sidebarOpen={sidebarOpen}
-           openSidebar={openSidebar}
-           voiceCoach={voiceCoach}
-           setCoachToolsOpen={setCoachToolsOpen}
-           coachToolsOpen={coachToolsOpen}
-         />
-       </div>
-     )
-   }
+  const coachInHeader =
+    wantsHeaderCoach && !!headerCoachSlotEl && !voiceCoach.hidden && !sidebarOpen
 
-  const sidebarPetOrbPx = 68
-  const sidebarPetFaceSize = 56
+  const routeViewBottomDockEl =
+    routeViewCoachDock && !coachInHeader && !voiceCoach.hidden && !sidebarOpen ? (
+      <div className={routeViewCoachShellClass}>
+        <RouteViewCoachCluster
+          {...commonCoachNotificationProps}
+          layout="docked"
+          showRouteViewMenu={showRouteViewMenu}
+          sidebarOpen={sidebarOpen}
+          openSidebar={openSidebar}
+          voiceCoach={voiceCoach}
+        />
+      </div>
+    ) : null
 
+  const coachHandFloating =
+    !coachInHeader && !recordBottomDock && !routeViewCoachDock && !voiceCoach.hidden && !sidebarOpen ? (
+      <div className={floatingCoachShellClass}>
+        <div className={`${COACH_DOCK_CLUSTER_CLASS} pointer-events-auto`}>
+          <CoachNotification
+            {...commonCoachNotificationProps}
+            glanceDir={glanceDir}
+            isSidebar={false}
+          />
+          <VoiceControlPanel voiceCoach={voiceCoach} />
+        </div>
+      </div>
+    ) : null
 
-
-  const coachHandFloating = !voiceCoach.hidden ? (
-    <VoiceControlPanel
-      voiceCoach={voiceCoach}
-      onToggleTools={() => setCoachToolsOpen((o) => !o)}
-      coachToolsOpen={coachToolsOpen}
-    />
-  ) : null
+  const headerCoachPortal =
+    coachInHeader && headerCoachSlotEl
+      ? createPortal(
+          routeViewCoachDock ? (
+            <RouteViewCoachCluster
+              {...commonCoachNotificationProps}
+              layout="header"
+              showRouteViewMenu={showRouteViewMenu}
+              sidebarOpen={sidebarOpen}
+              openSidebar={openSidebar}
+              voiceCoach={voiceCoach}
+            />
+          ) : (
+            <div className={`${COACH_HEADER_CLUSTER_CLASS} pointer-events-auto`}>
+              <CoachNotification
+                {...commonCoachNotificationProps}
+                glanceDir="below"
+                density="header"
+                bubbleLayout="underOrb"
+                isSidebar={false}
+              />
+              <VoiceControlPanel voiceCoach={voiceCoach} density="header" />
+            </div>
+          ),
+          headerCoachSlotEl,
+        )
+      : null
 
    const petPortal =
      sidebarOpen && sidebarPetSlot
-       ? createPortal(<SidebarPetContent {...commonCoachNotificationProps} />, sidebarPetSlot)
+       ? createPortal(
+           <SidebarPetContent {...commonCoachNotificationProps} petVisible={petVisible} />,
+           sidebarPetSlot,
+         )
        : null
 
   return (
     <>
       {petPortal}
+      {headerCoachPortal}
+      {routeViewBottomDockEl}
       {coachHandFloating}
     </>
   )

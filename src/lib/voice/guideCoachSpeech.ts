@@ -2,6 +2,32 @@
 
 let utteranceSeq = 0
 
+const speechEndWaiters: Array<() => void> = []
+
+function flushSpeechEndWaiters(): void {
+  const q = speechEndWaiters.splice(0)
+  for (const fn of q) fn()
+}
+
+/** True si hay locución del coach en curso (o encolada en el motor). */
+export function isGuideCoachSpeechBusy(): boolean {
+  if (typeof window === 'undefined' || !window.speechSynthesis) return false
+  return window.speechSynthesis.speaking || window.speechSynthesis.pending
+}
+
+/**
+ * Resuelve cuando no hay locución activa. Si se llama a `cancelGuideCoachSpeech`, también resuelve
+ * (interrupción cuenta como fin para no bloquear colas de trabajo).
+ */
+export function waitForGuideCoachSpeechEnd(): Promise<void> {
+  if (typeof window === 'undefined') return Promise.resolve()
+  const s = window.speechSynthesis
+  if (!s?.speaking && !s?.pending) return Promise.resolve()
+  return new Promise((resolve) => {
+    speechEndWaiters.push(resolve)
+  })
+}
+
 export function cancelGuideCoachSpeech(): void {
   if (typeof window === 'undefined' || !window.speechSynthesis) return
   try {
@@ -9,6 +35,7 @@ export function cancelGuideCoachSpeech(): void {
   } catch {
     /* noop */
   }
+  flushSpeechEndWaiters()
 }
 
 function pickVoice(lang: string): SpeechSynthesisVoice | null {
@@ -33,10 +60,10 @@ export function speakGuideCoachMessage(opts: {
 }): void {
   if (typeof window === 'undefined' || !window.speechSynthesis) return
 
-  const title = opts.title.replace(/\s+/g, ' ').trim().slice(0, 320)
+  const title = opts.title.replace(/\s+/g, ' ').trim().slice(0, 200)
   if (!title) return
 
-  const sub = (opts.subtitle ?? '').replace(/\s+/g, ' ').trim().slice(0, 320)
+  const sub = (opts.subtitle ?? '').replace(/\s+/g, ' ').trim().slice(0, 900)
   const text = sub && sub !== title ? `${title}. ${sub}` : title
 
   cancelGuideCoachSpeech()
@@ -53,6 +80,12 @@ export function speakGuideCoachMessage(opts: {
     u.volume = 1
     const voice = pickVoice(lang)
     if (voice) u.voice = voice
+    const done = () => {
+      if (mySeq !== utteranceSeq) return
+      flushSpeechEndWaiters()
+    }
+    u.onend = done
+    u.onerror = done
     window.speechSynthesis.speak(u)
   }
 

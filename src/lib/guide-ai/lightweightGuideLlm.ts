@@ -20,11 +20,21 @@ import {
 import { buildNavigationWarmup } from '@/lib/guide-ai/guideNavigationWarmup'
 import { coachVosFirstName } from '@/lib/guide-ai/riderCoachDisplayName'
 import { buildReplayCoachSnapshot } from '@/lib/guide-ai/guideReplayCoachSnapshot'
-import type { GuideContext, GuideReaction, GuideSessionReplaySignal, GuideUiEvent } from '@/lib/guide-ai/types'
+import type {
+  GuideContext,
+  GuideInteractionSessionHint,
+  GuideReaction,
+  GuideSessionReplaySignal,
+  GuideUiEvent,
+} from '@/lib/guide-ai/types'
 import { maybeSubmitPetEmotionProposalFromLlm } from '@/lib/pet/experimentalPetEmotionFromLlm'
 
 const INIT_TIMEOUT_MS = 22_000
 const GEN_TIMEOUT_MS = 4_200
+
+/** Replay: subtítulos con narración técnica (pendiente, caja, frenos); la UI permite scroll en la burbuja. */
+const REPLAY_COACH_SUBTITLE_CAP = 230
+const DEFAULT_SUBTITLE_CAP = 90
 
 let cachedEngine: { modelId: string; engine: any } | null = null
 
@@ -225,7 +235,6 @@ function buildReplayCoachFallback(
   if (!p.includes('attempt-replay')) return null
   const last = lastReplayTelemetrySample(sessionReplay)
   const snap = buildReplayCoachSnapshot(sessionReplay, ctx)
-  const routeName = (ctx.currentRoute?.name || ctx.attemptSummary?.routeName || 'La bajada').trim().slice(0, 28)
 
   const fmtT = (sec: number) => {
     const m = Math.floor(sec / 60)
@@ -331,11 +340,33 @@ function buildReplayCoachFallback(
 
   if (!last && !a) return null
 
-  const nick = coachVosFirstName(ctx.riderDisplayName)
-  const titleBase = routeName.length ? `${routeName} · coach` : 'Coach replay'
-  const title = (nick ? `${nick} · ${titleBase}` : titleBase).slice(0, 48)
-  const subtitle = [tip, metrics].filter(Boolean).join(' — ').slice(0, 90) || tip.slice(0, 90)
+  const title = replayCoachMomentTitle(snap, typeof v === 'number' && Number.isFinite(v) ? v : null).slice(0, 56)
+  const body = [tip.trim(), metrics].filter(Boolean).join(' ')
+  const subtitle = body.slice(0, REPLAY_COACH_SUBTITLE_CAP) || tip.slice(0, REPLAY_COACH_SUBTITLE_CAP)
   return { mood: 'guide', title, subtitle, duration: 6400 }
+}
+
+/** Título corto tipo cabina de radio: terreno + intención (no nombre de ruta). */
+function replayCoachMomentTitle(
+  snap: ReturnType<typeof buildReplayCoachSnapshot>,
+  speedKmh: number | null
+): string {
+  if (snap.uphill_pedaling_likely) return 'Subida · cadencia y caja'
+  if (snap.gps_vertical_mode === 'plano' || snap.vertical_trend === 'plano') {
+    if (speedKmh != null && speedKmh >= 22) return 'Plano con ritmo · mirá lejos'
+    return 'Zona llanada · podés rodar más'
+  }
+  if (snap.gps_vertical_mode === 'subida' || snap.vertical_trend === 'subiendo') {
+    return snap.gps_grade_pct_est != null
+      ? `Rampa ~${snap.gps_grade_pct_est}% · caja suave`
+      : 'Subiendo · suavizá carga'
+  }
+  if (snap.gps_vertical_mode === 'bajada' || snap.vertical_trend === 'bajando') {
+    if (speedKmh != null && speedKmh >= 42) return 'Bajada con ritmo · un solo frenaje'
+    if (speedKmh != null && speedKmh < 12) return 'Muy lento · soltá frenos si hay grip'
+    return 'Bajada · peso en pies, manos sueltas'
+  }
+  return 'Seguí la línea'
 }
 
 function fallbackReaction(
@@ -516,8 +547,10 @@ export async function generateGuideReactionWithLightLlm(input: {
   sessionReplaySignals?: GuideSessionReplaySignal[] | null
   /** Estado unificado + candidatos de intención emocional (`buildAffectivePromptAugment`). */
   affectiveAugment?: Record<string, unknown> | null
+  /** Memoria breve de la vista (anti-repetición, ritmo). */
+  sessionHint?: GuideInteractionSessionHint | null
 }): Promise<GuideReaction> {
-  const { context, event, executeMcpTools = true, sessionReplaySignals, affectiveAugment } = input
+  const { context, event, executeMcpTools = true, sessionReplaySignals, affectiveAugment, sessionHint } = input
   if (!canRunLocalLlm()) {
     return finalizeGuideReaction(
       fallbackReaction(context, event, sessionReplaySignals),
@@ -536,6 +569,7 @@ export async function generateGuideReactionWithLightLlm(input: {
       executeMcpTools,
       sessionReplaySignals: sessionReplaySignals ?? null,
       affectiveAugment: affectiveAugment ?? null,
+      sessionHint: sessionHint ?? null,
     })
 
     const res = (await withTimeout(
@@ -563,9 +597,16 @@ export async function generateGuideReactionWithLightLlm(input: {
         /* experimental: no bloquear guía */
       })
     }
+    const p = context.pathname.toLowerCase()
+    const replayCoachTurn =
+      p.includes('attempt-replay') &&
+      (event.label === 'interactive:replay_coach_tick' || String(event.label || '').startsWith('replay:'))
+    const subtitleCap = replayCoachTurn ? REPLAY_COACH_SUBTITLE_CAP : DEFAULT_SUBTITLE_CAP
+    const titleCap = replayCoachTurn ? 56 : 48
+
     const mood = parsed.mood && moods.includes(parsed.mood) ? parsed.mood : fb.mood
-    let title = String(parsed.title || fb.title).slice(0, 48)
-    let subtitle = String(parsed.subtitle || fb.subtitle).slice(0, 90)
+    let title = String(parsed.title || fb.title).slice(0, titleCap)
+    let subtitle = String(parsed.subtitle || fb.subtitle).slice(0, subtitleCap)
     const duration =
       Number(parsed.duration) > 0 ? Math.min(9000, Math.max(2500, Math.floor(Number(parsed.duration)))) : fb.duration
 
@@ -576,7 +617,7 @@ export async function generateGuideReactionWithLightLlm(input: {
       const obs = await executeGuideMcpTools(toolRequests)
       const extra = summarizeObservationsForSubtitle(obs)
       if (extra) {
-        subtitle = `${subtitle} · ${extra}`.slice(0, 90)
+        subtitle = `${subtitle} · ${extra}`.slice(0, subtitleCap)
       }
       const reaction: GuideReaction = {
         mood: inferMoodFromData(mood, subtitle),

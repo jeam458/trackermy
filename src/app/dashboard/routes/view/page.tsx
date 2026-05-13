@@ -20,13 +20,20 @@ import {
   Trash2,
   Loader2,
   Pencil,
+  ArrowLeft,
 } from 'lucide-react'
 import { BrandLogoLoader } from '@/components/ui/BrandLogoLoader'
+import {
+  DashboardAppTopBar,
+  DashboardAppTopBarHeading,
+  DASHBOARD_APP_TOP_BAR_ICON_BUTTON_CLASS,
+  DashboardCoachHeaderSlot,
+} from '@/app/dashboard/components/DashboardAppTopBar'
+import { cn } from '@/lib/utils'
 import Link from 'next/link'
 import { routePreviewIsVideo } from '@/lib/routePreviewMedia'
 import { RouteMyRankPanel } from '@/components/routes/RouteMyRankPanel'
 import { RouteOverviewShowcaseSection } from '@/components/routes/RouteOverviewShowcaseSection'
-import { RouteViewStartRideDock } from '@/components/routes/RouteViewStartRideDock'
 import {
   displaySpeedTriple,
   formatAggregatedMaxRecordedSpeedMps,
@@ -432,32 +439,48 @@ function RouteDashboardContent() {
 
   return (
     <div className="min-h-screen bg-gdh-page text-slate-100">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-[#121821]/95 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-4 pb-4 pt-[max(1rem,calc(env(safe-area-inset-top)+0.5rem))]">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <button
-              type="button"
-              onClick={goBack}
-              className="text-gray-400 hover:text-white flex items-center gap-2"
-            >
-              ← Volver
-            </button>
-            {canModerate && (
+      <DashboardAppTopBar
+        contentMaxWidth="7xl"
+        leading={
+          <button
+            type="button"
+            onClick={goBack}
+            className={cn(DASHBOARD_APP_TOP_BAR_ICON_BUTTON_CLASS)}
+            aria-label="Volver"
+          >
+            <ArrowLeft size={22} aria-hidden />
+          </button>
+        }
+        center={
+          <DashboardAppTopBarHeading
+            titleVariant="compact"
+            title={route.name}
+            subtitle={
+              <span className="line-clamp-2 text-slate-400">
+                {route.description?.trim() ? route.description : 'Sin descripción'}
+              </span>
+            }
+          />
+        }
+        trailing={
+          <div className="flex min-w-0 max-w-[min(100%,18rem)] items-center justify-end gap-1.5 sm:max-w-none">
+            <DashboardCoachHeaderSlot />
+            {canModerate ? (
               <button
                 type="button"
                 onClick={() => setEditPanelOpen((open) => !open)}
-                className="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm font-semibold text-slate-100 hover:bg-white/10"
+                aria-label={editPanelOpen ? 'Cerrar edición de ruta' : 'Editar ruta'}
+                className={cn(
+                  DASHBOARD_APP_TOP_BAR_ICON_BUTTON_CLASS,
+                  'shrink-0 border border-white/15 bg-white/5 hover:bg-white/10',
+                )}
               >
-                <Pencil size={14} aria-hidden />
-                {editPanelOpen ? 'Cerrar edición' : 'Editar'}
+                <Pencil size={18} aria-hidden className="text-slate-200" />
               </button>
-            )}
+            ) : null}
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">{route.name}</h1>
-          <p className="text-gray-400">{route.description || 'Sin descripción'}</p>
-        </div>
-      </header>
+        }
+      />
       {route.preview_media_url && (
         <div className="max-w-7xl mx-auto px-4 pt-4">
           <div className="relative w-full h-48 md:h-64 rounded-xl overflow-hidden border border-slate-800 bg-slate-900">
@@ -499,7 +522,7 @@ function RouteDashboardContent() {
         </div>
       )}
 
-      <main className="max-w-7xl mx-auto space-y-6 p-4 pb-32">
+      <main className="max-w-7xl mx-auto space-y-6 p-4 pb-24">
         {canModerate && editPanelOpen && (
           <section className="space-y-4 rounded-2xl border border-teal-500/25 bg-gdh-card p-4">
             <div>
@@ -682,13 +705,6 @@ function RouteDashboardContent() {
         </div>
       )}
 
-      <RouteViewStartRideDock
-        onStart={() =>
-          router.push(
-            `/dashboard/routes/record?routeId=${encodeURIComponent(route.id)}`
-          )
-        }
-      />
     </div>
   )
 }

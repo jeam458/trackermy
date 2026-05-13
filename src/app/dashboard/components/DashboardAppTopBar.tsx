@@ -3,13 +3,65 @@
 import type { ReactNode } from 'react'
 
 import { cn } from '@/lib/utils'
+import { DASHBOARD_COACH_HEADER_SLOT_ID } from '@/components/ui/DashboardRiderCore/types'
+
+/** Slot donde `DashboardRiderCore` renderiza el coach compacto (misma id en toda la app). */
+export function DashboardCoachHeaderSlot() {
+  return (
+    <div
+      id={DASHBOARD_COACH_HEADER_SLOT_ID}
+      className="flex min-w-0 shrink-0 items-center justify-end self-center"
+      aria-live="polite"
+    />
+  )
+}
 
 /** Shell sticky compartido entre pantallas del dashboard con cabecera propia (Descubrir, Mis rutas, etc.). */
 export const DASHBOARD_APP_TOP_BAR_SHELL_CLASS =
   'sticky top-0 z-40 border-b border-white/10 bg-[#121821]/95 backdrop-blur-md'
 
+/** Misma tipografía de título que Descubrir (cabecera centrada). */
+export const DASHBOARD_APP_TOP_BAR_TITLE_CLASS =
+  'text-[1.7rem] font-extrabold leading-none tracking-tight text-white'
+
+/** Título más pequeño cuando el centro comparte fila con coach / acciones (p. ej. ficha de ruta). */
+export const DASHBOARD_APP_TOP_BAR_TITLE_COMPACT_CLASS =
+  'line-clamp-2 text-[1.05rem] font-bold leading-snug tracking-tight text-white sm:text-[1.2rem]'
+
+/**
+ * Botón icono en cabecera (menú, buscar, cerrar, volver): padding y hover alineados con Descubrir.
+ */
+export const DASHBOARD_APP_TOP_BAR_ICON_BUTTON_CLASS =
+  'inline-flex items-center justify-center rounded-xl p-2.5 text-slate-400 transition-colors hover:bg-white/5 hover:text-white'
+
+export function DashboardAppTopBarHeading({
+  title,
+  subtitle,
+  titleVariant = 'default',
+}: {
+  title: ReactNode
+  subtitle?: ReactNode
+  /** `compact`: nombres largos en cabeceras con trailing ocupado (coach, iconos). */
+  titleVariant?: 'default' | 'compact'
+}) {
+  const titleClass =
+    titleVariant === 'compact'
+      ? DASHBOARD_APP_TOP_BAR_TITLE_COMPACT_CLASS
+      : DASHBOARD_APP_TOP_BAR_TITLE_CLASS
+
+  return (
+    <div className="min-w-0 px-1 text-center">
+      <h1 className={titleClass}>{title}</h1>
+      {subtitle != null && subtitle !== false ? (
+        <div className="mt-1 space-y-0.5 text-xs leading-snug text-slate-400 sm:text-sm">{subtitle}</div>
+      ) : null}
+    </div>
+  )
+}
+
 const maxWidthClass = {
   lg: 'max-w-lg',
+  '4xl': 'max-w-4xl',
   '7xl': 'max-w-7xl',
 } as const
 

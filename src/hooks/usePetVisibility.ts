@@ -1,47 +1,40 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { usePathname } from 'next/navigation'
+import { useDashboardSidebar } from '@/lib/dashboard/DashboardSidebarContext'
+import { isDashboardCoachHeaderSlotRoute } from '@/lib/dashboard/discoverCoachPaths'
 
 /**
- * Hook to determine pet visibility based on current context and user preferences
+ * Visibilidad y “modo” del pet coach según ruta y estado real del sidebar.
  */
 export function usePetVisibility() {
   const pathname = usePathname()
-  
-  // Check if we're in a replay view
+  const { open: sidebarOpen } = useDashboardSidebar()
+
   const isReplayView = pathname.includes('/dashboard/routes/attempt-replay')
-  
-  // Check if sidebar is open (pet moves to sidebar when open)
-  // We'll need to get this from context or state - for now we'll infer from pathname
-  const isSidebarOpen = pathname.includes('/dashboard') && !pathname.includes('/login')
-  
-  // Check if we're recording or viewing route (bottom dock positions)
-  const isRecordingOrViewing = 
-    pathname.includes('/dashboard/routes/record') || 
-    pathname.includes('/dashboard/routes/view')
-  
-  // Determine if pet should be visible based on context
+
+  const isRecordingRoute = pathname.includes('/dashboard/routes/record')
+  /** Incluye ficha de ruta (vista detalle) para consumidores que no distinguen grabación vs. detalle. */
+  const isRecordingOrViewing =
+    isRecordingRoute || pathname.includes('/dashboard/routes/view')
+
   const shouldBeVisible = useMemo(() => {
-    // Always hide during login
     if (pathname.includes('/login')) return false
-    
-    // Hide during replays to avoid distraction (especially video replays)
-    if (isReplayView) return false
-    
-    // Show in most other contexts
     return true
-  }, [pathname, isReplayView])
-  
-  // Determine optimal position based on context
+  }, [pathname])
+
+  const coachUsesHeaderSlot = isDashboardCoachHeaderSlotRoute(pathname)
+
   const position = useMemo(() => {
-    if (isSidebarOpen) return 'sidebar'
-    if (isRecordingOrViewing) return 'bottom-dock'
+    if (sidebarOpen) return 'sidebar'
+    if (isRecordingRoute) return 'bottom-dock'
+    if (coachUsesHeaderSlot) return 'header'
     return 'floating'
-  }, [isSidebarOpen, isRecordingOrViewing])
-  
+  }, [sidebarOpen, isRecordingRoute, coachUsesHeaderSlot])
+
   return {
     visible: shouldBeVisible,
     position,
     isReplayView,
-    isRecordingOrViewing
+    isRecordingOrViewing,
   }
 }

@@ -39,7 +39,7 @@ export function PetOrb({
   const glowRef = useRef<HTMLDivElement>(null)
   const orbRef = useRef<HTMLDivElement>(null)
   const iconRef = useRef<HTMLDivElement>(null)
-  const petSize = isSidebar ? 56 : 52
+  const petSize = isSidebar ? 56 : size <= 50 ? Math.max(34, Math.round(size * 0.78)) : 52
 
   // Animaciones de glow y orb
   useEffect(() => {
@@ -48,9 +48,9 @@ export function PetOrb({
     if (glowRef.current) {
       animations.push(
         animate(glowRef.current, {
-          opacity: [0.45, 0.9, 0.45],
-          scale: [0.94, 1.06, 0.94],
-          duration: 2100,
+          opacity: [0.35, 0.62, 0.35],
+          scale: [0.97, 1.03, 0.97],
+          duration: 3600,
           ease: 'inOutSine',
           loop: true,
         })
@@ -63,8 +63,8 @@ export function PetOrb({
       const triumphBob = mood === 'triumph' || toastFlavor === 'success'
       animations.push(
         animate(orbRef.current, {
-          y: triumphBob ? [0, -2, 0] : [0, -0.6, 0],
-          duration: triumphBob ? 820 : 1600,
+          y: triumphBob ? [0, -2, 0] : [0, -0.35, 0],
+          duration: triumphBob ? 920 : 2800,
           ease: 'inOutSine',
           loop: true,
         })
@@ -207,7 +207,7 @@ export function PetOrb({
            )}
           {petVisible && mood === 'loading' && (
             <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/35 rounded-full">
-              <BrandSpinner size={isSidebar ? 24 : 22} />
+              <BrandSpinner size={isSidebar ? 24 : size <= 50 ? 18 : 22} />
             </span>
           )}
         </div>

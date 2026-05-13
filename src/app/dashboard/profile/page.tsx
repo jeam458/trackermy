@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react'
 import dynamic from 'next/dynamic'
-import { Settings, Save, X } from 'lucide-react'
+import { Settings, Save, X, Menu } from 'lucide-react'
 import { createClient } from '@/core/infrastructure/supabase/client'
 import {
   ProfileRepository,
@@ -17,7 +17,15 @@ import { RiderStatsPanel } from '@/components/profile/RiderStatsPanel'
 import { createSquareMapIconPng, MAP_ICON_MAP_SIZE } from '@/lib/mapIconFromImage'
 import { PageLoadingShimmer } from '@/components/ui/PageLoadingShimmer'
 import { BrandSpinner } from '@/components/ui/BrandLogoLoader'
-import { DASHBOARD_APP_TOP_BAR_SHELL_CLASS } from '@/app/dashboard/components/DashboardAppTopBar'
+import { AnimeIconButton } from '@/components/ui/AnimeIconButton'
+import {
+  DashboardAppTopBar,
+  DashboardAppTopBarHeading,
+  DASHBOARD_APP_TOP_BAR_ICON_BUTTON_CLASS,
+  DashboardCoachHeaderSlot,
+} from '@/app/dashboard/components/DashboardAppTopBar'
+import { useDashboardSidebar } from '@/lib/dashboard/DashboardSidebarContext'
+import { cn } from '@/lib/utils'
 import { toast } from '@/lib/toast'
 import { getAuthUserOrNull } from '@/lib/authSession'
 import { resetGuideModelsAndBootstrap } from '@/lib/guide-ai/webLlmCacheAdmin'
@@ -46,6 +54,7 @@ function normalizeBikePhotoGallery(raw: unknown): string[] {
 
 export default function ProfilePage() {
   const { messages, setLocale, locale } = useLocale()
+  const { openSidebar } = useDashboardSidebar()
   const p = messages.profile
 
   const [isLoading, setIsLoading] = useState(true)
@@ -492,46 +501,28 @@ export default function ProfilePage() {
         onChange={handleBikeGalleryFiles}
       />
 
-      <header className={DASHBOARD_APP_TOP_BAR_SHELL_CLASS}>
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center gap-3">
-          <div className="min-w-0">
-            <p className="text-[10px] uppercase tracking-wider text-slate-500">{p.language.label}</p>
-            <p className="text-[11px] text-slate-500 mt-0.5 hidden sm:block">{p.language.hint}</p>
-            <div className="mt-2 inline-flex rounded-xl border border-white/10 bg-white/5 p-0.5">
-              <button
-                type="button"
-                onClick={() => void persistLang('es')}
-                aria-label={p.language.ariaEs}
-                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
-                  locale === 'es'
-                    ? 'bg-teal-500/25 text-teal-200 border border-teal-500/40'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                {p.language.optionEs}
-              </button>
-              <button
-                type="button"
-                onClick={() => void persistLang('en')}
-                aria-label={p.language.ariaEn}
-                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
-                  locale === 'en'
-                    ? 'bg-teal-500/25 text-teal-200 border border-teal-500/40'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                {p.language.optionEn}
-              </button>
-            </div>
-          </div>
-          <div className="flex gap-2 shrink-0">
+      <DashboardAppTopBar
+        contentMaxWidth="7xl"
+        leading={
+          <AnimeIconButton
+            label="Menú"
+            onClick={() => openSidebar()}
+            className={cn(DASHBOARD_APP_TOP_BAR_ICON_BUTTON_CLASS)}
+          >
+            <Menu size={22} aria-hidden />
+          </AnimeIconButton>
+        }
+        center={<DashboardAppTopBarHeading title={messages.nav.profile} />}
+        trailing={
+          <div className="flex min-w-0 shrink-0 items-center justify-end gap-2">
+            <DashboardCoachHeaderSlot />
             {isEditing ? (
               <>
                 <button
                   type="button"
                   onClick={handleCancel}
                   disabled={isSaving}
-                  className="inline-flex items-center justify-center rounded-lg border border-white/15 bg-white/5 p-2 text-slate-200 hover:bg-white/10 disabled:opacity-50"
+                  className="inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/5 p-2.5 text-slate-200 hover:bg-white/10 disabled:opacity-50"
                 >
                   <X size={20} />
                 </button>
@@ -539,7 +530,7 @@ export default function ProfilePage() {
                   type="button"
                   onClick={handleSave}
                   disabled={isSaving}
-                  className="inline-flex items-center justify-center rounded-lg border border-amber-400/40 bg-amber-500/90 p-2 text-[#1e2529] hover:bg-amber-400 disabled:opacity-50"
+                  className="inline-flex items-center justify-center rounded-xl border border-amber-400/40 bg-amber-500/90 p-2.5 text-[#1e2529] hover:bg-amber-400 disabled:opacity-50"
                 >
                   {isSaving ? <BrandSpinner size={20} /> : <Save size={20} />}
                 </button>
@@ -548,14 +539,50 @@ export default function ProfilePage() {
               <button
                 type="button"
                 onClick={() => setIsEditing(true)}
-                className="inline-flex items-center justify-center rounded-lg border border-white/15 bg-white/5 p-2 text-slate-200 hover:bg-white/10 transition-colors"
+                className={cn(
+                  DASHBOARD_APP_TOP_BAR_ICON_BUTTON_CLASS,
+                  'border border-white/15 bg-white/5 hover:bg-white/10',
+                )}
               >
-                <Settings size={20} className="text-slate-200" />
+                <Settings size={20} className="text-slate-200" aria-hidden />
               </button>
             )}
           </div>
+        }
+      >
+        <div className="flex flex-col gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">{p.language.label}</p>
+            <p className="mt-0.5 hidden text-[11px] text-slate-500 sm:block">{p.language.hint}</p>
+          </div>
+          <div className="inline-flex shrink-0 rounded-xl border border-white/10 bg-white/5 p-0.5">
+            <button
+              type="button"
+              onClick={() => void persistLang('es')}
+              aria-label={p.language.ariaEs}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                locale === 'es'
+                  ? 'border border-teal-500/40 bg-teal-500/25 text-teal-200'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              {p.language.optionEs}
+            </button>
+            <button
+              type="button"
+              onClick={() => void persistLang('en')}
+              aria-label={p.language.ariaEn}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                locale === 'en'
+                  ? 'border border-teal-500/40 bg-teal-500/25 text-teal-200'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              {p.language.optionEn}
+            </button>
+          </div>
         </div>
-      </header>
+      </DashboardAppTopBar>
 
       <div className="max-w-md mx-auto px-4 space-y-10 pb-28">
 

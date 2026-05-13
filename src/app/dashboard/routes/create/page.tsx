@@ -21,6 +21,13 @@ import {
   EyeOff,
 } from 'lucide-react'
 import { BrandSpinner } from '@/components/ui/BrandLogoLoader'
+import {
+  DashboardAppTopBar,
+  DashboardAppTopBarHeading,
+  DASHBOARD_APP_TOP_BAR_ICON_BUTTON_CLASS,
+  DashboardCoachHeaderSlot,
+} from '@/app/dashboard/components/DashboardAppTopBar'
+import { cn } from '@/lib/utils'
 
 // Badge de calidad del track
 function TrackQualityBadge({ quality }: { quality: string | null }) {
@@ -174,44 +181,50 @@ export default function CreateRoutePage() {
 
   return (
     <div className="min-h-screen bg-gdh-page text-slate-100">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-[#121821]/95 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.back()}
-              className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
-            >
-              <X size={20} />
-            </button>
-            <div>
-              <h1 className="text-xl font-bold text-white">Crear Nueva Ruta</h1>
-              <p className="text-sm text-gray-400">Dibuja tu ruta de downhill en el mapa</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {isDrawing && (
-              <>
+      <DashboardAppTopBar
+        contentMaxWidth="7xl"
+        leading={
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className={cn(DASHBOARD_APP_TOP_BAR_ICON_BUTTON_CLASS)}
+            aria-label="Cerrar"
+          >
+            <X size={20} aria-hidden />
+          </button>
+        }
+        center={
+          <DashboardAppTopBarHeading
+            title="Crear Nueva Ruta"
+            subtitle="Dibuja tu ruta de downhill en el mapa"
+          />
+        }
+        trailing={
+          <div className="flex min-w-0 shrink-0 items-center justify-end gap-1.5">
+            <DashboardCoachHeaderSlot />
+            {isDrawing ? (
+              <div className="flex max-w-[min(100%,11rem)] flex-wrap items-center justify-end gap-1 sm:max-w-none sm:gap-2">
                 <button
+                  type="button"
                   onClick={undoLastPoint}
-                  className="px-3 py-2 text-sm bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors flex items-center gap-2"
+                  className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-slate-800 px-2 py-1.5 text-xs text-slate-100 hover:bg-slate-700 sm:px-3 sm:text-sm"
                 >
                   <Undo2 size={16} />
-                  Deshacer
+                  <span className="hidden sm:inline">Deshacer</span>
                 </button>
                 <button
+                  type="button"
                   onClick={cancelDrawing}
-                  className="px-3 py-2 text-sm bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-lg transition-colors flex items-center gap-2"
+                  className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-red-500/20 px-2 py-1.5 text-xs text-red-400 hover:bg-red-500/30 sm:px-3 sm:text-sm"
                 >
                   <Trash2 size={16} />
-                  Cancelar
+                  <span className="hidden sm:inline">Cancelar</span>
                 </button>
-              </>
-            )}
+              </div>
+            ) : null}
           </div>
-        </div>
-      </header>
+        }
+      />
 
       <div className="max-w-7xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Columna izquierda - Mapa */}

@@ -35,8 +35,8 @@ export function RuntimeBootstrapInit() {
   if (!shouldShow) return null
 
   return (
-    <div className="fixed left-3 right-3 top-3 z-[2147483010] pointer-events-none">
-      <div className="mx-auto max-w-lg rounded-xl border border-cyan-400/30 bg-[#111b26]/92 px-3 py-2.5 shadow-2xl backdrop-blur-md">
+    <div className="pointer-events-none fixed left-3 right-3 top-3 z-[2147483010]">
+      <div className="mx-auto max-w-lg rounded-xl px-3 py-2.5">
         <div className="flex items-center gap-2">
           <BrandSpinner size={18} />
           <p className="text-sm font-semibold text-cyan-100">Preparando IA local y datos offline</p>
