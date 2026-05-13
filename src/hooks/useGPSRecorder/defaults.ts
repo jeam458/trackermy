@@ -1,0 +1,25 @@
+import type { RecordingOptions } from './types'
+
+export const DEFAULT_OPTIONS: RecordingOptions = {
+  recordingInterval: 1000,
+  minAccuracy: 22,
+  minDistance: 2,
+  maxSpeedMps: 40,
+  stallResampleAfterMs: 5000,
+  speedChangeAcceptMps: 0.85,
+  minBearingChangeForAcceptDeg: 9,
+  motionEnvelopeEnabled: true,
+  maxAccelMps2: 7,
+  motionEnvelopeGpsK: 2.2,
+  motionEnvelopeBaseM: 4,
+  mapMatchPath: null,
+  mapMatchGapTriggerMs: 5000,
+  mapMatchGapMaxDurationMs: 90_000,
+  mapMatchInferredMinSpeedMps: 1.5,
+  mapMatchInferredMaxSpeedMps: 25,
+  mapMatchMaxSnapMeters: 200,
+  enabled: true,
+  routeAttemptGates: null,
+  liveKalmanEnabled: true,
+  hardRejectAccuracyM: 20,
+}

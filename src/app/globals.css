@@ -117,6 +117,11 @@ body {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
+/* Pins HTML por encima del canvas (misma UX que con Leaflet). */
+.map-dark-ui .maplibregl-marker {
+  z-index: 3;
+}
+
 .map-dark-ui .leaflet-control-zoom a {
   background: #1e293b !important;
   color: #f8fafc !important;

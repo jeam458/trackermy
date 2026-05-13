@@ -1,40 +1,40 @@
 'use client'
 
-import { useEffect } from 'react'
 import type { JSAnimation } from 'animejs'
-import { useMap } from 'react-leaflet'
-import L from 'leaflet'
+import maplibregl from 'maplibre-gl'
+import { useEffect } from 'react'
 import { animate } from 'animejs'
+import { useMap } from '@/components/ui/map'
 
 const SONAR_WRAP_PX = 112
 const SONAR_HALF = SONAR_WRAP_PX / 2
 
-export type PartidaSonarLeafletProps = {
+export type PartidaSonarMaplibreProps = {
+  /** [lat, lng] */
   position: [number, number]
   ringColor: string
-  /** Clave estable para reiniciar el efecto al cambiar ruta/coords */
   signature: string
-  /** Por debajo del pin «A» en RouteMapEditor; más alto en vista previa sola */
   zIndexOffset?: number
-  /** Si false, solo anillos (cuando encima hay otro marcador, p. ej. letra A) */
   showCoreDot?: boolean
 }
 
 /**
- * Ondas tipo sonar en la partida (animejs), capa Leaflet imperativa para no depender del orden SVG de react-leaflet.
+ * Ondas tipo sonar en la partida (animejs) sobre MapLibre.
  */
-export function PartidaSonarLeaflet({
+export function PartidaSonarMaplibre({
   position,
   ringColor,
   signature,
   zIndexOffset = 500,
   showCoreDot = true,
-}: PartidaSonarLeafletProps) {
-  const map = useMap()
+}: PartidaSonarMaplibreProps) {
+  const { map, isLoaded } = useMap()
 
   useEffect(() => {
+    if (!isLoaded || !map) return
+
     const wrap = document.createElement('div')
-    wrap.style.cssText = `position:relative;width:${SONAR_WRAP_PX}px;height:${SONAR_WRAP_PX}px;pointer-events:none;overflow:visible`
+    wrap.style.cssText = `position:relative;width:${SONAR_WRAP_PX}px;height:${SONAR_WRAP_PX}px;pointer-events:none;overflow:visible;z-index:${zIndexOffset}`
 
     const rings: HTMLDivElement[] = []
     for (let i = 0; i < 3; i++) {
@@ -77,18 +77,9 @@ export function PartidaSonarLeaflet({
       wrap.appendChild(core)
     }
 
-    const icon = L.divIcon({
-      className: 'leaflet-sonar-partida',
-      html: wrap,
-      iconSize: [SONAR_WRAP_PX, SONAR_WRAP_PX],
-      iconAnchor: [SONAR_HALF, SONAR_HALF],
-    })
-
-    const marker = L.marker(L.latLng(position[0], position[1]), {
-      icon,
-      interactive: false,
-      zIndexOffset,
-    }).addTo(map)
+    const marker = new maplibregl.Marker({ element: wrap, anchor: 'center' })
+      .setLngLat([position[1], position[0]])
+      .addTo(map)
 
     const reduced =
       typeof window !== 'undefined' &&
@@ -121,9 +112,9 @@ export function PartidaSonarLeaflet({
           ;(a as { revert: () => void }).revert()
         }
       })
-      map.removeLayer(marker)
+      marker.remove()
     }
-  }, [map, position[0], position[1], ringColor, signature, zIndexOffset, showCoreDot])
+  }, [map, isLoaded, position[0], position[1], ringColor, signature, zIndexOffset, showCoreDot])
 
   return null
 }

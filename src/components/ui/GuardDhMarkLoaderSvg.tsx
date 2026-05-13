@@ -218,17 +218,17 @@ type MiniProps = {
 export function GuardDhMarkSpinnerMini({ size = 22, className }: MiniProps) {
   const gRef = useRef<SVGGElement>(null)
 
-  useEffect(() => {
-    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-    if (reduce || !gRef.current) return
-    const a = animate(gRef.current, {
-      rotate: [0, 360],
-      duration: 900,
-      ease: 'linear',
-      loop: true,
-    })
-    return () => a.revert()
-  }, [])
+   useEffect(() => {
+     const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+     if (reduce || !gRef.current) return
+     const a = animate(gRef.current, {
+       rotate: [0, 360],
+       duration: 900,
+       ease: 'linear',
+       loop: true,
+     })
+     return () => { a.revert() }
+   }, [])
 
   const path = wavyRingClosedPath(9.5, 1.1, 4, 0.8, 48)
 

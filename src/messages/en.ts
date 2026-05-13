@@ -79,6 +79,8 @@ export const en: AppMessages = {
     routes: 'Routes',
     ranking: 'Ranking',
     profile: 'Profile',
+    recordFab: 'Record',
+    recordFabAria: 'Record a run: free route, new route, or pick an existing route',
   },
 
   voice: voiceMessagesEn,

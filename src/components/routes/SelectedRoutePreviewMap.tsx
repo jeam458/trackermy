@@ -1,15 +1,12 @@
 'use client'
 
-import { useEffect, useLayoutEffect, useRef, useMemo, memo } from 'react'
-import type { Polyline as LeafletPolylineClass } from 'leaflet'
-import { MapContainer, TileLayer, Polyline, CircleMarker, useMap } from 'react-leaflet'
-import L from 'leaflet'
-import { animate } from 'animejs'
-import 'leaflet/dist/leaflet.css'
+import { useEffect, useMemo, useRef } from 'react'
 import { MapPinned } from 'lucide-react'
-import { APP_MAP_CANVAS_HEX, DARK_MAP_TILE, routeColorFromId, tileLayerPresetProps } from './mapTheme'
+import { APP_MAP_CANVAS_HEX, routeColorFromId } from './mapTheme'
 import { fadeSlideIn } from '@/lib/animeUi'
 import type { Route, RouteTrackPoint } from '@/core/domain/Route'
+import { MAPLIBRE_CARTO_DARK_STYLE } from '@/lib/maplibreAppStyles'
+import { Map, MapControls, MapFitBounds, MapMarker, MapRoute, MarkerContent, MarkerPopup, useMap } from '@/components/ui/map'
 
 type Props = {
   route: Route
@@ -22,109 +19,42 @@ function sortedTrackPoints(pts: RouteTrackPoint[]): [number, number][] {
   return s.map((p) => [p.latitude, p.longitude] as [number, number])
 }
 
-function FitBoundsToRoute({ positions }: { positions: [number, number][] }) {
-  const map = useMap()
+function latLngPathToLngLat(coords: [number, number][]): [number, number][] {
+  return coords.map(([lat, lng]) => [lng, lat])
+}
+
+function MapResizeOnWindowResize() {
+  const { map } = useMap()
   useEffect(() => {
-    if (positions.length < 2) return
-    const fit = () => {
-      try {
-        map.invalidateSize()
-      } catch {
-        /* noop */
-      }
-      const latlngs = positions.map((p) => L.latLng(p[0], p[1]))
-      const b = L.latLngBounds(latlngs)
-      map.fitBounds(b, { padding: [20, 20], maxZoom: 16, animate: false })
-    }
-    fit()
-    const raf = window.requestAnimationFrame(fit)
-    /** Un segundo repintado evita tamaño 0 antes de hidratar layout; menos llamadas que varios timeouts. */
-    const t1 = window.setTimeout(fit, 200)
-    return () => {
-      window.cancelAnimationFrame(raf)
-      window.clearTimeout(t1)
-    }
-  }, [map, positions])
+    if (!map) return
+    const onResize = () => requestAnimationFrame(() => map.resize())
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [map])
   return null
 }
 
-/**
- * Trazo animado (stroke-dash) cuando el polilínea ya está en el DOM SVG.
- */
-const AnimatedPath = memo(function AnimatedPath({
-  lineRef,
-  lineColor,
-  routeKey,
-}: {
-  lineRef: React.MutableRefObject<LeafletPolylineClass | null>
-  lineColor: string
-  routeKey: string
-}) {
-  const map = useMap()
-  useEffect(() => {
-    const pl = lineRef.current
-    if (!pl) return
-
-    const run = () => {
-      const el = pl.getElement()
-      if (!el) return
-      const path = el instanceof SVGPathElement ? el : el.querySelector('path')
-      if (!path || typeof path.getTotalLength !== 'function') return
-      const len = path.getTotalLength()
-      if (!Number.isFinite(len) || len < 4) {
-        void animate(path, { opacity: [0, 1], duration: 500, ease: 'outCubic' })
-        return
-      }
-      path.style.stroke = lineColor
-      path.setAttribute('stroke', lineColor)
-      path.setAttribute('fill', 'none')
-      path.setAttribute('stroke-width', '4')
-      path.style.strokeDasharray = String(len)
-      path.style.strokeDashoffset = String(len)
-      void animate(path, {
-        strokeDashoffset: [len, 0],
-        duration: 1800,
-        ease: 'outCubic',
-      })
-    }
-
-    // Capa aún no montada: reintenta
-    pl.once('add', run)
-    const t = window.setTimeout(run, 50)
-    map.whenReady(() => {
-      window.setTimeout(run, 16)
-    })
-    return () => {
-      clearTimeout(t)
-      pl.off('add', run)
-    }
-  }, [lineRef, lineColor, routeKey, map])
-  return null
-})
-
-/**
- * Mapa de vista previa del track de una ruta creada (no grabación en vivo).
- */
 export function SelectedRoutePreviewMap({ route, className = '' }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const lineRef = useRef<LeafletPolylineClass | null>(null)
 
   const positions = useMemo(() => sortedTrackPoints(route.trackPoints), [route])
-  const center = useMemo((): [number, number] => {
+  const lngLatLine = useMemo(() => latLngPathToLngLat(positions), [positions])
+
+  const centerLngLat = useMemo((): [number, number] => {
     if (route.startCoord) {
-      return [route.startCoord[0], route.startCoord[1]]
+      return [route.startCoord[1], route.startCoord[0]]
     }
-    if (positions[0]) return [positions[0][0], positions[0][1]]
-    return [-13.5319, -71.9675]
+    if (positions[0]) return [positions[0][1], positions[0][0]]
+    return [-71.9675, -13.5319]
   }, [route.startCoord, positions])
 
   const lineColor = useMemo(() => routeColorFromId(route.id), [route.id])
   const routeKey = useMemo(
     () => `${route.id}-${positions.length}-${positions[0]?.[0]?.toFixed(4) ?? 0}`,
-    [route.id, positions]
+    [route.id, positions],
   )
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     const el = containerRef.current
     if (!el || positions.length < 2) return
     const anim = fadeSlideIn(el, { duration: 380, y: [10, 0] })
@@ -161,49 +91,42 @@ export function SelectedRoutePreviewMap({ route, className = '' }: Props) {
         Vista previa del trazado
       </div>
       <div
-        className="h-[min(240px,38vh)] w-full overflow-hidden rounded-xl border border-white/10 [&_.leaflet-container]:h-full [&_.leaflet-container]:rounded-xl"
+        className="h-[min(240px,38vh)] w-full overflow-hidden rounded-xl border border-white/10"
         style={{ background: APP_MAP_CANVAS_HEX }}
       >
-        <MapContainer
-          center={center}
+        <Map
+          theme="dark"
+          forceStyle={MAPLIBRE_CARTO_DARK_STYLE}
+          className="map-dark-ui h-full min-h-[220px] w-full [&_.maplibregl-ctrl-attrib]:!text-[10px] [&_.maplibregl-ctrl-attrib]:!text-slate-400"
+          center={centerLngLat}
           zoom={14}
           minZoom={3}
-          maxZoom={DARK_MAP_TILE.maxZoom}
-          className="h-full w-full min-h-[220px] map-dark-ui"
-          style={{ background: APP_MAP_CANVAS_HEX }}
-          scrollWheelZoom
-          preferCanvas={false}
+          maxZoom={22}
         >
-          <TileLayer {...tileLayerPresetProps(DARK_MAP_TILE)} />
-          <FitBoundsToRoute positions={positions} />
-          <Polyline
-            ref={lineRef}
-            positions={positions}
-            pathOptions={{
-              color: lineColor,
-              weight: 4,
-              opacity: 0.95,
-              lineCap: 'round',
-              lineJoin: 'round',
-            }}
+          <MapResizeOnWindowResize />
+          <MapControls position="bottom-right" showZoom showCompass />
+          <MapFitBounds lngLats={lngLatLine} maxZoom={16} padding={20} duration={0} />
+          <MapRoute
+            id={`preview-${route.id}`}
+            coordinates={lngLatLine}
+            color={lineColor}
+            width={4}
+            opacity={0.95}
+            interactive={false}
           />
-          <AnimatedPath lineRef={lineRef} lineColor={lineColor} routeKey={routeKey} />
-          <CircleMarker
-            center={start}
-            radius={8}
-            pathOptions={{
-              color: '#22c55e',
-              fillColor: '#22c55e',
-              fillOpacity: 0.9,
-              weight: 2,
-            }}
-          />
-          <CircleMarker
-            center={end}
-            radius={6}
-            pathOptions={{ color: '#ef4444', fillColor: '#ef4444', fillOpacity: 0.85, weight: 2 }}
-          />
-        </MapContainer>
+          <MapMarker longitude={start[1]} latitude={start[0]}>
+            <MarkerContent className="h-4 w-4 rounded-full border-2 border-white bg-green-500 shadow-lg" />
+            <MarkerPopup className="border border-white/10 bg-slate-900 text-slate-100">
+              <span className="text-xs">Inicio</span>
+            </MarkerPopup>
+          </MapMarker>
+          <MapMarker longitude={end[1]} latitude={end[0]}>
+            <MarkerContent className="h-3.5 w-3.5 rounded-full border-2 border-white bg-red-500 shadow-lg" />
+            <MarkerPopup className="border border-white/10 bg-slate-900 text-slate-100">
+              <span className="text-xs">Meta</span>
+            </MarkerPopup>
+          </MapMarker>
+        </Map>
       </div>
       <p className="text-[11px] text-slate-500">
         {route.name} · {positions.length} puntos · inicio (verde) / meta (rojo)

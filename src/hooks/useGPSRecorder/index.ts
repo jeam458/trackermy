@@ -28,153 +28,11 @@ import {
   computeFinishApproachMs,
   type RouteAttemptGateTiming,
 } from '@/lib/routeAttemptGateTiming'
-
-export interface MapPoint {
-  latitude: number
-  longitude: number
-  altitude?: number
-  accuracy?: number
-  timestamp?: Date
-  /** Velocidad reportada por el GPS del dispositivo (m/s), si existe */
-  speed?: number
-  /** Relleno a lo largo de vía de referencia (map matching) sin fix GPS / sin cobertura */
-  inferredFromPath?: boolean
-}
-
-export type RouteAttemptGatesConfig = {
-  startLat: number
-  startLng: number
-  endLat: number
-  endLng: number
-  startEndRadiusM: number
-  maxOffRouteM: number
-  referencePath: MapPathNode[]
-}
-
-export interface RecordingOptions {
-  /** (Web) guía; el SDK nativo usa distanceFilter y el OS marcan frecuencia */
-  recordingInterval: number
-  /** Rechazar lecturas con accuracy peor (excepto 1.º punto y reglas de suavizado) */
-  minAccuracy: number
-  /** Distancia mínima para añadir un punto; ver stallResampleAfterMs */
-  minDistance: number
-  /** Velocidad implicada máx. entre muestras consecutivas (m/s) — DH razonable < ~40 m/s */
-  maxSpeedMps: number
-  /** Si hace &gt; este tiempo sin aceptar punto, aceptar aunque el movimiento &lt; minDistance (evita “cortar” el final) */
-  stallResampleAfterMs: number
-  /**
-   * Acepta una muestra aunque d &lt; min adaptativo si |v_segmento − v_anterior| ≥ este umbral (m/s);
-   * captura aceleración/frenado aun con poco desplazamiento entre fixes.
-   */
-  speedChangeAcceptMps: number
-  /**
-   * Aunque d &lt; min: si el rumbo cambia al menos esto (grados) respecto al tramo anterior,
-   * acepta el punto (curvas a más velocidad sin “cuerda recta” por espaciado alto).
-   */
-  minBearingChangeForAcceptDeg: number
-  /**
-   * Gating cinemático: la distancia al punto anterior no puede exceder lo físicamente
-   * coherente con v del tramo previo, dt y aceleración máx., más margen GPS.
-   */
-  motionEnvelopeEnabled: boolean
-  /** Aceleración máx. usada al acotar el paso (m/s²) — p. ej. acelerar/frenar de vehículo */
-  maxAccelMps2: number
-  /** Coef. × (accuracy último + actual) añadido a la envolvente (m) */
-  motionEnvelopeGpsK: number
-  /** Margen fijo añadido a la envolvente (m) */
-  motionEnvelopeBaseM: number
-  /**
-   * Polilínea de referencia (p. ej. ruta publicada, o vía descargada de OSM) para
-   * continuar el trazado aprox. cuando falle o tarde el GPS.
-   */
-  mapMatchPath?: MapPathNode[] | null
-  /** Tras esto (ms) sin aceptar un fix real, comienza inserción sobre la pista. */
-  mapMatchGapTriggerMs: number
-  /** Tope de duración (ms) de inserción por lote, para no “volar” al infinito. */
-  mapMatchGapMaxDurationMs: number
-  /** Vel. estimada a lo largo de la pista (m/s) al interpolar, acotada. */
-  mapMatchInferredMinSpeedMps: number
-  mapMatchInferredMaxSpeedMps: number
-  /** Si el snap a la pista excede esto, no se usa map matching. */
-  mapMatchMaxSnapMeters: number
-  // Habilitar/deshabilitar grabación
-  enabled: boolean
-  /**
-   * Ruta publicada: no graba ni cronometra hasta estar en el radio de la salida;
-   * distancia a la ruta &gt; maxOffRouteM marca intento inválido; al parar, exige radio en la meta.
-   */
-  routeAttemptGates: RouteAttemptGatesConfig | null
-  /** Suavizado Kalman incremental en vivo (coherente con Q/R del post-proceso) */
-  liveKalmanEnabled: boolean
-  /**
-   * Con ya al menos un punto aceptado en crudo en el track, descarta muestras
-   * peor que este umbral (m) — refuerzo off-road / cobertura mala.
-   */
-  hardRejectAccuracyM: number
-}
-
-export interface RecordingState {
-  isRecording: boolean
-  isPaused: boolean
-  points: MapPoint[]
-  startTime: Date | null
-  elapsedTime: number // segundos
-  currentAccuracy: number | null
-  currentSpeed: number | null // m/s
-  /** Máx. instantánea en la sesión (m/s), no acumulado — max(vel. mostradas) */
-  maxSessionSpeedMps: number | null
-  error: string | null
-  /** Solo intento con ruta: aún no estás en la línea de salida (no hay puntos ni tiempo) */
-  awaitingStartGate: boolean
-  /** Solo intento: algún tramo se alejó más de `maxOffRouteM` de la ruta publicada */
-  routeAttemptOffRoute: boolean
-  /** Distancia al punto de salida de la ruta (m), solo en modo intento */
-  distanceMetersToStart: number | null
-  /** Distancia al punto de meta (m) según última posición, solo en modo intento */
-  distanceMetersToEnd: number | null
-  /** Desfase arranque + aproximación meta (solo intento con ruta; null si no aplica) */
-  routeAttemptGateTiming: RouteAttemptGateTiming | null
-}
-
-export interface StopRecordingOptions {
-  /** Si true (defecto), pide un fix de alta prioridad y cierra el trazado hacia el destino */
-  flushLastFix?: boolean
-  /** P.ej. al descartar: no exigir meta ni inicio (solo intento con ruta publicada) */
-  skipRouteAttemptValidation?: boolean
-}
-
-export interface UseGPSRecorderReturn extends RecordingState {
-  startRecording: () => void
-  stopRecording: (options?: StopRecordingOptions) => Promise<MapPoint[]>
-  pauseRecording: () => void
-  resumeRecording: () => void
-  clearRecording: () => void
-  exportPoints: () => MapPoint[]
-}
-
-const DEFAULT_OPTIONS: RecordingOptions = {
-  recordingInterval: 1000,
-  minAccuracy: 22,
-  minDistance: 2,
-  maxSpeedMps: 40,
-  stallResampleAfterMs: 5000,
-  speedChangeAcceptMps: 0.85,
-  minBearingChangeForAcceptDeg: 9,
-  motionEnvelopeEnabled: true,
-  maxAccelMps2: 7,
-  motionEnvelopeGpsK: 2.2,
-  motionEnvelopeBaseM: 4,
-  mapMatchPath: null,
-  mapMatchGapTriggerMs: 5000,
-  mapMatchGapMaxDurationMs: 90_000,
-  mapMatchInferredMinSpeedMps: 1.5,
-  mapMatchInferredMaxSpeedMps: 25,
-  mapMatchMaxSnapMeters: 200,
-  enabled: true,
-  routeAttemptGates: null,
-  liveKalmanEnabled: true,
-  hardRejectAccuracyM: 20,
-}
+import type { MapPoint, RecordingOptions, RecordingState, StopRecordingOptions, UseGPSRecorderReturn, RouteAttemptGatesConfig } from './types'
+import { DEFAULT_OPTIONS } from './defaults'
+import { calculateSpeed, mergeClosingFix } from './utils'
+export { formatTime, formatDistance, formatSpeed } from './utils'
+export type { MapPoint, RecordingOptions, RecordingState, StopRecordingOptions, UseGPSRecorderReturn, RouteAttemptGatesConfig } from './types'
 
 /**
  * Hook para grabación de track GPS en tiempo real
@@ -293,10 +151,6 @@ export function useGPSRecorder(
     }
   }, [opts.mapMatchPath])
 
-  const calculateSpeed = useCallback((point1: MapPoint, point2: MapPoint): number | null => {
-    return impliedSpeedMps(point1 as MapPointLike, point2 as MapPointLike)
-  }, [])
-
   const acceptanceOpts: GpsRecordingAcceptanceOptions = useMemo(
     () => ({
       minAccuracy: opts.minAccuracy,
@@ -323,21 +177,6 @@ export function useGPSRecorder(
       opts.motionEnvelopeBaseM,
     ]
   )
-
-  /** Tras parar, incorpora (o reemplaza) el último fix; no se descarta por precisión (cierre intencionado) */
-  const mergeClosingFix = useCallback((base: MapPoint[], final: MapPoint | null): MapPoint[] => {
-    if (!final) return base
-    if (base.length === 0) {
-      return [{ ...final, timestamp: final.timestamp ?? new Date() }]
-    }
-    const last = base[base.length - 1]
-    const d = haversineMeters(last.latitude, last.longitude, final.latitude, final.longitude)
-    const t = final.timestamp ?? new Date()
-    if (d < 1) {
-      return [...base.slice(0, -1), { ...final, timestamp: t }]
-    }
-    return [...base, { ...final, timestamp: t }]
-  }, [])
 
   const applyElapsedFromWallClock = useCallback(() => {
     if (isPausedRef.current) return
@@ -1114,28 +953,4 @@ export function useGPSRecorder(
   }
 }
 
-/**
- * Formatear tiempo en segundos a formato MM:SS
- */
-export function formatTime(seconds: number): string {
-  const mins = Math.floor(seconds / 60)
-  const secs = seconds % 60
-  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
-}
 
-/**
- * Formatear distancia en metros a string legible
- */
-export function formatDistance(meters: number): string {
-  if (meters >= 1000) {
-    return `${(meters / 1000).toFixed(2)} km`
-  }
-  return `${meters.toFixed(0)} m`
-}
-
-/**
- * Formatear velocidad en m/s a km/h
- */
-export function formatSpeed(ms: number): string {
-  return `${(ms * 3.6).toFixed(1)} km/h`
-}

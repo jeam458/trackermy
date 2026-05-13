@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { Menu, Search, Timer, Trophy, MapPinned, ChevronRight } from 'lucide-react'
+import { Menu, Search, Trophy, MapPinned, ChevronRight } from 'lucide-react'
 import MapPlaceholderWrapper from './MapPlaceholderWrapper'
 import { useDashboardSidebar } from '@/lib/dashboard/DashboardSidebarContext'
 import WeeklyRecord from './WeeklyRecord'
@@ -363,20 +363,12 @@ export default function DiscoverPageClient() {
 
   const ctaActions = [
     {
-      key: 'record',
-      href: '/dashboard/routes/record',
-      label: 'Grabar bajada',
-      icon: Timer,
-      className:
-        'flex-1 inline-flex min-h-[3.25rem] min-w-0 items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-r from-gdh-brand to-gdh-brand-muted px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-teal-900/30 ring-1 ring-white/15 [text-shadow:0_1px_2px_rgba(0,0,0,0.35)] hover:from-gdh-brand-highlight hover:to-gdh-brand',
-    },
-    {
       key: 'ranking',
       href: '/dashboard/ranking',
       label: 'Ranking',
       icon: Trophy,
       className:
-        'inline-flex min-h-[3.25rem] shrink-0 items-center justify-center gap-2.5 rounded-2xl border border-indigo-400/45 bg-indigo-500/10 px-5 py-3.5 text-sm font-semibold text-indigo-100 shadow-sm hover:bg-indigo-500/18 hover:text-white',
+        'flex-1 inline-flex min-h-[3.25rem] min-w-0 items-center justify-center gap-2.5 rounded-2xl border border-indigo-400/45 bg-indigo-500/10 px-5 py-3.5 text-sm font-semibold text-indigo-100 shadow-sm hover:bg-indigo-500/18 hover:text-white',
     },
   ] as const
 
