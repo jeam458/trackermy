@@ -22,7 +22,7 @@ import {
   DashboardAppTopBar,
   DashboardAppTopBarHeading,
   DASHBOARD_APP_TOP_BAR_ICON_BUTTON_CLASS,
-  DashboardCoachHeaderSlot,
+  DashboardAppTopBarTrailingCluster,
 } from '@/app/dashboard/components/DashboardAppTopBar'
 import { routeViewUrl } from '@/lib/routeViewNavigation'
 import { toast } from '@/lib/toast'
@@ -267,7 +267,6 @@ export default function NotificationsPage() {
   return (
     <div className="gdh-immersive-page min-h-screen text-slate-100">
       <DashboardAppTopBar
-        contentMaxWidth="4xl"
         leading={
           <button
             type="button"
@@ -283,7 +282,7 @@ export default function NotificationsPage() {
             title={activeTab === 'notifications' ? 'Notificaciones' : 'Mi Perfil'}
           />
         }
-        trailing={<DashboardCoachHeaderSlot />}
+        trailing={<DashboardAppTopBarTrailingCluster />}
       >
         <div className="flex gap-2">
           <button

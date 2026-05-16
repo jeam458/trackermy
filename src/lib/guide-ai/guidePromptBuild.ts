@@ -9,6 +9,7 @@ import {
 import {
   COACHING_CONTEXT_RULES,
   CONTEXT_REACTION_SKILL,
+  COACH_TURN_MEMORY_PROMPT_RULES,
   HUMAN_INTERACTION_PRINCIPLES,
   GUIDE_NATURAL_INTERACTION_FLOW,
   PET_CONNECTIVITY_VOICE,
@@ -20,9 +21,16 @@ import {
 import { buildCoachKnowledgeEvidenceFromNodes, COACH_KNOWLEDGE_NODES } from '@/lib/guide-ai/coachKnowledgeTree'
 import { buildReplayCoachSnapshot } from '@/lib/guide-ai/guideReplayCoachSnapshot'
 import { coachVosFirstName } from '@/lib/guide-ai/riderCoachDisplayName'
+import type { GuideCoachTurnMemoryPromptRow } from '@/lib/guide-ai/guideCoachTurnMemory'
 import type { GuideContext, GuideInteractionSessionHint, GuideSessionReplaySignal, GuideUiEvent } from '@/lib/guide-ai/types'
 
-export function interactionHint(pathname: string, event: Pick<GuideUiEvent, 'type' | 'label'>): string {
+export function interactionHint(pathname: string, event: Pick<GuideUiEvent, 'type' | 'label' | 'userMessage'>): string {
+  if (event.type === 'user-message') {
+    return 'El rider escribió una pregunta o pedido explícito (user_message en el JSON del evento). Respondé en tuteo: máximo dos ideas útiles; solo datos del contexto o tools; si no hay dato, decilo sin inventar.'
+  }
+  if (event.label === 'interactive:idle_probe') {
+    return 'Sondeo suave: el rider lleva un rato en esta pantalla sin nuevas acciones. Un solo matiz útil (dato del JSON o hábito) sin repetir recent_coach_titles; no alarmismo.'
+  }
   if (event.label?.startsWith('system:gps_')) {
     return 'Evento de sistema: ubicación degradada (ver gps_hint en JSON). Elegí mood, título, subtítulo y pet_mood en conjunto: analyzing si es ambiguo o permisos; warning si bloquea mapa cercano o seguimiento; neutral solo si el aviso es leve. Dos líneas útiles; estilo [VOZ_CONEXION_OFFLINE].'
   }
@@ -97,8 +105,11 @@ export function buildGuideNarrationFullPrompt(input: {
   affectiveAugment?: Record<string, unknown> | null
   /** Memoria breve de la vista (cliente): ritmo y anti-repetición. */
   sessionHint?: GuideInteractionSessionHint | null
+  /** Últimos turnos coach+rider en esta vista (continuidad). */
+  coachTurnMemory?: GuideCoachTurnMemoryPromptRow[] | null
 }): string {
-  const { context, event, executeMcpTools, sessionReplaySignals, affectiveAugment, sessionHint } = input
+  const { context, event, executeMcpTools, sessionReplaySignals, affectiveAugment, sessionHint, coachTurnMemory } =
+    input
   const localHour = new Date().getHours()
   const pLower = context.pathname.toLowerCase()
   const routeDetailHard =
@@ -184,6 +195,11 @@ export function buildGuideNarrationFullPrompt(input: {
       ? 'interactive:replay_followup_*: seguís en la misma pantalla de replay; aportá un matiz NUEVO (no rehacer el primer mensaje). session_recent_replay + resúmenes; pet_mood coherente.'
       : ''
 
+  const idleProbeHard =
+    event.label === 'interactive:idle_probe'
+      ? 'interactive:idle_probe: un solo párrafo breve; priorizá dato nuevo del contexto o un hábito; no rehagas la bienvenida ni copies recent_coach_turns verbatim.'
+      : ''
+
   const affectiveLayer =
     affectiveAugment && Object.keys(affectiveAugment).length > 0
       ? `Capa afectiva unificada (obligatorio leer): affective_world incluye last_app_trigger y recent_app_triggers. Pulsos kind catalog usan ids del catálogo; kind dynamic usan domain+action libres (map, ui, metrics, geo, replay_data…) y crecen sin listarlos todos — interpretá detail y situation_tags (dyn:*). last_trigger_meta incluye hint_es cuando existe. Alineá mood y pet_mood con la causa; sin whiplash si los tags no son extremos. emotion_candidate_slugs = atlas GUARDDH (no inventes otros slugs para atlas). pet_mood solo neutral|happy|analyzing|warning|stoked.\n${JSON.stringify(affectiveAugment)}`
@@ -191,11 +207,20 @@ export function buildGuideNarrationFullPrompt(input: {
 
   const riderVos = coachVosFirstName(context.riderDisplayName ?? null)
 
+  const recentTurns =
+    coachTurnMemory && coachTurnMemory.length > 0 ? coachTurnMemory.slice(-6) : null
+
+  const eventUiLine =
+    event.type === 'user-message' && event.userMessage?.trim()
+      ? `Evento UI: user-message · user_message: ${event.userMessage.replace(/\s+/g, ' ').trim().slice(0, 420)}`
+      : `Evento UI: ${event.type}${event.label ? ` · ${event.label}` : ''}`
+
   const userPayload = [
     `Contexto JSON del rider:\n${JSON.stringify({
       pathname: context.pathname,
       rider_display_name: context.riderDisplayName ?? null,
       rider_vos_first_name: riderVos,
+      recent_coach_turns: recentTurns,
       aggregate_coach_insights: context.aggregateCoachInsights ?? null,
       gps_hint: context.gpsHint ?? 'unknown',
       network_online: context.networkOnline ?? null,
@@ -230,8 +255,8 @@ export function buildGuideNarrationFullPrompt(input: {
           }
         : null,
     })}`,
-    `Evento UI: ${event.type}${event.label ? ` · ${event.label}` : ''}`,
-    `Hint de interacción: ${interactionHint(context.pathname, { type: event.type, label: event.label })}`,
+    eventUiLine,
+    `Hint de interacción: ${interactionHint(context.pathname, { type: event.type, label: event.label, userMessage: event.userMessage })}`,
     routeDetailHard,
     attemptStatsHard,
     dataRefreshHint,
@@ -241,6 +266,7 @@ export function buildGuideNarrationFullPrompt(input: {
     replaySessionHard,
     replayCoachHard,
     replayFollowupHard,
+    idleProbeHard,
     coachLibraryHard,
     riderSpectrumHard,
     maintenanceHintsHard,
@@ -249,6 +275,7 @@ export function buildGuideNarrationFullPrompt(input: {
     'Tuteo siempre ("vos"); nunca uses emails, handles técnicos ni el fragmento local de un correo como nombre. Si rider_vos_first_name es null, no inventes nombre: hablale de "vos" sin apodo forzado.',
     'Si rider_vos_first_name no es null, podés usarlo al inicio una vez con naturalidad (ej. "Carlos, mirá…"); no repitas el nombre en cada frase ni lo uses si suena a usuario de sistema.',
     'aggregate_coach_insights: frases agregadas anónimas de riders en la misma pantalla; inspiración opcional (tono/ángulo), no copiar literal si no encaja; nunca las cites como datos personales.',
+    'recent_coach_turns: memoria corta de la sesión en esta vista; continuidad y anti-repetición; no copies literal coach_title ni user_message pasados.',
     'Si estás en detalle de ruta, orden sugerido de discurso: 1) ruta actual, 2) métrica útil, 3) siguiente acción (detalle/ranking/record).',
     'Si el evento es data-refresh, continuá la conversación con un ángulo distinto al mensaje anterior (evita repetir title/subtitle).',
     ...(executeMcpTools
@@ -260,12 +287,6 @@ export function buildGuideNarrationFullPrompt(input: {
       : ([
           'Restricción de este turno: no incluyas tool_requests (vacío). Variá solo mood/title/subtitle/duration y opcional pet_mood usando el mismo contexto JSON.',
         ] as const)),
-    ...(typeof process !== 'undefined' &&
-    String(process.env.NEXT_PUBLIC_GUIDE_PET_EMOTION_PROPOSALS || '').trim() === '1'
-      ? ([
-          'EXPERIMENTAL (solo si aporta matiz nuevo y no en cada turno): en el mismo JSON podés incluir pet_emotion_proposal: { slug (regex ^[a-z][a-z0-9_]{1,62}$), label_es, ambient_animations: { tracks: [...] } como antes, opcional enter_animation, focus_x/y/zoom, atlas_slot. Opcional procedural_face: objeto solo con claves brow|mouth|accents|brow_tilt|mouth_open|intensity (valores en lista blanca de la app: cejas neutral|up|down|furrow|sad|asym; boca neutral|smile|smileWide|frown|wavy|grit|o|flat; accents sweat|spark; brow_tilt -1..1; mouth_open 0..1; intensity ~0.4..1.6). Opcional wrapStyle en ambient: { filter: string corto }. Si no hay matiz nuevo de mascota, omití pet_emotion_proposal.',
-        ] as const)
-      : []),
   ]
     .filter((s) => typeof s === 'string' && s.trim().length > 0)
     .join('\n\n')
@@ -279,6 +300,7 @@ export function buildGuideNarrationFullPrompt(input: {
     `[PET_VISUAL_BRIDGE]\n${PET_VISUAL_BRIDGE}`,
     `[TURNOS_INTERACTIVOS_IA]\n${PET_INTERACTIVE_ANALYSIS_CONTRACT}`,
     `[SKILL_REACCION_CONTEXTO]\n${CONTEXT_REACTION_SKILL}`,
+    `[MEMORIA_TURNOS]\n${COACH_TURN_MEMORY_PROMPT_RULES}`,
     `[INTERACCION_HUMANA]\n${HUMAN_INTERACTION_PRINCIPLES}`,
     `[FLUJO_NATURAL_INTERACION]\n${GUIDE_NATURAL_INTERACTION_FLOW}`,
     `[PERFIL_VOZ]\n${getGuideVoiceProfileAddon()}`,

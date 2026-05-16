@@ -192,7 +192,7 @@ function MetricsPanel({
       </div>
       
       <div className="flex items-center gap-2">
-        <TrendingUp className="text-purple-500" size={16} />
+        <TrendingUp className="text-gdh-brand-highlight" size={16} />
         <div>
           <p className="text-xs text-gray-400">Vel. Promedio</p>
           <p className="text-sm font-bold text-white">{formatSpeed(averageSpeed)}</p>

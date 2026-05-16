@@ -18,10 +18,11 @@ import { AnimeIconButton } from '@/components/ui/AnimeIconButton'
 import { BrandSpinner } from '@/components/ui/BrandLogoLoader'
 import { routeViewUrl } from '@/lib/routeViewNavigation'
 import {
+  DASHBOARD_APP_TOP_BAR_ICON_BUTTON_CLASS,
   DASHBOARD_APP_TOP_BAR_SHELL_CLASS,
   DashboardAppTopBarHeading,
   DashboardAppTopBarInner,
-  DashboardCoachHeaderSlot,
+  DashboardAppTopBarTrailingCluster,
 } from '@/app/dashboard/components/DashboardAppTopBar'
 
 const repoRef = { current: new SupabaseRouteRepository() }
@@ -370,7 +371,7 @@ export default function DiscoverPageClient() {
       label: 'Ranking',
       icon: Trophy,
       className:
-        'flex-1 inline-flex min-h-[3.25rem] min-w-0 items-center justify-center gap-2.5 rounded-2xl border border-indigo-400/45 bg-indigo-500/10 px-5 py-3.5 text-sm font-semibold text-indigo-100 shadow-sm hover:bg-indigo-500/18 hover:text-white',
+        'flex-1 inline-flex min-h-[3.25rem] min-w-0 items-center justify-center gap-2.5 rounded-2xl border border-white/12 bg-white/[0.06] px-5 py-3.5 text-sm font-semibold text-slate-100 shadow-sm hover:bg-white/[0.1] hover:border-gdh-brand/35',
     },
   ] as const
 
@@ -392,23 +393,22 @@ export default function DiscoverPageClient() {
             <AnimeIconButton
               label="Menú"
               onClick={() => openSidebar()}
-              className="p-2.5 rounded-xl text-slate-400 hover:bg-white/5"
+              className={DASHBOARD_APP_TOP_BAR_ICON_BUTTON_CLASS}
             >
               <Menu size={22} />
             </AnimeIconButton>
           }
           center={<DashboardAppTopBarHeading title="Descubrir Rutas" />}
           trailing={
-            <div className="flex min-w-0 shrink-0 items-center justify-end gap-1">
-              <DashboardCoachHeaderSlot />
+            <DashboardAppTopBarTrailingCluster>
               <AnimeIconButton
                 label="Buscar rutas"
                 onClick={() => setShowSearch((s) => !s)}
-                className={`shrink-0 rounded-xl p-2.5 transition-colors ${showSearch ? 'bg-teal-500/20 text-teal-400' : 'text-slate-400 hover:bg-white/5'}`}
+                className={`shrink-0 rounded-xl p-2.5 transition-colors ${showSearch ? 'bg-gdh-brand/18 text-gdh-brand-highlight' : 'text-slate-400 hover:bg-white/5'}`}
               >
                 <Search size={22} />
               </AnimeIconButton>
-            </div>
+            </DashboardAppTopBarTrailingCluster>
           }
         >
           {showSearch ? (
@@ -427,7 +427,7 @@ export default function DiscoverPageClient() {
                 placeholder="Nombre de la ruta…"
                 autoComplete="off"
                 aria-label="Buscar ruta por nombre"
-                className="w-full rounded-xl bg-gdh-card border border-white/10 pl-10 pr-10 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-teal-500/50"
+                className="w-full rounded-xl bg-gdh-card border border-white/10 pl-10 pr-10 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-gdh-brand/45"
               />
               {query.trim() !== '' && (
                 <button
@@ -463,7 +463,7 @@ export default function DiscoverPageClient() {
                           onClick={() => openRouteDetail(r.id)}
                           className="w-full flex items-center gap-3 px-3 py-3 text-left hover:bg-white/5 active:bg-white/10 transition-colors border-b border-white/5 last:border-0"
                         >
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-500/15 text-teal-400">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gdh-brand/14 text-gdh-brand-highlight">
                             <MapPinned size={20} />
                           </div>
                           <div className="flex-1 min-w-0">

@@ -26,7 +26,7 @@ export default function RecordPage() {
         </p>
 
         {/* Huge Countdown Display mock */}
-        <div className="relative w-40 h-40 flex items-center justify-center rounded-full bg-slate-800 border-[6px] border-emerald-400/20 shadow-[0_0_30px_rgba(16,185,129,0.1)]">
+        <div className="relative w-40 h-40 flex items-center justify-center rounded-full bg-slate-800 border-[6px] border-gdh-brand/25 shadow-[0_0_30px_rgba(227,120,69,0.12)]">
            <svg className="absolute inset-0 w-full h-full transform -rotate-90">
              <circle 
                 cx="80" 
@@ -50,7 +50,7 @@ export default function RecordPage() {
              <span className="font-medium">Validando...</span>
           </div>
           <div className="bg-slate-700/50 p-2 rounded-full">
-            <PlayIcon size={20} className="text-sky-400 pl-0.5" />
+            <PlayIcon size={20} className="text-gdh-brand-highlight pl-0.5" />
           </div>
         </div>
       </div>

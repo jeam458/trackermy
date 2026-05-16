@@ -360,16 +360,16 @@ function RouteRankingContent() {
 
       <MobileMain>
         {myRank && currentUserId && (
-          <div className="rounded-2xl border border-teal-500/35 bg-teal-500/10 px-4 py-3 flex flex-wrap items-center gap-3">
-            <User className="text-teal-400 shrink-0" size={22} />
+          <div className="rounded-2xl border border-gdh-brand/35 bg-gdh-brand/10 px-4 py-3 flex flex-wrap items-center gap-3">
+            <User className="text-gdh-brand-highlight shrink-0" size={22} />
             <div className="flex-1 min-w-[200px]">
               <p className="text-sm font-semibold text-white">Tu posición</p>
               <p className="text-xs text-slate-400">
                 Mejor tiempo público {mode === 'weekly' ? 'de esta semana' : 'histórico'} en esta pista ·{' '}
-                <span className="font-mono text-teal-200">{formatTime(myRank.time)}</span>
+                <span className="font-mono text-gdh-brand-highlight">{formatTime(myRank.time)}</span>
               </p>
             </div>
-            <div className="text-2xl font-bold text-teal-400 tabular-nums">#{myRank.rank}</div>
+            <div className="text-2xl font-bold text-gdh-brand-highlight tabular-nums">#{myRank.rank}</div>
             {!myRank.inLoadedList && hasMore && (
               <p className="text-[11px] text-slate-500 w-full">
                 Sigue bajando con «Cargar más» hasta ver tu fila en la tabla, o usa el listado completo más abajo.
@@ -382,10 +382,10 @@ function RouteRankingContent() {
           <button
             type="button"
             onClick={() => openAttemptDetail(leader.attemptId)}
-            className="w-full rounded-2xl border-2 border-sky-400/70 bg-gradient-to-r from-violet-600/40 to-slate-700/60 px-4 pb-4 pt-8 relative"
+            className="w-full rounded-2xl border-2 border-gdh-brand/45 bg-gradient-to-r from-gdh-brand/30 to-gdh-canvas px-4 pb-4 pt-8 relative"
           >
             <div className="absolute -top-7 left-1/2 -translate-x-1/2">
-              <div className="rounded-full p-1 bg-violet-500/70">
+              <div className="rounded-full p-1 bg-gdh-brand/60">
                 <RiderAvatar name={leader.user_name} url={leader.avatar_url} size={76} />
               </div>
             </div>
@@ -408,7 +408,7 @@ function RouteRankingContent() {
                 onClick={() => openAttemptDetail(entry.attemptId)}
                 className={`w-full ${mobileStyles.card} px-3 py-2.5 transition text-left ${
                   isMe
-                    ? 'border-teal-500/40 bg-teal-500/15'
+                    ? 'border-gdh-brand/40 bg-gdh-brand/14'
                     : 'hover:bg-slate-700/70'
                 }`}
               >
@@ -420,7 +420,7 @@ function RouteRankingContent() {
                     <p className="text-2xl text-slate-200 font-mono">{formatTime(entry.total_time)}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-2xl text-teal-300">{entry.overall_score != null ? entry.overall_score : '—'}</p>
+                    <p className="text-2xl text-gdh-brand-highlight">{entry.overall_score != null ? entry.overall_score : '—'}</p>
                     <p className="text-xs text-slate-500">{formatDate(entry.completed_at)}</p>
                   </div>
                 </div>

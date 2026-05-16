@@ -257,8 +257,8 @@ export function AttemptReelPreview({ videoUrl, planRaw, onRegeneratePlan, regene
   const hideMusicBecauseHeuristic = plan.planSource !== 'ai'
 
   return (
-    <div className="rounded-xl border border-violet-500/25 bg-violet-500/5 p-3 space-y-2">
-      <div className="flex items-center gap-2 text-[11px] font-medium text-violet-200/95">
+    <div className="rounded-xl border border-gdh-brand/25 bg-gdh-brand/5 p-3 space-y-2">
+      <div className="flex items-center gap-2 text-[11px] font-medium text-gdh-brand-highlight/95">
         <Clapperboard size={14} className="shrink-0" />
         Preview reel (mismo vídeo, cortes + slow-mo)
       </div>
@@ -318,7 +318,7 @@ export function AttemptReelPreview({ videoUrl, planRaw, onRegeneratePlan, regene
             type="button"
             disabled={busy}
             onClick={() => void playReel()}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-600/85 hover:bg-violet-500 text-[11px] font-medium text-white disabled:opacity-45"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gdh-brand/90 hover:bg-gdh-brand-highlight text-[11px] font-medium text-white disabled:opacity-45"
           >
             {busy ? <Square size={12} /> : <Play size={12} />}
             {busy ? 'Reproduciendo…' : 'Reproducir reel'}
@@ -340,7 +340,7 @@ export function AttemptReelPreview({ videoUrl, planRaw, onRegeneratePlan, regene
       {showMusicPanel ? (
         <div className="rounded-lg border border-white/10 bg-[#121826]/80 p-2 space-y-2">
           <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 flex items-center gap-1">
-            <Music2 size={12} className="text-violet-400" />
+            <Music2 size={12} className="text-gdh-brand-highlight" />
             Música de fondo
           </p>
           <p className="text-[9px] text-slate-500 leading-snug">
@@ -369,7 +369,7 @@ export function AttemptReelPreview({ videoUrl, planRaw, onRegeneratePlan, regene
             <button
               type="button"
               onClick={() => clearMusic()}
-              className={`rounded-md border px-2 py-1 text-[9px] ${selectedPresetId === '' && !effectiveMusicUrl ? 'border-teal-500/60 bg-teal-500/15' : 'border-white/10 bg-black/30'}`}
+              className={`rounded-md border px-2 py-1 text-[9px] ${selectedPresetId === '' && !effectiveMusicUrl ? 'border-gdh-brand/60 bg-gdh-brand/15' : 'border-white/10 bg-black/30'}`}
             >
               Sin música
             </button>
@@ -379,7 +379,7 @@ export function AttemptReelPreview({ videoUrl, planRaw, onRegeneratePlan, regene
                 type="button"
                 onClick={() => applyPreset(p.id)}
                 className={`rounded-md border px-2 py-1 text-[9px] max-w-[9rem] truncate ${
-                  selectedPresetId === p.id ? 'border-violet-400/70 bg-violet-500/20' : 'border-white/10 bg-black/30'
+                  selectedPresetId === p.id ? 'border-gdh-brand/70 bg-gdh-brand/20' : 'border-white/10 bg-black/30'
                 }`}
                 title={p.attribution}
               >
@@ -389,10 +389,10 @@ export function AttemptReelPreview({ videoUrl, planRaw, onRegeneratePlan, regene
           </div>
 
           {effectiveYoutube && !musicDetailsOpen ? (
-            <div className="flex flex-wrap items-center gap-2 rounded-md border border-emerald-500/30 bg-emerald-950/25 px-2 py-2">
-              <Music2 size={14} className="shrink-0 text-emerald-300" />
+            <div className="flex flex-wrap items-center gap-2 rounded-md border border-gdh-brand/30 bg-gdh-brand/12 px-2 py-2">
+              <Music2 size={14} className="shrink-0 text-gdh-brand-highlight" />
               <div className="min-w-0 flex-1">
-                <p className="text-[9px] font-semibold uppercase tracking-wide text-emerald-200/90">YouTube en el plan</p>
+                <p className="text-[9px] font-semibold uppercase tracking-wide text-gdh-brand-highlight/90">YouTube en el plan</p>
                 <p className="text-[10px] text-slate-200 leading-snug line-clamp-2">
                   {formatYoutubeMusicLabel(musicAttribution)}
                 </p>
@@ -450,7 +450,7 @@ export function AttemptReelPreview({ videoUrl, planRaw, onRegeneratePlan, regene
                   type="button"
                   disabled={regenerateBusy}
                   onClick={() => persistMusicToPlan()}
-                  className="w-full rounded-md border border-violet-400/40 bg-violet-600/30 py-1.5 text-[10px] font-semibold text-violet-50 hover:bg-violet-600/45 disabled:opacity-45"
+                  className="w-full rounded-md border border-gdh-brand/40 bg-gdh-brand/30 py-1.5 text-[10px] font-semibold text-white hover:bg-gdh-brand/45 disabled:opacity-45"
                 >
                   {regenerateBusy ? 'Guardando plan…' : 'Guardar música en el plan'}
                 </button>

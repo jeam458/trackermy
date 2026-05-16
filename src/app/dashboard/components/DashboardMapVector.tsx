@@ -59,16 +59,16 @@ function MapLayerStylePickerPortal({
           onClose()
         }}
         className={`flex w-full items-start gap-3 rounded-xl border px-3 py-3 text-left transition-colors ${
-          active ? 'border-teal-500/50 bg-teal-500/10' : 'border-white/10 bg-slate-800/40 hover:bg-white/5'
+          active ? 'border-gdh-brand/45 bg-gdh-brand/12' : 'border-white/10 bg-slate-800/40 hover:bg-white/5'
         }`}
       >
-        <span className="mt-0.5 text-teal-400">
+        <span className="mt-0.5 text-gdh-brand-highlight">
           <Icon size={20} aria-hidden />
         </span>
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-2 font-semibold text-white">
             {title}
-            {active ? <Check size={16} className="text-teal-400" aria-hidden /> : null}
+            {active ? <Check size={16} className="text-gdh-brand-highlight" aria-hidden /> : null}
           </span>
           <span className="mt-0.5 block text-xs text-slate-400">{desc}</span>
         </span>
@@ -399,9 +399,9 @@ export default function DashboardMapVector() {
           'flex size-8 items-center justify-center transition-all',
           'hover:bg-accent dark:hover:bg-accent/40',
           'focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset',
-          tilePreset === 'dark' && 'text-amber-600 dark:text-amber-300',
-          tilePreset === 'outdoor' && 'text-emerald-600 dark:text-emerald-300',
-          tilePreset === 'natural' && 'text-sky-500 dark:text-sky-300'
+          tilePreset === 'dark' && 'text-gdh-brand-highlight',
+          tilePreset === 'outdoor' && 'text-gdh-sun',
+          tilePreset === 'natural' && 'text-gdh-muted'
         )}
       >
         <Layers className="size-4" aria-hidden />
@@ -452,14 +452,14 @@ export default function DashboardMapVector() {
                   </div>
                 ) : (
                   <div
-                    className="h-5 w-5 rounded-full border-[3px] border-white bg-blue-500 shadow-lg"
+                    className="h-5 w-5 rounded-full border-[3px] border-white bg-gdh-brand shadow-lg"
                     style={{ boxShadow: '0 2px 8px rgba(0,0,0,.5)' }}
                   />
                 )}
               </MarkerContent>
               <MarkerPopup>
                 <div className="px-3 py-2.5 pr-8 text-white">
-                  <strong className="text-blue-400">Tu ubicación</strong>
+                  <strong className="text-gdh-brand-highlight">Tu ubicación</strong>
                 </div>
               </MarkerPopup>
             </MapMarker>
@@ -468,10 +468,10 @@ export default function DashboardMapVector() {
           {routes.map((route) => {
             const diffColor =
               route.difficulty === 'Expert'
-                ? 'text-red-400'
+                ? 'text-rose-400'
                 : route.difficulty === 'Intermediate'
-                  ? 'text-sky-400'
-                  : 'text-emerald-400'
+                  ? 'text-slate-300'
+                  : 'text-gdh-sun'
             const diffText =
               route.difficulty === 'Expert'
                 ? 'Experto'
@@ -522,7 +522,7 @@ export default function DashboardMapVector() {
                     <div className="mt-3 flex justify-end">
                       <Link
                         href={routeViewUrl(route.id, 'discover')}
-                        className="gdh-discover-route-cta inline-flex min-h-[2.85rem] min-w-[200px] w-[min(100%,17.5rem)] items-center justify-center rounded-xl bg-gradient-to-r from-gdh-brand to-gdh-brand-muted px-5 py-3 text-sm font-semibold text-white shadow-md shadow-teal-900/30 [text-shadow:0_1px_2px_rgba(0,0,0,0.35)] transition-colors hover:from-gdh-brand-highlight hover:to-gdh-brand"
+                        className="gdh-discover-route-cta inline-flex min-h-[2.85rem] min-w-[200px] w-[min(100%,17.5rem)] items-center justify-center rounded-xl bg-gradient-to-r from-gdh-brand to-gdh-brand-muted px-5 py-3 text-sm font-semibold text-white shadow-md shadow-[0_8px_24px_rgba(197,90,47,0.35)] [text-shadow:0_1px_2px_rgba(0,0,0,0.35)] transition-colors hover:from-gdh-brand-highlight hover:to-gdh-brand"
                       >
                         Ver detalles
                       </Link>

@@ -151,7 +151,7 @@ function LiveRiderMarkerContent({
 
 function LiveGpsPin() {
   return (
-    <MarkerContent className="flex h-[34px] w-[34px] items-center justify-center rounded-full border-[3px] border-slate-900 bg-gradient-to-br from-teal-400 to-teal-700 text-[15px] shadow-lg">
+    <MarkerContent className="flex h-[34px] w-[34px] items-center justify-center rounded-full border-[3px] border-slate-900 bg-gradient-to-br from-gdh-brand-highlight to-gdh-brand text-[15px] shadow-lg">
       🚴
     </MarkerContent>
   )
@@ -442,7 +442,7 @@ export function RouteMapEditor({
             )}
             <MarkerPopup className="max-w-62 border border-white/10 bg-slate-900 p-2 text-slate-100 shadow-xl">
               <div className="p-2">
-                <strong className="text-teal-400">Tu posición (GPS)</strong>
+                <strong className="text-gdh-brand-highlight">Tu posición (GPS)</strong>
                 <p className="mt-1 text-xs text-slate-400">
                   {riderPreviewPosition.latitude.toFixed(6)}, {riderPreviewPosition.longitude.toFixed(6)}
                 </p>
@@ -484,7 +484,7 @@ export function RouteMapEditor({
                     liveRecording
                       ? 'text-red-400'
                       : previewRiderAvatar
-                        ? 'text-teal-400'
+                        ? 'text-gdh-brand-highlight'
                         : 'text-red-400'
                   }
                 >
@@ -510,8 +510,8 @@ export function RouteMapEditor({
           if (!point) return null
           const r = liveRecording ? 3 : 8
           const w = liveRecording ? 1 : 2
-          const fill = liveRecording ? recordingAccent : '#0ea5e9'
-          const stroke = liveRecording ? hexToRgba(recordingAccent, 0.55) : '#38bdf8'
+          const fill = liveRecording ? recordingAccent : '#e37845'
+          const stroke = liveRecording ? hexToRgba(recordingAccent, 0.55) : '#e37845'
           return (
             <MapMarker
               key={liveRecording ? `live-tp-${index}` : `tp-${index}`}
@@ -545,7 +545,7 @@ export function RouteMapEditor({
                   {point.altitude != null && (
                     <p className="text-xs text-slate-500">Altitud: {point.altitude.toFixed(0)}m</p>
                   )}
-                  {isDrawing && <p className="mt-2 text-xs text-sky-400">Click para eliminar</p>}
+                  {isDrawing && <p className="mt-2 text-xs text-gdh-brand-highlight">Click para eliminar</p>}
                 </div>
               </MarkerPopup>
             </MapMarker>
@@ -596,9 +596,9 @@ export function RouteMapEditor({
               <span className="text-sm text-slate-300">Meta {endPoint ? '✓' : ''}</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="h-3 w-3 rounded-full bg-sky-500" />
+              <div className="h-3 w-3 rounded-full bg-gdh-brand-highlight" />
               <span className="text-sm text-slate-300">Intermedios</span>
-              <span className="ml-auto rounded-full bg-sky-500/20 px-2 py-0.5 text-xs text-sky-300">
+              <span className="ml-auto rounded-full bg-gdh-brand-highlight/20 px-2 py-0.5 text-xs text-gdh-brand-highlight">
                 {trackPoints.length}
               </span>
             </div>
@@ -619,7 +619,7 @@ export function RouteMapEditor({
             <button
               type="button"
               onClick={() => startPointSelection?.('intermediate')}
-              className="mb-3 flex w-full items-center justify-center gap-2 rounded-lg bg-sky-600 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-sky-500"
+              className="mb-3 flex w-full items-center justify-center gap-2 rounded-lg bg-gdh-brand px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-gdh-brand-highlight"
             >
               Siguiente: puntos del trazado
               <ChevronRight size={16} />
@@ -646,7 +646,7 @@ export function RouteMapEditor({
                   <button
                     type="button"
                     onClick={() => startPointSelection?.('intermediate')}
-                    className="flex w-full items-center gap-2 rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-500"
+                    className="flex w-full items-center gap-2 rounded-lg bg-gdh-brand px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-gdh-brand-highlight"
                   >
                     <Navigation size={16} />
                     Punto intermedio (mapa)
@@ -658,7 +658,7 @@ export function RouteMapEditor({
                       onClick={() => {
                         onUseCurrentLocation?.()
                       }}
-                      className="flex w-full items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-500"
+                      className="flex w-full items-center gap-2 rounded-lg bg-gdh-sun px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-gdh-sun/90"
                     >
                       <Navigation size={16} />
                       Mi ubicación
@@ -670,7 +670,7 @@ export function RouteMapEditor({
                   <button
                     type="button"
                     onClick={() => startPointSelection?.('intermediate')}
-                    className="flex w-full items-center gap-2 rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-500"
+                    className="flex w-full items-center gap-2 rounded-lg bg-gdh-brand px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-gdh-brand-highlight"
                   >
                     <Navigation size={16} />
                     Otro intermedio
@@ -682,7 +682,7 @@ export function RouteMapEditor({
                       onClick={() => {
                         onUseCurrentLocation?.()
                       }}
-                      className="flex w-full items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-500"
+                      className="flex w-full items-center gap-2 rounded-lg bg-gdh-sun px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-gdh-sun/90"
                     >
                       <Navigation size={16} />
                       Mi ubicación
@@ -701,13 +701,13 @@ export function RouteMapEditor({
                     ? 'border-green-500 bg-green-950/80'
                     : pointSelectionMode === 'end'
                       ? 'border-red-500 bg-red-950/80'
-                      : 'border-sky-500 bg-sky-950/80'
+                      : 'border-gdh-brand-highlight bg-gdh-brand/15'
                 }`}
               >
                 <p className="mb-1 flex items-center gap-2 text-sm font-medium text-white">
                   {pointSelectionMode === 'start' && <MapPin className="text-green-400" size={16} />}
                   {pointSelectionMode === 'end' && <MapPin className="text-red-400" size={16} />}
-                  {pointSelectionMode === 'intermediate' && <Navigation className="text-sky-400" size={16} />}
+                  {pointSelectionMode === 'intermediate' && <Navigation className="text-gdh-brand-highlight" size={16} />}
                   {pointSelectionMode === 'start' && 'Toca el mapa: INICIO'}
                   {pointSelectionMode === 'end' && 'Toca el mapa: META'}
                   {pointSelectionMode === 'intermediate' && 'Toca el mapa: punto intermedio'}

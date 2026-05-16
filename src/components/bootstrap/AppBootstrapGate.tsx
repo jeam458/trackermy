@@ -43,17 +43,17 @@ export function AppBootstrapGate({ children }: { children: React.ReactNode }) {
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(14,116,144,0.18),transparent_58%)]" />
         <div className="relative z-10 flex w-full max-w-xl flex-col items-center px-6 text-center">
           <BrandLogoLoader label={status.message || 'Preparando recursos...'} compact showRing />
-          <p className="mt-4 text-lg font-semibold text-cyan-100">Preparando IA local y datos offline</p>
+          <p className="mt-4 text-lg font-semibold text-gdh-brand-highlight">Preparando IA local y datos offline</p>
           {progress != null ? (
-            <div className="mt-4 h-2 w-full max-w-sm overflow-hidden rounded-full bg-cyan-950/70">
+            <div className="mt-4 h-2 w-full max-w-sm overflow-hidden rounded-full bg-black/35">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-teal-400 transition-all duration-300"
+                className="h-full rounded-full bg-gradient-to-r from-gdh-brand to-gdh-brand-highlight transition-all duration-300"
                 style={{ width: `${progress}%` }}
               />
             </div>
           ) : null}
           {status.modelId ? (
-            <p className="mt-2 text-center text-xs text-cyan-200/80">Modelo local: {status.modelId}</p>
+            <p className="mt-2 text-center text-xs text-gdh-muted">Modelo local: {status.modelId}</p>
           ) : null}
           {status.modelLoadNote ? (
             <p className="mt-2 max-h-24 overflow-y-auto text-center text-[11px] leading-snug text-amber-200/90">

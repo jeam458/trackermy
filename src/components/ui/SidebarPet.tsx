@@ -2,14 +2,12 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { CoachNotification } from '@/components/ui/CoachNotification'
 import type { PetAiMindState } from '@/components/pet/GuardDhPetAtlas'
-import type { GuidePetMood } from '@/lib/pet/guidePetBridge'
 
 interface SidebarPetProps {
   sidebarOpen: boolean
   petVisible: boolean
   petEmotion: any
   petAiMindState: PetAiMindState | 'off' | 'thinking'
-  petMood: GuidePetMood
   toastGlanceKey: number
   glanceDir: 'above' | 'below'
   activeTitle: string
@@ -28,7 +26,6 @@ export function SidebarPet({
   petVisible,
   petEmotion,
   petAiMindState,
-  petMood,
   toastGlanceKey,
   glanceDir,
   activeTitle,
@@ -75,7 +72,6 @@ export function SidebarPet({
           externalEventSource={externalEventSource}
           externalEventToastType={externalEventToastType}
           guideLlmThinking={guideLlmThinking}
-          petMood={petMood}
           petVisible={petVisible}
           petEmotion={petEmotion}
           petAiMindState={petAiMindState}

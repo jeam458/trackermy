@@ -6,7 +6,7 @@ import { usePathname, useSearchParams } from 'next/navigation'
 import { usePetVisibility } from '@/hooks/usePetVisibility'
 import { VoiceControlPanel, COACH_DOCK_CLUSTER_CLASS, COACH_HEADER_CLUSTER_CLASS } from '@/components/ui/VoiceControlPanel'
 import { RouteViewCoachCluster } from '@/components/ui/RouteViewCoachCluster'
-import { CoachNotification } from '@/components/ui/CoachNotification'
+import { CoachNotification, type CoachEngagementHandlers } from '@/components/ui/CoachNotification'
 import { SidebarPetContent } from '@/components/ui/SidebarPetContent'
 import { RecordDockCoach } from '@/components/ui/RecordDockCoach'
 import type { PetAiMindState } from '@/components/pet/GuardDhPetAtlas'
@@ -35,6 +35,12 @@ import {
 } from '@/lib/guide-ai/guideDashboardReactiveTurn'
 import { generateGuideReactionWithLightLlm, warmupGuideLlmEngine } from '@/lib/guide-ai/lightweightGuideLlm'
 import { buildGuideInteractionSessionHint } from '@/lib/guide-ai/guideSessionHint'
+import {
+  appendGuideCoachTurnMemory,
+  coachTurnMemoryForPrompt,
+  type GuideCoachTurnMemoryEntry,
+} from '@/lib/guide-ai/guideCoachTurnMemory'
+import { submitGuideCoachFeedback } from '@/lib/guide-ai/submitGuideCoachFeedback'
 import type { GuideContext, GuideGpsHint, GuideUiEvent } from '@/lib/guide-ai/types'
 import { GDH_VOICE_NAVIGATE_EVENT } from '@/lib/voice/voiceCoachEvents'
 import { cancelGuideCoachSpeech, speakGuideCoachMessage } from '@/lib/voice/guideCoachSpeech'
@@ -61,6 +67,32 @@ import { SIDEBAR_PET_SLOT_ID, MIN_GUIDE_THINKING_MS, type RiderMood, type RiderS
 import { buildAffectiveAugmentForLlm } from './helpers'
 import { isDashboardCoachHeaderSlotRoute } from '@/lib/dashboard/discoverCoachPaths'
 import { useGuideReplaySignals } from './useGuideReplaySignals'
+
+/** Deja pintar la nueva ruta antes de Supabase/WebLLM (menos sensación de “traba” al navegar). */
+function yieldToPaint(): Promise<void> {
+  if (typeof window === 'undefined' || typeof requestAnimationFrame === 'undefined') {
+    return Promise.resolve()
+  }
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => resolve())
+    })
+  })
+}
+
+function recordCoachTurn(
+  ref: { current: GuideCoachTurnMemoryEntry[] },
+  ev: Pick<GuideUiEvent, 'type' | 'label' | 'userMessage'>,
+  reaction: { title: string; subtitle: string },
+): void {
+  appendGuideCoachTurnMemory(ref, {
+    trigger: ev.type,
+    label: ev.label,
+    userMessage: ev.userMessage,
+    coachTitle: reaction.title,
+    coachSubtitleSnippet: reaction.subtitle.slice(0, 200),
+  })
+}
 
 export function DashboardRiderCore() {
   const pathname = usePathname()
@@ -242,6 +274,8 @@ export function DashboardRiderCore() {
   const lastNetworkLlmNoticeRef = useRef(0)
   const lastNetworkNoAuthNoticeRef = useRef(0)
   const followupTimersRef = useRef<number[]>([])
+  const idleProbeTimerRef = useRef<number | null>(null)
+  const coachTurnMemoryRef = useRef<GuideCoachTurnMemoryEntry[]>([])
   const viewEnteredAtRef = useRef<number>(Date.now())
   const currentViewKeyRef = useRef<string>('')
   const spokenTitlesRef = useRef<string[]>([])
@@ -262,6 +296,12 @@ export function DashboardRiderCore() {
     }
     return new SupabaseGuideDataProvider(createClient())
   }, [])
+  /** Evita un `auth.getUser()` extra dentro de `getContext` cuando ya tenemos metadata del turno de navegación. */
+  const coachAuthMetadataRef = useRef<Record<string, unknown> | null>(null)
+
+  useEffect(() => {
+    if (!userId) coachAuthMetadataRef.current = null
+  }, [userId])
   const contextualRouteId = (searchParams.get('id') || searchParams.get('routeId') || '').trim() || null
   const contextualAttemptId = (searchParams.get('attemptId') || '').trim() || null
   const viewKey = `${pathname}|${contextualRouteId ?? ''}|${contextualAttemptId ?? ''}`
@@ -283,21 +323,160 @@ export function DashboardRiderCore() {
     lastSpokenAtRef,
     spokenTitlesRef,
     viewEnteredAtRef,
+    coachAuthMetadataRef,
+    coachTurnMemoryRef,
   })
 
   const clearFollowupTimers = () => {
     followupTimersRef.current.forEach((id) => window.clearTimeout(id))
     followupTimersRef.current = []
+    if (idleProbeTimerRef.current != null) {
+      window.clearTimeout(idleProbeTimerRef.current)
+      idleProbeTimerRef.current = null
+    }
   }
 
+  const coachBubbleSig = useMemo(() => {
+    if (!externalEvent || externalEvent.source === 'toast') return null
+    return `${externalEvent.title ?? ''}|${externalEvent.subtitle ?? ''}|${externalEvent.source ?? ''}`
+  }, [externalEvent?.title, externalEvent?.subtitle, externalEvent?.source])
+
+  const [coachFeedbackConsumed, setCoachFeedbackConsumed] = useState(false)
   useEffect(() => {
-    cancelGuideCoachSpeech()
+    setCoachFeedbackConsumed(false)
+  }, [coachBubbleSig])
+
+  const handleCoachFeedback = useCallback(
+    (sentiment: -1 | 1) => {
+      if (!coachBubbleSig || coachFeedbackConsumed) return
+      submitGuideCoachFeedback({ screenKind: inferScreenKind(pathname), sentiment })
+      setCoachFeedbackConsumed(true)
+    },
+    [coachBubbleSig, coachFeedbackConsumed, pathname],
+  )
+
+  const handleCoachUserMessage = useCallback(
+    (text: string) => {
+      if (!userId) return
+      const trimmed = text.trim()
+      if (trimmed.length < 2) return
+      const llmKey = viewKey
+      void (async () => {
+        try {
+          affectiveWorldRef.current.ingestAppTrigger('coach.user_message', { length: trimmed.length })
+          const snap = pageGuideContextRef.current
+          const sameSession =
+            snap &&
+            snap.pathname === pathname &&
+            (snap.routeId ?? null) === (contextualRouteId ?? null) &&
+            (snap.attemptId ?? null) === (contextualAttemptId ?? null)
+          let ctx: GuideContext
+          if (sameSession && snap) {
+            ctx = {
+              ...snap,
+              gpsHint: petClientHints.gpsHint,
+              networkOnline: petClientHints.networkOnline,
+            }
+            pageGuideContextRef.current = ctx
+          } else {
+            ctx = (await provider.getContext({
+              pathname,
+              userId,
+              geo: approxGeo ?? undefined,
+              routeId: contextualRouteId,
+              attemptId: contextualAttemptId || undefined,
+              clientHints: petClientHints,
+              ...(coachAuthMetadataRef.current != null ? { authMetadata: coachAuthMetadataRef.current } : {}),
+            })) as GuideContext
+            pageGuideContextRef.current = ctx
+          }
+          const userEv: GuideUiEvent = {
+            type: 'user-message',
+            pathname,
+            label: 'coach:user_message',
+            userMessage: trimmed,
+            timestamp: Date.now(),
+          }
+          const reaction = await runLlmReaction(() =>
+            generateGuideReactionWithLightLlm({
+              context: ctx,
+              event: userEv,
+              executeMcpTools: true,
+              sessionReplaySignals:
+                pathname.includes('/dashboard/routes/attempt-replay') && sessionReplaySignalsRef.current.length
+                  ? [...sessionReplaySignalsRef.current]
+                  : undefined,
+              affectiveAugment: buildAffectiveAugmentForLlm(affectiveWorldRef.current, ctx),
+              sessionHint: buildGuideInteractionSessionHint({
+                viewEnteredAtMs: viewEnteredAtRef.current,
+                recentCoachTitlesLower: spokenTitlesRef.current,
+                lastTriggerType: 'user-message',
+              }),
+              coachTurnMemory: coachTurnMemoryForPrompt(coachTurnMemoryRef),
+            })
+          )
+          if (currentViewKeyRef.current !== llmKey) return
+          recordCoachTurn(coachTurnMemoryRef, userEv, reaction)
+          setExternalEvent({
+            mood: reaction.mood,
+            title: reaction.title,
+            subtitle: reaction.subtitle,
+            duration: Math.min(10_000, Math.max(4000, reaction.duration)),
+            source: 'coach',
+          })
+          lastSpokenAtRef.current = Date.now()
+          spokenTitlesRef.current = [...spokenTitlesRef.current.slice(-5), reaction.title.trim().toLowerCase()]
+          setMessageVisible(true)
+        } catch {
+          /* noop */
+        }
+      })()
+    },
+    [
+      userId,
+      pathname,
+      contextualRouteId,
+      contextualAttemptId,
+      viewKey,
+      provider,
+      runLlmReaction,
+      approxGeo,
+      petClientHints,
+    ],
+  )
+
+  const coachEngagement: CoachEngagementHandlers | null = useMemo(() => {
+    const p = (pathname || '').toLowerCase()
+    if (
+      !userId ||
+      p.includes('/dashboard/routes/record') ||
+      p.includes('/dashboard/routes/attempt-replay')
+    ) {
+      return null
+    }
+    return {
+      onAsk: handleCoachUserMessage,
+      onFeedback: handleCoachFeedback,
+      busy: guideLlmThinking,
+      feedbackLocked: coachFeedbackConsumed,
+    }
+  }, [
+    userId,
+    pathname,
+    guideLlmThinking,
+    coachFeedbackConsumed,
+    handleCoachUserMessage,
+    handleCoachFeedback,
+  ])
+
+  useEffect(() => {
     setIsLoadingPulse(true)
     setMessageVisible(true)
     clearGuidePetMood()
     const t = window.setTimeout(() => setIsLoadingPulse(false), 820)
     clearFollowupTimers()
     spokenTitlesRef.current = []
+    coachTurnMemoryRef.current = []
     viewEnteredAtRef.current = Date.now()
     affectiveWorldRef.current.reset()
     didPulseGeoFixRef.current = false
@@ -334,10 +513,11 @@ export function DashboardRiderCore() {
       cancelGuideCoachSpeech()
       return
     }
-    if (!messageVisible || !externalEvent || isLoadingPulse) {
-      cancelGuideCoachSpeech()
-      return
-    }
+    if (isLoadingPulse) return
+    // No cancelar TTS al ocultar burbuja por timer (`externalEvent` null): la voz suele durar más
+    // que `duration` y `cancelGuideCoachSpeech` cortaba la frase a mitad. Sigue cancelando con TTS
+    // desactivado, al desmontar el rider, o al iniciar una locución nueva desde `speakGuideCoachMessage`.
+    if (!messageVisible || !externalEvent) return
     const title = (externalEvent.title ?? '').trim()
     const sub = (externalEvent.subtitle ?? '').trim()
     if (!title) {
@@ -362,7 +542,7 @@ export function DashboardRiderCore() {
       return
     }
     if (!externalEvent.title?.trim()) return
-    if (externalEvent.source === 'toast') return
+    if (externalEvent.source === 'toast' || externalEvent.source === 'coach') return
     const sk = inferScreenKind(pathname)
     const sig = `${sk}|${externalEvent.title}|${externalEvent.subtitle || ''}`
     if (sig === lastCoachInsightSigRef.current) return
@@ -491,6 +671,7 @@ export function DashboardRiderCore() {
             routeId: contextualRouteId,
             attemptId: contextualAttemptId || undefined,
             clientHints: petClientHints,
+            ...(coachAuthMetadataRef.current != null ? { authMetadata: coachAuthMetadataRef.current } : {}),
           })) as GuideContext
           if (cancelled) return
           pageGuideContextRef.current = ctx
@@ -513,6 +694,7 @@ export function DashboardRiderCore() {
               recentCoachTitlesLower: spokenTitlesRef.current,
               lastTriggerType: 'data-refresh',
             }),
+            coachTurnMemory: coachTurnMemoryForPrompt(coachTurnMemoryRef),
           })
         )
         if (cancelled) return
@@ -525,6 +707,7 @@ export function DashboardRiderCore() {
           source: 'navigation',
           toastType: mapReactionMoodToToastType(reaction.mood),
         })
+        recordCoachTurn(coachTurnMemoryRef, { type: 'data-refresh', label }, reaction)
         setMessageVisible(true)
       } catch {
         if (!cancelled) staticGpsBubble()
@@ -619,6 +802,7 @@ export function DashboardRiderCore() {
             routeId: contextualRouteId,
             attemptId: contextualAttemptId || undefined,
             clientHints: petClientHints,
+            ...(coachAuthMetadataRef.current != null ? { authMetadata: coachAuthMetadataRef.current } : {}),
           })) as GuideContext
           if (cancelled) return
           pageGuideContextRef.current = ctx
@@ -640,6 +824,7 @@ export function DashboardRiderCore() {
               recentCoachTitlesLower: spokenTitlesRef.current,
               lastTriggerType: 'data-refresh',
             }),
+            coachTurnMemory: coachTurnMemoryForPrompt(coachTurnMemoryRef),
           })
         )
         if (cancelled) return
@@ -651,6 +836,7 @@ export function DashboardRiderCore() {
           source: 'navigation',
           toastType: mapReactionMoodToToastType(reaction.mood),
         })
+        recordCoachTurn(coachTurnMemoryRef, { type: 'data-refresh', label }, reaction)
         setMessageVisible(true)
       } catch {
         if (!cancelled) staticNetBubble()
@@ -678,6 +864,8 @@ export function DashboardRiderCore() {
 
     ;(async () => {
       try {
+        await yieldToPaint()
+        if (cancelled) return
         const supabase = createClient()
         const {
           data: { user },
@@ -685,6 +873,10 @@ export function DashboardRiderCore() {
         if (!user) return
         if (cancelled) return
         setUserId(user.id)
+        coachAuthMetadataRef.current =
+          user.user_metadata && typeof user.user_metadata === 'object'
+            ? (user.user_metadata as Record<string, unknown>)
+            : {}
 
         const onRouteDetail = pathname.toLowerCase().includes('/dashboard/routes/view')
         const onAttemptStats = pathname.toLowerCase().includes('/dashboard/routes/attempt-stats')
@@ -695,6 +887,7 @@ export function DashboardRiderCore() {
           routeId: contextualRouteId,
           attemptId: contextualAttemptId || undefined,
           clientHints: petClientHints,
+          authMetadata: coachAuthMetadataRef.current,
         })) as GuideContext
         if (cancelled) return
 
@@ -740,139 +933,213 @@ export function DashboardRiderCore() {
           pathname,
           label: navEvent.label,
         })
-        const reaction = await runLlmReaction(() =>
-          generateGuideReactionWithLightLlm({
-            context: ctx,
-            event: navEvent,
-            sessionReplaySignals:
-              pathname.includes('/dashboard/routes/attempt-replay') && sessionReplaySignalsRef.current.length
-                ? [...sessionReplaySignalsRef.current]
-                : undefined,
-            affectiveAugment: buildAffectiveAugmentForLlm(affectiveWorldRef.current, ctx),
-            sessionHint: buildGuideInteractionSessionHint({
-              viewEnteredAtMs: viewEnteredAtRef.current,
-              recentCoachTitlesLower: spokenTitlesRef.current,
-              lastTriggerType: 'navigation',
-            }),
-          })
-        )
-        if (cancelled) return
-        const pLower = pathname.toLowerCase()
-        const onActivity = pLower.includes('/dashboard/activity')
-        const onRanking =
-          pLower.includes('/dashboard/ranking') || pLower.includes('/dashboard/routes/route-ranking')
-        const onNotifications = pLower.includes('/dashboard/notifications')
-        const onDashboardHome = pLower === '/dashboard'
-        const dwellMs =
-          onRouteDetail || onAttemptStats
-            ? Math.max(reaction.duration, 8600)
-            : onActivity || onRanking
-              ? Math.max(reaction.duration, 7200)
-              : pLower.includes('attempt-replay')
-                ? Math.max(reaction.duration, 7200)
-                : reaction.duration
-        setExternalEvent({
-          mood: reaction.mood,
-          title: reaction.title,
-          subtitle: reaction.subtitle,
-          duration: dwellMs,
-          source: 'navigation',
-        })
-        lastSpokenAtRef.current = Date.now()
-        spokenTitlesRef.current = [reaction.title.trim().toLowerCase()]
+        const llmSessionKey = viewKey
+        void (async () => {
+          try {
+            const reaction = await runLlmReaction(() =>
+              generateGuideReactionWithLightLlm({
+                context: ctx,
+                event: navEvent,
+                sessionReplaySignals:
+                  pathname.includes('/dashboard/routes/attempt-replay') && sessionReplaySignalsRef.current.length
+                    ? [...sessionReplaySignalsRef.current]
+                    : undefined,
+                affectiveAugment: buildAffectiveAugmentForLlm(affectiveWorldRef.current, ctx),
+                sessionHint: buildGuideInteractionSessionHint({
+                  viewEnteredAtMs: viewEnteredAtRef.current,
+                  recentCoachTitlesLower: spokenTitlesRef.current,
+                  lastTriggerType: 'navigation',
+                }),
+                coachTurnMemory: coachTurnMemoryForPrompt(coachTurnMemoryRef),
+              })
+            )
+            if (cancelled || currentViewKeyRef.current !== llmSessionKey) return
+            const pLower = pathname.toLowerCase()
+            const onActivity = pLower.includes('/dashboard/activity')
+            const onRanking =
+              pLower.includes('/dashboard/ranking') || pLower.includes('/dashboard/routes/route-ranking')
+            const onNotifications = pLower.includes('/dashboard/notifications')
+            const onDashboardHome = pLower === '/dashboard'
+            const dwellMs =
+              onRouteDetail || onAttemptStats
+                ? Math.max(reaction.duration, 8600)
+                : onActivity || onRanking
+                  ? Math.max(reaction.duration, 7200)
+                  : pLower.includes('attempt-replay')
+                    ? Math.max(reaction.duration, 7200)
+                    : reaction.duration
+            setExternalEvent({
+              mood: reaction.mood,
+              title: reaction.title,
+              subtitle: reaction.subtitle,
+              duration: dwellMs,
+              source: 'navigation',
+            })
+            recordCoachTurn(coachTurnMemoryRef, navEvent, reaction)
+            lastSpokenAtRef.current = Date.now()
+            spokenTitlesRef.current = [reaction.title.trim().toLowerCase()]
 
-        const shouldProgressiveTalk =
-          pLower.includes('/dashboard/routes/view') ||
-          pLower.includes('/dashboard/routes/attempt-') ||
-          onActivity ||
-          onRanking ||
-          onNotifications ||
-          onDashboardHome
-        if (shouldProgressiveTalk) {
-          clearFollowupTimers()
-          const delays = onRouteDetail
-            ? [5600, 12800]
-            : pLower.includes('/dashboard/routes/attempt-replay')
-              ? [4000, 8000, 12000, 16800, 22000, 28000]
-              : pLower.includes('/dashboard/routes/attempt-')
-                ? [7000, 15000]
-                : onActivity
-                ? [4200, 9000, 15000, 21000]
-                : onRanking
-                  ? [4800, 11000, 17000]
-                  : onNotifications
-                    ? [4000, 9500]
-                    : onDashboardHome
-                      ? [5200, 12000, 18500]
-                      : [7000, 15000]
-          for (let i = 0; i < delays.length; i += 1) {
-            const timerId = window.setTimeout(() => {
-              void (async () => {
-                if (currentViewKeyRef.current !== viewKey) return
-                if (document.hidden) return
-                if (
-                  Date.now() - lastSpokenAtRef.current <
-                  (pLower.includes('attempt-replay') ? 2800 : 4200)
-                )
-                  return
-                try {
-                  const snap = pageGuideContextRef.current
-                  if (!snap) return
-                  const followEvent: GuideUiEvent = {
-                    type: 'data-refresh',
-                    pathname,
-                    label: pLower.includes('attempt-replay')
-                      ? `interactive:replay_followup_${i + 1}`
-                      : `followup_turn_${i + 1}`,
-                    timestamp: Date.now(),
-                  }
-                  affectiveWorldRef.current.ingestAppTrigger('coach.scheduled_followup', {
-                    label: followEvent.label,
-                  })
-                  const followMcp =
-                    onActivity && (i === 1 || i === 3)
-                  const nextReaction = await runLlmReaction(() =>
-                    generateGuideReactionWithLightLlm({
-                      context: snap,
-                      event: followEvent,
-                      executeMcpTools: followMcp,
-                      sessionReplaySignals:
-                        pathname.includes('/dashboard/routes/attempt-replay') &&
-                        sessionReplaySignalsRef.current.length
-                          ? [...sessionReplaySignalsRef.current]
-                          : undefined,
-                      affectiveAugment: buildAffectiveAugmentForLlm(affectiveWorldRef.current, snap),
-                      sessionHint: buildGuideInteractionSessionHint({
-                        viewEnteredAtMs: viewEnteredAtRef.current,
-                        recentCoachTitlesLower: spokenTitlesRef.current,
-                        lastTriggerType: 'data-refresh',
-                      }),
+            const shouldProgressiveTalk =
+              pLower.includes('/dashboard/routes/view') ||
+              pLower.includes('/dashboard/routes/attempt-') ||
+              onActivity ||
+              onRanking ||
+              onNotifications ||
+              onDashboardHome
+            if (shouldProgressiveTalk) {
+              clearFollowupTimers()
+              const delays = onRouteDetail
+                ? [5600, 12800]
+                : pLower.includes('/dashboard/routes/attempt-replay')
+                  ? [4000, 8000, 12000, 16800, 22000, 28000]
+                  : pLower.includes('/dashboard/routes/attempt-')
+                    ? [7000, 15000]
+                    : onActivity
+                      ? [4200, 9000, 15000, 21000]
+                      : onRanking
+                        ? [4800, 11000, 17000]
+                        : onNotifications
+                          ? [4000, 9500]
+                          : onDashboardHome
+                            ? [5200, 12000, 18500]
+                            : [7000, 15000]
+              for (let i = 0; i < delays.length; i += 1) {
+                const timerId = window.setTimeout(() => {
+                  void (async () => {
+                    if (currentViewKeyRef.current !== llmSessionKey) return
+                    if (document.hidden) return
+                    if (
+                      Date.now() - lastSpokenAtRef.current <
+                      (pLower.includes('attempt-replay') ? 2800 : 4200)
+                    )
+                      return
+                    try {
+                      const snap = pageGuideContextRef.current
+                      if (!snap) return
+                      const followEvent: GuideUiEvent = {
+                        type: 'data-refresh',
+                        pathname,
+                        label: pLower.includes('attempt-replay')
+                          ? `interactive:replay_followup_${i + 1}`
+                          : `followup_turn_${i + 1}`,
+                        timestamp: Date.now(),
+                      }
+                      affectiveWorldRef.current.ingestAppTrigger('coach.scheduled_followup', {
+                        label: followEvent.label,
+                      })
+                      const followMcp = onActivity && (i === 1 || i === 3)
+                      const nextReaction = await runLlmReaction(() =>
+                        generateGuideReactionWithLightLlm({
+                          context: snap,
+                          event: followEvent,
+                          executeMcpTools: followMcp,
+                          sessionReplaySignals:
+                            pathname.includes('/dashboard/routes/attempt-replay') &&
+                            sessionReplaySignalsRef.current.length
+                              ? [...sessionReplaySignalsRef.current]
+                              : undefined,
+                          affectiveAugment: buildAffectiveAugmentForLlm(affectiveWorldRef.current, snap),
+                          sessionHint: buildGuideInteractionSessionHint({
+                            viewEnteredAtMs: viewEnteredAtRef.current,
+                            recentCoachTitlesLower: spokenTitlesRef.current,
+                            lastTriggerType: 'data-refresh',
+                          }),
+                          coachTurnMemory: coachTurnMemoryForPrompt(coachTurnMemoryRef),
+                        })
+                      )
+                      const key = nextReaction.title.trim().toLowerCase()
+                      if (!key || spokenTitlesRef.current.includes(key)) return
+                      spokenTitlesRef.current = [...spokenTitlesRef.current.slice(-5), key]
+                      lastSpokenAtRef.current = Date.now()
+                      recordCoachTurn(coachTurnMemoryRef, followEvent, nextReaction)
+                      setExternalEvent({
+                        mood: nextReaction.mood,
+                        title: nextReaction.title,
+                        subtitle: nextReaction.subtitle,
+                        duration:
+                          pLower.includes('attempt-replay')
+                            ? Math.max(nextReaction.duration, 6200)
+                            : nextReaction.duration,
+                        source: 'navigation',
+                        ...(pLower.includes('attempt-replay')
+                          ? { toastType: mapReactionMoodToToastType(nextReaction.mood) }
+                          : {}),
+                      })
+                      setMessageVisible(true)
+                    } catch {
+                      // noop
+                    }
+                  })()
+                }, delays[i])
+                followupTimersRef.current.push(timerId)
+              }
+            } else if (
+              userId &&
+              !pLower.includes('/dashboard/routes/record') &&
+              !pLower.includes('attempt-replay')
+            ) {
+              if (idleProbeTimerRef.current != null) {
+                window.clearTimeout(idleProbeTimerRef.current)
+              }
+              const idleSession = llmSessionKey
+              idleProbeTimerRef.current = window.setTimeout(() => {
+                void (async () => {
+                  if (currentViewKeyRef.current !== idleSession) return
+                  if (document.hidden) return
+                  if (Date.now() - viewEnteredAtRef.current < 28_000) return
+                  if (Date.now() - lastSpokenAtRef.current < 7000) return
+                  try {
+                    const snap = pageGuideContextRef.current
+                    if (!snap) return
+                    const idleEv: GuideUiEvent = {
+                      type: 'data-refresh',
+                      pathname,
+                      label: 'interactive:idle_probe',
+                      timestamp: Date.now(),
+                    }
+                    affectiveWorldRef.current.ingestAppTrigger('coach.idle_probe', {})
+                    const idleReaction = await runLlmReaction(() =>
+                      generateGuideReactionWithLightLlm({
+                        context: snap,
+                        event: idleEv,
+                        executeMcpTools: false,
+                        sessionReplaySignals:
+                          pathname.includes('/dashboard/routes/attempt-replay') &&
+                          sessionReplaySignalsRef.current.length
+                            ? [...sessionReplaySignalsRef.current]
+                            : undefined,
+                        affectiveAugment: buildAffectiveAugmentForLlm(affectiveWorldRef.current, snap),
+                        sessionHint: buildGuideInteractionSessionHint({
+                          viewEnteredAtMs: viewEnteredAtRef.current,
+                          recentCoachTitlesLower: spokenTitlesRef.current,
+                          lastTriggerType: 'data-refresh',
+                        }),
+                        coachTurnMemory: coachTurnMemoryForPrompt(coachTurnMemoryRef),
+                      })
+                    )
+                    const ik = idleReaction.title.trim().toLowerCase()
+                    if (!ik || spokenTitlesRef.current.includes(ik)) return
+                    spokenTitlesRef.current = [...spokenTitlesRef.current.slice(-5), ik]
+                    lastSpokenAtRef.current = Date.now()
+                    recordCoachTurn(coachTurnMemoryRef, idleEv, idleReaction)
+                    setExternalEvent({
+                      mood: idleReaction.mood,
+                      title: idleReaction.title,
+                      subtitle: idleReaction.subtitle,
+                      duration: idleReaction.duration,
+                      source: 'navigation',
                     })
-                  )
-                  const key = nextReaction.title.trim().toLowerCase()
-                  if (!key || spokenTitlesRef.current.includes(key)) return
-                  spokenTitlesRef.current = [...spokenTitlesRef.current.slice(-5), key]
-                  lastSpokenAtRef.current = Date.now()
-                  setExternalEvent({
-                    mood: nextReaction.mood,
-                    title: nextReaction.title,
-                    subtitle: nextReaction.subtitle,
-                    duration:
-                      pLower.includes('attempt-replay') ? Math.max(nextReaction.duration, 6200) : nextReaction.duration,
-                    source: 'navigation',
-                    ...(pLower.includes('attempt-replay')
-                      ? { toastType: mapReactionMoodToToastType(nextReaction.mood) }
-                      : {}),
-                  })
-                  setMessageVisible(true)
-                } catch {
-                  // noop
-                }
-              })()
-            }, delays[i])
-            followupTimersRef.current.push(timerId)
+                    setMessageVisible(true)
+                  } catch {
+                    /* noop */
+                  }
+                })()
+              }, 32_000)
+            }
+          } catch {
+            /* WebLLM opcional: warmup ya mostró valor */
           }
-        }
+        })()
       } catch {
         const emptyCtx = {
           pathname,
@@ -883,6 +1150,10 @@ export function DashboardRiderCore() {
           routeTrackPointCount: null,
           attemptId: null,
           attemptSummary: null,
+          weeklyKm: null,
+          topRouteName: null,
+          topRouteKm: null,
+          aggregateCoachInsights: null,
           screenKind: inferScreenKind(pathname),
         } as GuideContext
         if (cancelled) return
@@ -1000,6 +1271,7 @@ export function DashboardRiderCore() {
               routeId: contextualRouteId,
               attemptId: contextualAttemptId || undefined,
               clientHints: petClientHints,
+              ...(coachAuthMetadataRef.current != null ? { authMetadata: coachAuthMetadataRef.current } : {}),
             })) as GuideContext
             pageGuideContextRef.current = ctx
           }
@@ -1017,6 +1289,7 @@ export function DashboardRiderCore() {
                 recentCoachTitlesLower: spokenTitlesRef.current,
                 lastTriggerType: 'click',
               }),
+              coachTurnMemory: coachTurnMemoryForPrompt(coachTurnMemoryRef),
             })
           )
           setExternalEvent({
@@ -1026,6 +1299,7 @@ export function DashboardRiderCore() {
             duration: reaction.duration,
             source: 'manual',
           })
+          recordCoachTurn(coachTurnMemoryRef, clickEvent, reaction)
           lastSpokenAtRef.current = Date.now()
           spokenTitlesRef.current = [...spokenTitlesRef.current.slice(-5), reaction.title.trim().toLowerCase()]
         } catch {
@@ -1092,6 +1366,7 @@ export function DashboardRiderCore() {
             routeId: null,
             attemptId: undefined,
             clientHints: petClientHints,
+            ...(coachAuthMetadataRef.current != null ? { authMetadata: coachAuthMetadataRef.current } : {}),
           })) as GuideContext
           if (cancelled) return
           pageGuideContextRef.current = ctx
@@ -1113,6 +1388,7 @@ export function DashboardRiderCore() {
                 recentCoachTitlesLower: spokenTitlesRef.current,
                 lastTriggerType: 'click',
               }),
+              coachTurnMemory: coachTurnMemoryForPrompt(coachTurnMemoryRef),
             })
           )
           if (cancelled) return
@@ -1125,6 +1401,7 @@ export function DashboardRiderCore() {
             source: 'navigation',
             toastType: mapReactionMoodToToastType(reaction.mood),
           })
+          recordCoachTurn(coachTurnMemoryRef, guideEvent, reaction)
           setMessageVisible(true)
         } catch {
           /* turno opcional */
@@ -1235,7 +1512,6 @@ export function DashboardRiderCore() {
      externalEventSource: externalEvent?.source,
      externalEventToastType: externalEvent?.toastType,
      guideLlmThinking,
-     petMood: (petMood ?? 'neutral') as GuidePetMood,
      petVisible: coachPetVisible,
      petEmotion,
      petAiMindState,
@@ -1246,6 +1522,7 @@ export function DashboardRiderCore() {
      showMessageBubble: showMessageBubble && !hideCoachBubbleForVoice,
      hideForVoice: hideCoachBubbleForVoice,
      onSetMessageVisible: setMessageVisible,
+     coachEngagement,
    }
 
    if (recordBottomDock) {

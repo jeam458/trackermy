@@ -5,6 +5,7 @@ import { ArrowLeft } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import { cn } from '@/lib/utils'
+import { DASHBOARD_APP_TOP_BAR_SURFACE_CLASS } from '@/app/dashboard/components/DashboardAppTopBar'
 
 /**
  * Cabecera sticky compartida en flujos de ruta / intento (misma línea visual que `routes/view`).
@@ -31,11 +32,12 @@ export function RouteFlowStickyHeader({
   return (
     <header
       className={cn(
-        'sticky top-0 z-50 w-full border-b border-white/10 bg-[#121821]/95 backdrop-blur-md',
+        'sticky top-0 z-50 w-full',
+        DASHBOARD_APP_TOP_BAR_SURFACE_CLASS,
         bleedInline && '-mx-4',
       )}
     >
-      <div className="mx-auto max-w-lg px-4 pb-3 pt-[max(0.75rem,calc(env(safe-area-inset-top)+0.25rem))]">
+      <div className="mx-auto max-w-lg px-3 pb-2 pt-[max(0.75rem,calc(env(safe-area-inset-top)+0.25rem))]">
         <div className="flex w-full flex-nowrap items-center gap-2">
           <div className="min-w-0 flex-1">
             <Link
@@ -47,7 +49,7 @@ export function RouteFlowStickyHeader({
             </Link>
           </div>
           {trailing ? (
-            <div className="flex shrink-0 flex-nowrap items-center justify-end gap-2">{trailing}</div>
+            <div className="flex shrink-0 flex-nowrap items-center justify-end gap-1">{trailing}</div>
           ) : null}
         </div>
         {title != null && title !== '' ? (

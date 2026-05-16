@@ -9,14 +9,14 @@ export function GuardDhPetBodySvg() {
     <>
       <defs>
         <radialGradient id="gdh-face-grad" cx="42%" cy="38%" r="65%">
-          <stop offset="0%" stopColor="#6d5efc" />
-          <stop offset="55%" stopColor="#4f46e5" />
-          <stop offset="100%" stopColor="#312e81" />
+          <stop offset="0%" stopColor="#78716c" />
+          <stop offset="55%" stopColor="#57534e" />
+          <stop offset="100%" stopColor="#292524" />
         </radialGradient>
         <linearGradient id="gdh-helmet-grad" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#2dd4bf" />
-          <stop offset="55%" stopColor="#0f766e" />
-          <stop offset="100%" stopColor="#0d5c56" />
+          <stop offset="0%" stopColor="#e37845" />
+          <stop offset="55%" stopColor="#c55a2f" />
+          <stop offset="100%" stopColor="#8f3d1f" />
         </linearGradient>
         <filter id="gdh-soft" x="-8%" y="-8%" width="116%" height="116%">
           <feDropShadow dx="0" dy="1.2" stdDeviation="1.2" floodOpacity="0.35" />

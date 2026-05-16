@@ -39,19 +39,19 @@ export function RuntimeBootstrapInit() {
       <div className="mx-auto max-w-lg rounded-xl px-3 py-2.5">
         <div className="flex items-center gap-2">
           <BrandSpinner size={18} />
-          <p className="text-sm font-semibold text-cyan-100">Preparando IA local y datos offline</p>
+          <p className="text-sm font-semibold text-gdh-brand-highlight">Preparando IA local y datos offline</p>
         </div>
-        <p className="mt-1 text-xs text-cyan-200/85">{status.message}</p>
+        <p className="mt-1 text-xs text-slate-300/90">{status.message}</p>
         {typeof status.progressPct === 'number' ? (
-          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-cyan-950/70">
+          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-black/35">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-teal-400 transition-all duration-300"
+              className="h-full rounded-full bg-gradient-to-r from-gdh-brand to-gdh-brand-highlight transition-all duration-300"
               style={{ width: `${Math.max(3, Math.min(100, status.progressPct))}%` }}
             />
           </div>
         ) : null}
         {status.modelId ? (
-          <p className="mt-1 text-[10px] text-cyan-300/75">Modelo: {status.modelId}</p>
+          <p className="mt-1 text-[10px] text-gdh-muted">Modelo: {status.modelId}</p>
         ) : null}
         {status.modelLoadNote ? (
           <p className="mt-1 text-[10px] text-amber-200/85 max-h-16 overflow-y-auto leading-snug">

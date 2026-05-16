@@ -27,7 +27,7 @@ import {
   DashboardAppTopBar,
   DashboardAppTopBarHeading,
   DASHBOARD_APP_TOP_BAR_ICON_BUTTON_CLASS,
-  DashboardCoachHeaderSlot,
+  DashboardAppTopBarTrailingCluster,
 } from '@/app/dashboard/components/DashboardAppTopBar'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
@@ -368,14 +368,14 @@ function RouteDashboardContent() {
                 label: 'Riders (únicos)',
                 value: String(statistics.unique_riders),
                 icon: Users,
-                iconClassName: 'text-purple-500',
+                iconClassName: 'text-gdh-muted',
               },
               {
                 key: 'attempts',
                 label: 'Intentos (total)',
                 value: String(statistics.total_attempts),
                 icon: ListOrdered,
-                iconClassName: 'text-cyan-500',
+                iconClassName: 'text-gdh-sun',
               },
               {
                 key: 'avg-time',
@@ -395,7 +395,7 @@ function RouteDashboardContent() {
                   statistics.max_recorded_speed != null
                     ? formatAggregatedMaxRecordedSpeedMps(statistics.max_recorded_speed)
                     : '—',
-                valueClassName: 'text-lg font-bold text-emerald-400',
+                valueClassName: 'text-lg font-bold text-gdh-brand-highlight',
               },
               {
                 key: 'avg-jumps',
@@ -440,7 +440,6 @@ function RouteDashboardContent() {
   return (
     <div className="min-h-screen bg-gdh-page text-slate-100">
       <DashboardAppTopBar
-        contentMaxWidth="7xl"
         leading={
           <button
             type="button"
@@ -463,8 +462,7 @@ function RouteDashboardContent() {
           />
         }
         trailing={
-          <div className="flex min-w-0 max-w-[min(100%,18rem)] items-center justify-end gap-1.5 sm:max-w-none">
-            <DashboardCoachHeaderSlot />
+          <DashboardAppTopBarTrailingCluster className="max-w-[min(100%,18rem)] gap-1.5 sm:max-w-none">
             {canModerate ? (
               <button
                 type="button"
@@ -478,7 +476,7 @@ function RouteDashboardContent() {
                 <Pencil size={18} aria-hidden className="text-slate-200" />
               </button>
             ) : null}
-          </div>
+          </DashboardAppTopBarTrailingCluster>
         }
       />
       {route.preview_media_url && (
@@ -524,7 +522,7 @@ function RouteDashboardContent() {
 
       <main className="max-w-7xl mx-auto space-y-6 p-4 pb-24">
         {canModerate && editPanelOpen && (
-          <section className="space-y-4 rounded-2xl border border-teal-500/25 bg-gdh-card p-4">
+          <section className="space-y-4 rounded-2xl border border-gdh-brand/25 bg-gdh-card p-4">
             <div>
               <h2 className="text-lg font-bold text-white">Gestión de la ruta</h2>
               <p className="mt-1 text-xs text-slate-500">
@@ -541,7 +539,7 @@ function RouteDashboardContent() {
                 id="route-edit-name"
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-gdh-canvas-2 px-3 py-2.5 text-white outline-none focus:border-teal-500/50"
+                className="w-full rounded-xl border border-white/10 bg-gdh-canvas-2 px-3 py-2.5 text-white outline-none focus:border-gdh-brand/50"
                 autoComplete="off"
               />
             </div>
@@ -554,7 +552,7 @@ function RouteDashboardContent() {
                 value={editDescription}
                 onChange={(e) => setEditDescription(e.target.value)}
                 rows={4}
-                className="w-full resize-y rounded-xl border border-white/10 bg-gdh-canvas-2 px-3 py-2.5 text-white outline-none focus:border-teal-500/50"
+                className="w-full resize-y rounded-xl border border-white/10 bg-gdh-canvas-2 px-3 py-2.5 text-white outline-none focus:border-gdh-brand/50"
               />
             </div>
             <div className="flex flex-wrap gap-3">
@@ -562,7 +560,7 @@ function RouteDashboardContent() {
                 type="button"
                 onClick={() => void handleSaveRouteMeta()}
                 disabled={saveMetaBusy}
-                className="inline-flex items-center gap-2 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-xl bg-gdh-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-gdh-brand-highlight disabled:opacity-50"
               >
                 {saveMetaBusy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
                 Guardar nombre y descripción
@@ -614,7 +612,7 @@ function RouteDashboardContent() {
             <div className="mt-3 space-y-3">
               <p className="text-xs text-slate-500">
                 Datos de la pista y, si existen, cifras de la comunidad.{' '}
-                <Link href="/dashboard/profile" className="text-teal-400 hover:text-teal-300 underline">
+                <Link href="/dashboard/profile" className="text-gdh-brand-highlight hover:text-gdh-brand-highlight/85 underline">
                   Tus intentos y análisis de bajada: perfil
                 </Link>
               </p>

@@ -56,14 +56,14 @@ export function RecordingStatsPanel({
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-bold text-teal-300 truncate">
+          <p className="text-xs font-bold text-gdh-brand-highlight truncate">
             {isPaused ? 'Pausado' : awaitingStartGate ? 'Validando...' : 'Grabando recorrido'}
           </p>
           <p className="text-[10px] text-slate-400">
             {awaitingStartGate ? 'Validación de velocidad en salida' : 'GPS activo · seguimiento en vivo'}
           </p>
         </div>
-        <Gauge className="text-violet-300 shrink-0" size={24} />
+        <Gauge className="text-gdh-muted shrink-0" size={24} />
       </div>
 
       <div className="pointer-events-none fixed bottom-[4.35rem] left-2 right-2 z-[1060] max-h-[38vh] overflow-y-auto sm:bottom-[4.25rem]">
@@ -92,7 +92,7 @@ export function RecordingStatsPanel({
             )}
           </div>
           <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-800">
-            <div className="flex items-center gap-2 text-emerald-400 mb-2">
+            <div className="flex items-center gap-2 text-gdh-brand-highlight mb-2">
               <Gauge size={18} /><span className="text-sm">Máx. pico</span>
             </div>
             <p className="text-2xl font-bold text-white">
@@ -101,7 +101,7 @@ export function RecordingStatsPanel({
             <p className="text-[10px] text-slate-500 mt-1">GPS + tramo</p>
           </div>
           <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-800">
-            <div className="flex items-center gap-2 text-purple-400 mb-2">
+            <div className="flex items-center gap-2 text-gdh-brand-highlight mb-2">
               <MapPin size={18} /><span className="text-sm">Puntos</span>
             </div>
             <p className="text-2xl font-bold text-white">{points.length}</p>

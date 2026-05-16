@@ -82,12 +82,12 @@ export function RouteTraceThumbnail({ trackPoints }: { trackPoints: RouteTrackPo
         ref={traceRef}
         d={data.d}
         fill="none"
-        stroke="#22d3ee"
+        stroke="#e37845"
         strokeWidth="3"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <circle ref={riderRef} cx={data.points[0]!.x} cy={data.points[0]!.y} r="3.6" fill="#2dd4bf" />
+      <circle ref={riderRef} cx={data.points[0]!.x} cy={data.points[0]!.y} r="3.6" fill="#e37845" />
     </svg>
   )
 }

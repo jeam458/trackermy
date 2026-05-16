@@ -395,7 +395,7 @@ export function RouteOverviewShowcaseSection({
                 key={row.attemptId}
                 className={`rounded-xl border px-2.5 py-2 flex items-center gap-2 w-full ${
                   row.rank === 1
-                    ? 'border-sky-400/70 bg-violet-500/15'
+                    ? 'border-gdh-brand/70 bg-gdh-brand/15'
                     : 'border-white/10 bg-slate-700/50'
                 }`}
               >
@@ -408,7 +408,7 @@ export function RouteOverviewShowcaseSection({
                 <button
                   type="button"
                   onClick={() => openAttemptDetail(row.attemptId)}
-                  className="shrink-0 inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/15 bg-black/25 text-teal-300 hover:bg-white/10 hover:text-white transition"
+                  className="shrink-0 inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/15 bg-black/25 text-gdh-brand-highlight hover:bg-white/10 hover:text-white transition"
                   aria-label={`Ver detalle del recorrido de ${row.userName}`}
                 >
                   <ChevronRight size={18} className="opacity-90" aria-hidden />
@@ -432,7 +432,7 @@ export function RouteOverviewShowcaseSection({
               <p className="text-xs text-slate-500 mt-1 leading-snug">
                 Fotos y vídeos de intentos públicos en los últimos 30 días.{' '}
                 <span className="text-slate-600">
-                  En <strong className="text-slate-500">tus</strong> vídeos aparece el botón violeta «Reel»; también
+                  En <strong className="text-slate-500">tus</strong> vídeos aparece el botón «Reel»; también
                   podés generarlo desde «Tus bajadas» más abajo.
                 </span>
               </p>
@@ -468,7 +468,7 @@ export function RouteOverviewShowcaseSection({
                         type="button"
                         onClick={() => openMediaFromCollage(item)}
                         disabled={busy}
-                        className="absolute inset-0 z-0 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/80 disabled:opacity-50"
+                        className="absolute inset-0 z-0 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-gdh-brand/80 disabled:opacity-50"
                       >
                         {isVid ? (
                           <video src={item.url} className="h-full w-full object-cover pointer-events-none" muted playsInline preload="metadata" />
@@ -508,7 +508,7 @@ export function RouteOverviewShowcaseSection({
                             void generateReelForAttempt(item.attemptId, null)
                           }}
                           disabled={reelBusyAttemptId === item.attemptId}
-                          className="absolute bottom-1.5 left-1.5 z-30 inline-flex items-center gap-1 rounded-md border border-violet-400/55 bg-black/80 px-1.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-violet-100 hover:bg-violet-950/95 disabled:opacity-45"
+                          className="absolute bottom-1.5 left-1.5 z-30 inline-flex items-center gap-1 rounded-md border border-gdh-trail/50 bg-black/80 px-1.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-100 hover:bg-gdh-trail/30 disabled:opacity-45"
                         >
                           {reelBusyAttemptId === item.attemptId ? (
                             <BrandSpinner size={10} className="shrink-0" />
@@ -575,7 +575,7 @@ export function RouteOverviewShowcaseSection({
                         type="button"
                         onClick={() => openMediaFromCollage(item)}
                         disabled={busy}
-                        className="absolute inset-0 z-0 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/80 disabled:opacity-50"
+                        className="absolute inset-0 z-0 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-gdh-brand/80 disabled:opacity-50"
                       >
                         {isVid ? (
                           <video
@@ -621,7 +621,7 @@ export function RouteOverviewShowcaseSection({
                             void generateReelForAttempt(item.attemptId, null)
                           }}
                           disabled={reelBusyAttemptId === item.attemptId}
-                          className="absolute bottom-1.5 left-1.5 z-30 inline-flex items-center gap-1 rounded-md border border-violet-400/55 bg-black/80 px-1.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-violet-100 hover:bg-violet-950/95 disabled:opacity-45"
+                          className="absolute bottom-1.5 left-1.5 z-30 inline-flex items-center gap-1 rounded-md border border-gdh-trail/50 bg-black/80 px-1.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-100 hover:bg-gdh-trail/30 disabled:opacity-45"
                         >
                           {reelBusyAttemptId === item.attemptId ? (
                             <BrandSpinner size={10} className="shrink-0" />
@@ -660,7 +660,7 @@ export function RouteOverviewShowcaseSection({
                               type="button"
                               onClick={() => openMediaFromCollage(item)}
                               disabled={busy}
-                              className="block w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/80 disabled:opacity-50"
+                              className="block w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-gdh-brand/80 disabled:opacity-50"
                             >
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
@@ -687,7 +687,7 @@ export function RouteOverviewShowcaseSection({
                                 type="button"
                                 onClick={() => void generateReelForAttempt(item.attemptId, null)}
                                 disabled={reelBusyAttemptId === item.attemptId}
-                                className="inline-flex items-center gap-1.5 rounded-lg border border-violet-400/50 bg-violet-600/25 px-3 py-1.5 text-[11px] font-semibold text-violet-100 hover:bg-violet-600/40 disabled:opacity-45"
+                                className="inline-flex items-center gap-1.5 rounded-lg border border-gdh-brand/50 bg-gdh-brand/25 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-gdh-brand/40 disabled:opacity-45"
                               >
                                 {reelBusyAttemptId === item.attemptId ? (
                                   <BrandSpinner size={12} className="shrink-0" />

@@ -38,9 +38,10 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
   }
 
-  const [{ data: profileRow }, ctx] = await Promise.all([
+  const [{ data: profileRow }, ctx, coach] = await Promise.all([
     supabase.from('profiles').select('full_name').eq('id', user.id).maybeSingle(),
-    fetchSupabaseEmotionContext({ supabase, userId: user.id }),
+    fetchSupabaseEmotionContext({ supabase, userId: user.id, attemptsLimit: 48 }),
+    loadGuideCoachAttachments(supabase, user.id),
   ])
   const md = (user.user_metadata ?? {}) as Record<string, unknown>
   const fromMeta = (key: string) => {
@@ -117,10 +118,7 @@ export async function GET(req: Request) {
     attemptSummary,
     screenKind: inferScreenKind(pathname),
   }
-  const [extra, coach] = await Promise.all([
-    augmentGuideContextForScreen(supabase, user.id, base),
-    loadGuideCoachAttachments(supabase, user.id),
-  ])
+  const extra = await augmentGuideContextForScreen(supabase, user.id, base)
   return NextResponse.json({
     ...base,
     ...extra,

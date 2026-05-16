@@ -154,7 +154,7 @@ export function RecordedTrackOverview({
       {/* Mapa + perfil */}
       <div className={`${PANEL} space-y-4`}>
         <div className="flex items-center justify-between gap-2">
-          <span className="text-xs font-semibold uppercase tracking-wide text-teal-400/90">
+          <span className="text-xs font-semibold uppercase tracking-wide text-gdh-brand-highlight/90">
             Recorrido
           </span>
           <span className="text-[10px] text-slate-500">Toca un punto en el mapa o en la tabla</span>
@@ -178,7 +178,7 @@ export function RecordedTrackOverview({
         <div className={`${PANEL} grid grid-cols-2 sm:grid-cols-4 gap-3`}>
           <div className="col-span-2 sm:col-span-1">
             <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase text-slate-500">
-              <Mountain size={12} className="text-violet-400" />
+              <Mountain size={12} className="text-gdh-muted" />
               Desnivel
             </div>
             <p className="text-lg font-bold text-white mt-0.5">
@@ -196,7 +196,7 @@ export function RecordedTrackOverview({
           </div>
           <div>
             <div className="text-[10px] font-semibold uppercase text-slate-500">Rango</div>
-            <p className="text-lg font-bold text-violet-200">{Math.round(elevStats.delta)} m</p>
+            <p className="text-lg font-bold text-slate-200">{Math.round(elevStats.delta)} m</p>
           </div>
         </div>
       )}
@@ -209,7 +209,7 @@ export function RecordedTrackOverview({
           className="flex w-full items-center justify-between gap-2 bg-[#161d2e] px-3 py-3 text-left hover:bg-slate-800/80 transition-colors"
         >
           <span className="text-sm font-semibold text-slate-100 flex items-center gap-2">
-            <MapPin size={16} className="text-teal-400 shrink-0" />
+            <MapPin size={16} className="text-gdh-brand-highlight shrink-0" />
             Detalle por ubicación
           </span>
           {detailOpen ? <ChevronDown size={18} className="text-slate-500" /> : <ChevronRight size={18} className="text-slate-500" />}
@@ -278,7 +278,7 @@ function SegmentBar({ seg, scale }: { seg: SpeedSegment; scale: number }) {
   return (
     <div className="flex h-36 flex-1 flex-col items-center justify-end gap-1 min-w-0">
       <div
-        className="w-full max-w-[58px] rounded-t-md bg-gradient-to-t from-violet-500/90 to-sky-400 shadow-sm shadow-teal-900/20"
+        className="w-full max-w-[58px] rounded-t-md bg-gradient-to-t from-gdh-brand/90 to-gdh-brand-highlight shadow-sm shadow-[0_4px_14px_rgba(197,90,47,0.25)]"
         style={{ height: `${px}px` }}
         title={`${seg.label}: ${seg.maxSpeedKmh.toFixed(0)} km/h`}
       />
@@ -318,7 +318,7 @@ function TrackRow({
   return (
     <tr
       className={`cursor-pointer transition-colors ${
-        selected ? 'bg-teal-500/15 ring-1 ring-inset ring-teal-500/30' : 'hover:bg-white/[0.04]'
+        selected ? 'bg-gdh-brand/15 ring-1 ring-inset ring-gdh-brand/30' : 'hover:bg-white/[0.04]'
       }`}
       onClick={onSelect}
     >
@@ -332,7 +332,7 @@ function TrackRow({
           </span>
         )}
       </td>
-      <td className="px-1 py-1.5 text-teal-300/90 tabular-nums">
+      <td className="px-1 py-1.5 text-gdh-brand-highlight/90 tabular-nums">
         {formatNumber(r.cumDistanceM, 0)} m
       </td>
       <td className="px-1 py-1.5 text-slate-400 tabular-nums">

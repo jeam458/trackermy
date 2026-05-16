@@ -356,7 +356,7 @@ export function AttemptReplayViewer({
         style={{ background: APP_MAP_CANVAS_HEX }}
       >
         <div className="absolute left-3 top-3 z-10 max-w-[min(92%,280px)] rounded-xl border border-white/10 bg-slate-950/92 px-3 py-2.5 text-xs shadow-lg backdrop-blur-sm pointer-events-none">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-teal-400/90 mb-1.5">Posición actual</p>
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-gdh-brand-highlight/90 mb-1.5">Posición actual</p>
           <ul className="space-y-1.5 text-slate-100">
             <li className="flex items-center gap-2">
               <Timer className="shrink-0 text-amber-400" size={14} />
@@ -366,14 +366,14 @@ export function AttemptReplayViewer({
               </span>
             </li>
             <li className="flex items-center gap-2">
-              <Zap className="shrink-0 text-sky-400" size={14} />
+              <Zap className="shrink-0 text-gdh-sun" size={14} />
               <span className="text-slate-400">Velocidad</span>
-              <span className="ml-auto font-mono tabular-nums text-sky-200/90">{formatKmh(frame.speedKmh)}</span>
+              <span className="ml-auto font-mono tabular-nums text-gdh-sun">{formatKmh(frame.speedKmh)}</span>
             </li>
             <li className="flex items-center gap-2">
-              <Mountain className="shrink-0 text-emerald-400" size={14} />
+              <Mountain className="shrink-0 text-gdh-muted" size={14} />
               <span className="text-slate-400">Altitud</span>
-              <span className="ml-auto font-mono tabular-nums text-emerald-200/90">{formatAlt(frame.altitudeM)}</span>
+              <span className="ml-auto font-mono tabular-nums text-slate-300">{formatAlt(frame.altitudeM)}</span>
             </li>
           </ul>
         </div>
@@ -386,7 +386,7 @@ export function AttemptReplayViewer({
           zoom={13}
         >
           <FitReplayBounds coords={lineLngLat} />
-          <MapRoute id="replay-track" coordinates={lineLngLat} color="#38bdf8" width={4} opacity={0.88} />
+          <MapRoute id="replay-track" coordinates={lineLngLat} color="#e37845" width={4} opacity={0.88} />
           <MapControls position="bottom-right" showZoom showCompass showLocate={false} showFullscreen />
           <MapMarker
             key={`rider-${avatarResolved ?? 'n'}-${initialLetter ?? 'x'}`}
@@ -480,11 +480,11 @@ export function AttemptReplayViewer({
           </div>
           <div className="text-center sm:text-left">
             <p className="text-slate-500">v</p>
-            <p className="font-mono text-sky-200/90 tabular-nums">{formatKmh(frame.speedKmh)}</p>
+            <p className="font-mono text-gdh-sun tabular-nums">{formatKmh(frame.speedKmh)}</p>
           </div>
           <div className="text-center sm:text-left">
             <p className="text-slate-500">z</p>
-            <p className="font-mono text-emerald-200/90 tabular-nums">{formatAlt(frame.altitudeM)}</p>
+            <p className="font-mono text-slate-300 tabular-nums">{formatAlt(frame.altitudeM)}</p>
           </div>
         </div>
 
@@ -492,7 +492,7 @@ export function AttemptReplayViewer({
           <button
             type="button"
             onClick={togglePlay}
-            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-teal-600 text-white hover:bg-teal-500"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gdh-brand text-white hover:bg-gdh-brand-highlight"
             aria-label={playing ? 'Pausa' : 'Reproducir'}
           >
             {playing ? <Pause size={22} /> : <Play size={22} className="ml-0.5" />}
@@ -504,7 +504,7 @@ export function AttemptReplayViewer({
             step={0.05}
             value={Math.min(sliderSec, maxSlider)}
             onChange={(e) => onSliderChange(Number(e.target.value))}
-            className="min-w-[120px] flex-1 accent-teal-500"
+            className="min-w-[120px] flex-1 accent-[var(--gdh-brand)]"
           />
           <span className="shrink-0 font-mono text-xs text-slate-400 tabular-nums">
             {formatElapsedHhMmSsMmm(sliderSec)} / {formatElapsedHhMmSsMmm(maxSlider)}

@@ -166,10 +166,10 @@ export function ReelYoutubeMusicPicker({ onPick }: Props) {
                         e.stopPropagation()
                         addHit(h)
                       }}
-                      className="shrink-0 flex w-[4.25rem] flex-col items-center justify-center gap-0.5 self-stretch rounded-r-md border-l border-white/10 bg-emerald-950/45 px-1 py-1 text-[9px] font-semibold leading-tight text-emerald-100 hover:bg-emerald-900/55 active:bg-emerald-900/70"
+                      className="shrink-0 flex w-[4.25rem] flex-col items-center justify-center gap-0.5 self-stretch rounded-r-md border-l border-white/10 bg-gdh-brand-muted/45 px-1 py-1 text-[9px] font-semibold leading-tight text-white hover:bg-gdh-brand/55 active:bg-gdh-brand/70"
                       aria-label={`Agregar al reel: ${h.title}`}
                     >
-                      <Plus size={16} strokeWidth={2.5} className="text-emerald-200" />
+                      <Plus size={16} strokeWidth={2.5} className="text-gdh-brand-highlight" />
                       Agregar
                     </button>
                   </div>

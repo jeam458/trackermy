@@ -87,7 +87,7 @@ export function SelectedRoutePreviewMap({ route, className = '' }: Props) {
   return (
     <div ref={containerRef} className={`space-y-2 ${className}`}>
       <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-        <MapPinned size={16} className="text-teal-400" />
+        <MapPinned size={16} className="text-gdh-brand-highlight" />
         Vista previa del trazado
       </div>
       <div

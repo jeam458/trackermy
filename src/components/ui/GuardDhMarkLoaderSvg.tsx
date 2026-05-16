@@ -19,7 +19,7 @@ type Props = {
 }
 
 /**
- * Marca guardDh como SVG + animejs: tres anillos ondulados (teal / trail / sol),
+ * Marca PATT como SVG + animejs: tres anillos ondulados (brand / trail / sol),
  * hexágono, montaña y sol — sin imagen.
  */
 export function GuardDhMarkLoaderSvg({ compact = false, className }: Props) {
@@ -142,9 +142,9 @@ export function GuardDhMarkLoaderSvg({ compact = false, className }: Props) {
     >
       <defs>
         <radialGradient id={glowId} cx="50%" cy="42%" r="65%">
-          <stop offset="0%" stopColor="rgba(45,212,191,0.28)" />
-          <stop offset="55%" stopColor="rgba(99,102,241,0.08)" />
-          <stop offset="100%" stopColor="transparent" />
+          <stop offset="0%" stopColor="var(--gdh-brand-highlight)" stopOpacity={0.32} />
+          <stop offset="55%" stopColor="var(--gdh-trail)" stopOpacity={0.12} />
+          <stop offset="100%" stopColor="transparent" stopOpacity={0} />
         </radialGradient>
       </defs>
       <circle cx="0" cy="0" r={vb - 2} fill={`url(#${glowId})`} />
@@ -214,7 +214,7 @@ type MiniProps = {
   className?: string
 }
 
-/** Spinner compacto: un anillo ondulado teal animado con animejs. */
+/** Spinner compacto: anillo ondulado (color marca) animado con animejs. */
 export function GuardDhMarkSpinnerMini({ size = 22, className }: MiniProps) {
   const gRef = useRef<SVGGElement>(null)
 

@@ -65,11 +65,11 @@ export default function WeeklyRecord({
   const getDifficultyColor = (diff: string) => {
     switch (diff) {
       case 'Expert':
-        return 'text-red-300'
+        return 'text-rose-300'
       case 'Intermediate':
-        return 'text-sky-300'
+        return 'text-slate-300'
       case 'Beginner':
-        return 'text-emerald-300'
+        return 'text-gdh-sun/95'
       default:
         return 'text-slate-400'
     }
@@ -78,27 +78,27 @@ export default function WeeklyRecord({
   const accentColorByDifficulty = (diff: string) => {
     switch (diff) {
       case 'Expert':
-        return 'from-violet-500 via-fuchsia-500 to-rose-400'
+        return 'from-rose-700 via-rose-500 to-rose-400'
       case 'Intermediate':
-        return 'from-cyan-400 via-teal-400 to-emerald-400'
+        return 'from-gdh-brand-muted via-gdh-brand to-gdh-brand-highlight'
       case 'Beginner':
-        return 'from-emerald-400 to-teal-300'
+        return 'from-gdh-brand-muted/90 via-gdh-sun to-gdh-brand-highlight/90'
       default:
-        return 'from-slate-500 to-slate-400'
+        return 'from-slate-600 to-slate-400'
     }
   }
 
   const inner = (
     <div
       data-anime-stagger
-      className="relative overflow-hidden bg-[#1c2329]/95 backdrop-blur-md border border-white/10 p-3.5 rounded-2xl flex gap-3 shadow-lg transition-transform active:scale-[0.99] group min-h-[5.5rem]"
+      className="relative overflow-hidden bg-gdh-card/95 backdrop-blur-md border border-white/10 p-3.5 rounded-2xl flex gap-3 shadow-lg transition-transform active:scale-[0.99] group min-h-[5.5rem]"
     >
       <div
         className={`absolute left-0 top-0 h-full w-[5px] bg-gradient-to-b ${accentColorByDifficulty(difficulty)} rounded-l-2xl`}
       />
       <div className="flex-1 space-y-2 min-w-0 pl-1.5">
         <div>
-          <h3 className="text-[1.05rem] font-bold text-teal-300 truncate group-hover:text-teal-200 transition-colors tracking-tight">
+          <h3 className="text-[1.05rem] font-bold text-slate-50 truncate group-hover:text-gdh-brand-highlight transition-colors tracking-tight">
             {routeName}
           </h3>
           <p className="text-[11px] text-slate-400 font-medium tracking-wide">
@@ -146,7 +146,7 @@ export default function WeeklyRecord({
       <div className="flex w-[7.25rem] shrink-0 flex-col items-stretch gap-1.5 border-l border-white/10 pl-3">
         <div className="flex justify-end">
           <div
-            className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10 text-teal-400/90"
+            className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10 text-gdh-brand-highlight"
             aria-hidden
           >
             <ChevronRight size={18} strokeWidth={2.5} className="translate-x-px" />
@@ -160,7 +160,7 @@ export default function WeeklyRecord({
             <div
               key={i}
               data-pct={h}
-              className="route-card-signal w-[5px] max-h-full rounded-t-sm bg-gradient-to-t from-violet-600 via-indigo-500 to-cyan-400 opacity-90"
+              className="route-card-signal w-[5px] max-h-full rounded-t-sm bg-gradient-to-t from-gdh-brand-muted via-gdh-brand to-gdh-brand-highlight opacity-90"
               style={{ height: '0%' }}
             />
           ))}

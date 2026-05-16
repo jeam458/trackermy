@@ -115,7 +115,7 @@ export function RouteDescentOverviewSection({ routeId }: RouteDescentOverviewSec
     return (
       <div className="rounded-2xl border border-dashed border-white/15 bg-[#121826] p-5 text-slate-300">
         <div className="flex items-start gap-3">
-          <User className="size-6 shrink-0 text-teal-500/80" />
+          <User className="size-6 shrink-0 text-gdh-brand-highlight/80" />
           <div className="space-y-1">
             <h3 className="font-semibold text-white">Aún no hay traza tuya con GPS en esta pista</h3>
             <p className="text-sm text-slate-400 leading-relaxed">
@@ -140,7 +140,7 @@ export function RouteDescentOverviewSection({ routeId }: RouteDescentOverviewSec
   return (
     <section className="space-y-3">
       <div className="flex items-center gap-2 text-slate-300">
-        <MapPinned className="size-5 text-teal-400" />
+        <MapPinned className="size-5 text-gdh-brand-highlight" />
         <h2 className="text-lg font-bold text-white">Tu recorrido medido (GPS)</h2>
       </div>
       <p className="text-xs text-slate-500">

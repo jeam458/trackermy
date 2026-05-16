@@ -10,7 +10,7 @@ import {
   DashboardAppTopBar,
   DashboardAppTopBarHeading,
   DASHBOARD_APP_TOP_BAR_ICON_BUTTON_CLASS,
-  DashboardCoachHeaderSlot,
+  DashboardAppTopBarTrailingCluster,
 } from '@/app/dashboard/components/DashboardAppTopBar'
 import { useDashboardSidebar } from '@/lib/dashboard/DashboardSidebarContext'
 import { cn } from '@/lib/utils'
@@ -149,8 +149,8 @@ function ActivityTrendChart({ points }: { points: TrendPoint[] }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-[#0f1520] p-3">
       <div className="mb-2 flex flex-wrap gap-2 text-[11px]">
-        <span className="rounded-full border border-cyan-400/45 bg-cyan-400/10 px-2 py-0.5 text-cyan-200">{t.chartLegendDistance}</span>
-        <span className="rounded-full border border-emerald-400/45 bg-emerald-400/10 px-2 py-0.5 text-emerald-200">{t.chartLegendAvgSpeed}</span>
+        <span className="rounded-full border border-gdh-sun/40 bg-gdh-sun/12 px-2 py-0.5 text-gdh-sun">{t.chartLegendDistance}</span>
+        <span className="rounded-full border border-gdh-brand/35 bg-gdh-brand/12 px-2 py-0.5 text-gdh-brand-highlight">{t.chartLegendAvgSpeed}</span>
       </div>
       <svg viewBox="0 0 100 120" className="w-full h-48">
         {[0.25, 0.5, 0.75, 1].map((f, i) => (
@@ -450,19 +450,19 @@ export default function ActivityPage() {
             subtitle={
               <>
                 <p>{messages.activity.pageSubtitle}</p>
-                <p className="font-medium text-teal-300/90">
+                <p className="font-medium text-gdh-brand-highlight/90">
                   {interpolate(messages.activity.weekKmSummary, { km: derived.weeklyKm.toFixed(2) })}
                 </p>
               </>
             }
           />
         }
-        trailing={<DashboardCoachHeaderSlot />}
+        trailing={<DashboardAppTopBarTrailingCluster />}
       />
 
       <div className="p-4 space-y-5 max-w-lg mx-auto">
-        <div className="rounded-3xl border border-teal-500/25 bg-gradient-to-b from-teal-500/10 via-[#121821] to-[#0f1520] p-4 shadow-[0_0_40px_rgba(45,212,191,0.08)] gdh-immersive-panel">
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-teal-300/90 mb-2">
+        <div className="rounded-3xl border border-gdh-brand/25 bg-gradient-to-b from-gdh-brand/12 via-gdh-canvas-2 to-gdh-canvas p-4 shadow-[0_0_40px_rgba(227,120,69,0.1)] gdh-immersive-panel">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gdh-brand-highlight/90 mb-2">
             {messages.activity.calendarHeroEyebrow}
           </p>
           <ActivityCalendarMonth entries={calendarEntries} emphasizeWeekStart={selectedWeekStart} />
@@ -477,8 +477,8 @@ export default function ActivityPage() {
           }
         />
 
-        <section className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4 gdh-immersive-panel">
-          <div className="flex items-center gap-2 text-emerald-300">
+        <section className="rounded-2xl border border-gdh-brand/22 bg-gdh-brand/10 p-4 gdh-immersive-panel">
+          <div className="flex items-center gap-2 text-gdh-brand-highlight">
             <Sparkles size={18} />
             <h2 className="text-lg font-semibold">{messages.activity.autoAnalysisTitle}</h2>
           </div>
@@ -523,7 +523,7 @@ export default function ActivityPage() {
             href="/dashboard/routes"
             className="rounded-xl border border-white/10 bg-slate-700/35 p-3 hover:bg-slate-700/55"
           >
-            <div className="inline-flex items-center gap-2 text-cyan-300 text-sm font-semibold">
+            <div className="inline-flex items-center gap-2 text-gdh-sun text-sm font-semibold">
               <Route size={16} /> {messages.activity.linkRoutesTitle}
             </div>
             <p className="text-xs text-slate-400 mt-1">{messages.activity.linkRoutesSubtitle}</p>
@@ -532,7 +532,7 @@ export default function ActivityPage() {
             href="/dashboard/ranking"
             className="rounded-xl border border-white/10 bg-slate-700/35 p-3 hover:bg-slate-700/55"
           >
-            <div className="inline-flex items-center gap-2 text-violet-300 text-sm font-semibold">
+            <div className="inline-flex items-center gap-2 text-gdh-muted text-sm font-semibold">
               <Trophy size={16} /> {messages.activity.linkRankingTitle}
             </div>
             <p className="text-xs text-slate-400 mt-1">{messages.activity.linkRankingSubtitle}</p>
@@ -547,7 +547,7 @@ export default function ActivityPage() {
                 <Star className="text-amber-400" size={18} />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-teal-300 font-semibold leading-tight uppercase tracking-wide">{item.title}</p>
+                <p className="text-gdh-brand-highlight font-semibold leading-tight uppercase tracking-wide">{item.title}</p>
                 <p className="text-2xl text-white leading-tight">{item.route}</p>
                 <p className="text-sm text-slate-400">{item.time}</p>
               </div>
@@ -578,7 +578,7 @@ export default function ActivityPage() {
                   {interpolate(messages.activity.bestTimeLabel, { time: fmtTime(r.time) })}
                 </p>
               </div>
-              <p className="text-teal-300 font-bold">#{r.rank}</p>
+              <p className="text-gdh-brand-highlight font-bold">#{r.rank}</p>
             </Link>
           ))}
           {rankRows.length === 0 && (
@@ -615,7 +615,7 @@ export default function ActivityPage() {
                 </div>
                 <Link
                   href={`/dashboard/routes/attempt-replay?attemptId=${encodeURIComponent(item.attemptId)}&routeId=${encodeURIComponent(item.routeId)}&from=activity`}
-                  className="text-xs text-teal-300 hover:text-teal-200"
+                  className="text-xs text-gdh-brand-highlight hover:text-gdh-brand-highlight/80"
                 >
                   {messages.activity.communityViewReplay}
                 </Link>
@@ -646,7 +646,7 @@ export default function ActivityPage() {
 
         <Link
           href="/dashboard/ranking"
-          className="block w-full py-3.5 text-center rounded-2xl border border-violet-500/40 text-violet-300 font-semibold hover:bg-violet-500/10 transition-colors"
+          className="block w-full py-3.5 text-center rounded-2xl border border-gdh-trail/40 text-slate-200 font-semibold hover:bg-gdh-trail/12 transition-colors"
         >
           {messages.activity.weeklyRankingCta}
         </Link>

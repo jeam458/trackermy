@@ -50,8 +50,8 @@ export function CountdownOverlay({
             />
             <defs>
               <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#2dd4bf" />
-                <stop offset="100%" stopColor="#5eead4" />
+                <stop offset="0%" stopColor="#e37845" />
+                <stop offset="100%" stopColor="#c55a2f" />
               </linearGradient>
             </defs>
           </svg>

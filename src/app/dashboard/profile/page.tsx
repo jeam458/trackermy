@@ -22,7 +22,7 @@ import {
   DashboardAppTopBar,
   DashboardAppTopBarHeading,
   DASHBOARD_APP_TOP_BAR_ICON_BUTTON_CLASS,
-  DashboardCoachHeaderSlot,
+  DashboardAppTopBarTrailingCluster,
 } from '@/app/dashboard/components/DashboardAppTopBar'
 import { useDashboardSidebar } from '@/lib/dashboard/DashboardSidebarContext'
 import { cn } from '@/lib/utils'
@@ -502,7 +502,6 @@ export default function ProfilePage() {
       />
 
       <DashboardAppTopBar
-        contentMaxWidth="7xl"
         leading={
           <AnimeIconButton
             label="Menú"
@@ -514,8 +513,7 @@ export default function ProfilePage() {
         }
         center={<DashboardAppTopBarHeading title={messages.nav.profile} />}
         trailing={
-          <div className="flex min-w-0 shrink-0 items-center justify-end gap-2">
-            <DashboardCoachHeaderSlot />
+          <DashboardAppTopBarTrailingCluster className="gap-2">
             {isEditing ? (
               <>
                 <button
@@ -547,7 +545,7 @@ export default function ProfilePage() {
                 <Settings size={20} className="text-slate-200" aria-hidden />
               </button>
             )}
-          </div>
+          </DashboardAppTopBarTrailingCluster>
         }
       >
         <div className="flex flex-col gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
@@ -562,7 +560,7 @@ export default function ProfilePage() {
               aria-label={p.language.ariaEs}
               className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
                 locale === 'es'
-                  ? 'border border-teal-500/40 bg-teal-500/25 text-teal-200'
+                  ? 'border border-gdh-brand/40 bg-gdh-brand/25 text-gdh-brand-highlight'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -574,7 +572,7 @@ export default function ProfilePage() {
               aria-label={p.language.ariaEn}
               className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
                 locale === 'en'
-                  ? 'border border-teal-500/40 bg-teal-500/25 text-teal-200'
+                  ? 'border border-gdh-brand/40 bg-gdh-brand/25 text-gdh-brand-highlight'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -609,7 +607,7 @@ export default function ProfilePage() {
               max="300"
               value={riderWeightKg}
               onChange={(e) => setRiderWeightKg(e.target.value)}
-              className="w-full text-sm text-center bg-slate-800/50 border border-slate-600 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-sky-500"
+              className="w-full text-sm text-center bg-slate-800/50 border border-slate-600 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-gdh-brand/50"
               placeholder={p.weight.placeholder}
             />
           </div>

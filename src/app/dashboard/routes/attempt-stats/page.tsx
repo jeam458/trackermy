@@ -71,7 +71,7 @@ function SegmentMiniMap({
     .join(' ')
   return (
     <svg viewBox="0 0 100 100" className="h-20 w-full rounded-md border border-white/10 bg-[#0f1520]">
-      <path d={path} fill="none" stroke="#38bdf8" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+      <path d={path} fill="none" stroke="#e37845" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
       <circle cx="4" cy="96" r="0" fill="transparent" />
     </svg>
   )
@@ -110,9 +110,9 @@ function SegmentPerformanceChart({
   return (
     <div className="rounded-xl border border-white/10 bg-[#0f1520] p-3">
       <div className="mb-2 flex flex-wrap items-center gap-2 text-[11px]">
-        <span className="rounded-full border border-cyan-400/50 bg-cyan-400/10 px-2 py-0.5 text-cyan-200">Velocidad media real</span>
-        <span className="rounded-full border border-sky-400/50 bg-sky-400/10 px-2 py-0.5 text-sky-200">Velocidad máxima real</span>
-        <span className="rounded-full border border-violet-400/50 bg-violet-400/10 px-2 py-0.5 text-violet-200">Rango objetivo</span>
+        <span className="rounded-full border border-gdh-brand/40 bg-gdh-brand/12 px-2 py-0.5 text-gdh-brand-highlight">Velocidad media real</span>
+        <span className="rounded-full border border-gdh-sun/40 bg-gdh-sun/12 px-2 py-0.5 text-gdh-sun">Velocidad máxima real</span>
+        <span className="rounded-full border border-gdh-trail/40 bg-gdh-trail/12 px-2 py-0.5 text-slate-200">Rango objetivo</span>
         <span className="rounded-full border border-amber-400/50 bg-amber-400/10 px-2 py-0.5 text-amber-200">Velocidad segura</span>
       </div>
       <svg viewBox="0 0 100 120" className="w-full h-52">
@@ -479,7 +479,7 @@ function AttemptStatsInner() {
             </button>
             <Link
               href={rankingHref}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-sky-400/45 bg-sky-400/10 px-2.5 py-1.5 text-xs font-semibold text-sky-300 hover:bg-sky-400/15"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-gdh-brand/40 bg-gdh-brand/12 px-2.5 py-1.5 text-xs font-semibold text-gdh-brand-highlight hover:bg-gdh-brand/18"
             >
               <Trophy size={14} aria-hidden />
               Ranking
@@ -522,7 +522,7 @@ function AttemptStatsInner() {
               )}
             </div>
             <div className="min-w-0">
-              <p className="text-teal-300 font-semibold uppercase text-sm">
+              <p className="text-gdh-brand-highlight font-semibold uppercase text-sm">
                 {isPersonalRecord ? 'Nuevo récord personal!' : 'Tu mejor bajada'}
               </p>
               <p className="text-2xl font-bold text-white truncate">{riderName}</p>
@@ -562,7 +562,7 @@ function AttemptStatsInner() {
                     ins.priority === 'high'
                       ? 'border-amber-500/35 bg-amber-500/10'
                       : ins.priority === 'medium'
-                        ? 'border-sky-500/30 bg-sky-500/10'
+                        ? 'border-gdh-brand/30 bg-gdh-brand/10'
                         : 'border-white/10 bg-slate-700/35'
                   }`}
                 >
@@ -591,14 +591,14 @@ function AttemptStatsInner() {
             )}
           </div>
 
-          <div className="mt-4 rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-3">
+          <div className="mt-4 rounded-xl border border-gdh-brand/25 bg-gdh-brand/10 p-3">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-semibold text-emerald-300">Coach IA local (WebLLM / respaldo)</p>
+                <p className="text-sm font-semibold text-gdh-brand-highlight">Coach IA local (WebLLM / respaldo)</p>
                 <p className="text-xs text-slate-300">
                   Genera recomendaciones y las coloca automáticamente en cada tramo detallado.
                 </p>
-                <p className="text-[11px] text-emerald-200/85 mt-1">
+                <p className="text-[11px] text-slate-300/90 mt-1">
                   Motor activo: {coachRuntimeModel || (getLocalCoachRuntimeInfo().webgpu ? 'inicializando modelo…' : 'WebGPU no disponible')}
                 </p>
               </div>
@@ -606,7 +606,7 @@ function AttemptStatsInner() {
                 type="button"
                 onClick={() => void onRunLocalCoach()}
                 disabled={coachLoading}
-                className="rounded-lg border border-emerald-400/40 bg-emerald-500/20 px-3 py-2 text-sm font-semibold text-emerald-200 hover:bg-emerald-500/30 disabled:opacity-60"
+                className="rounded-lg border border-gdh-brand/40 bg-gdh-brand/20 px-3 py-2 text-sm font-semibold text-white hover:bg-gdh-brand-highlight/25 disabled:opacity-60"
               >
                 {coachLoading ? 'Analizando…' : 'Analizar con IA'}
               </button>
@@ -616,7 +616,7 @@ function AttemptStatsInner() {
               brecha vs PB: {bestTimeDiffSec != null ? `${bestTimeDiffSec.toFixed(1)} s` : 'N/D'}
             </div>
             {coachAdviceText ? (
-              <pre className="mt-2 whitespace-pre-wrap rounded-lg border border-emerald-400/25 bg-black/20 p-2 text-[12px] leading-relaxed text-emerald-100">
+              <pre className="mt-2 whitespace-pre-wrap rounded-lg border border-gdh-brand/25 bg-black/20 p-2 text-[12px] leading-relaxed text-slate-200">
                 {coachAdviceText}
               </pre>
             ) : null}
@@ -631,7 +631,7 @@ function AttemptStatsInner() {
 
           {!showDetailedSegments ? (
             <p className="mt-3 text-sm text-slate-300 rounded-xl border border-white/10 bg-slate-700/30 p-3">
-              Pulsa <span className="font-semibold text-emerald-300">Analizar con IA</span> para generar los tramos detallados con mapa.
+              Pulsa <span className="font-semibold text-gdh-brand-highlight">Analizar con IA</span> para generar los tramos detallados con mapa.
             </p>
           ) : (
             <div className="mt-3 space-y-3">
@@ -644,7 +644,7 @@ function AttemptStatsInner() {
                     key={`dseg-${seg.index}`}
                     className={`rounded-xl border p-3 ${
                       selected
-                        ? 'border-cyan-400/50 bg-cyan-400/5'
+                        ? 'border-gdh-sun/45 bg-gdh-sun/8'
                         : 'border-white/10 bg-[#0f1520]'
                     }`}
                   >
@@ -658,7 +658,7 @@ function AttemptStatsInner() {
                             ? 'border-red-500/40 text-red-300 bg-red-500/10'
                             : below
                               ? 'border-amber-500/40 text-amber-300 bg-amber-500/10'
-                              : 'border-emerald-500/40 text-emerald-300 bg-emerald-500/10'
+                              : 'border-gdh-brand/40 text-gdh-brand-highlight bg-gdh-brand/10'
                         }`}
                       >
                         {aboveSafe ? 'Riesgo alto' : below ? 'Mejorable' : 'En rango'}
@@ -693,8 +693,8 @@ function AttemptStatsInner() {
                     </div>
 
                     {aiSegmentRecommendations[seg.index] && (
-                      <div className="mt-2 rounded-md border border-emerald-400/30 bg-emerald-500/10 p-2">
-                        <p className="text-[11px] uppercase tracking-wide text-emerald-300 font-semibold">
+                      <div className="mt-2 rounded-md border border-gdh-brand/30 bg-gdh-brand/10 p-2">
+                        <p className="text-[11px] uppercase tracking-wide text-gdh-brand-highlight font-semibold">
                           Recomendación IA del tramo
                         </p>
                         <p className="text-[12px] text-slate-100 mt-1 leading-relaxed">

@@ -8,7 +8,7 @@ export type RiderGuidePayload = {
   title: string
   subtitle?: string
   duration?: number
-  source?: 'toast' | 'navigation' | 'data' | 'manual'
+  source?: 'toast' | 'navigation' | 'data' | 'manual' | 'coach'
   toastType?: RiderGuideToastType
 }
 

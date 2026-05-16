@@ -16,6 +16,50 @@ const ALLOWED_KINDS = new Set<GuideScreenKind>([
   'other',
 ])
 
+/** Tabla no migrada o no expuesta en API; evitamos 500 en navegación (fire-and-forget del cliente). */
+function isGuideInsightTableUnavailable(err: { code?: string; message?: string } | null): boolean {
+  if (!err) return false
+  const c = String(err.code || '')
+  const m = String(err.message || '').toLowerCase()
+  return (
+    c === '42P01' ||
+    c === 'PGRST205' ||
+    m.includes('does not exist') ||
+    m.includes('schema cache') ||
+    m.includes('could not find the table')
+  )
+}
+
+async function bumpAggregateInsight(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  screen_kind: GuideScreenKind,
+  insight_key: string,
+  now: string
+): Promise<{ ok: boolean; error?: string }> {
+  const { data: row, error: selErr } = await supabase
+    .from('guide_coach_aggregate_insights')
+    .select('id, score')
+    .eq('screen_kind', screen_kind)
+    .eq('insight_key', insight_key)
+    .maybeSingle()
+
+  if (selErr) {
+    if (isGuideInsightTableUnavailable(selErr)) return { ok: false }
+    return { ok: false, error: selErr.message }
+  }
+  if (!row?.id) return { ok: false, error: 'Fila no encontrada tras conflicto' }
+  const score = Number(row.score) || 1
+  const { error: upErr } = await supabase
+    .from('guide_coach_aggregate_insights')
+    .update({ score: score + 1, last_seen_at: now })
+    .eq('id', row.id)
+  if (upErr) {
+    if (isGuideInsightTableUnavailable(upErr)) return { ok: false }
+    return { ok: false, error: upErr.message }
+  }
+  return { ok: true }
+}
+
 export async function POST(req: Request) {
   const supabase = await createClient()
   const {
@@ -53,6 +97,10 @@ export async function POST(req: Request) {
     .maybeSingle()
 
   if (selErr) {
+    if (isGuideInsightTableUnavailable(selErr)) {
+      console.warn('[guide-insight] tabla no disponible:', selErr.message)
+      return NextResponse.json({ ok: false, skipped: true }, { status: 200 })
+    }
     return NextResponse.json({ error: selErr.message }, { status: 500 })
   }
 
@@ -64,7 +112,13 @@ export async function POST(req: Request) {
       .from('guide_coach_aggregate_insights')
       .update({ score: score + 1, last_seen_at: now })
       .eq('id', id)
-    if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 })
+    if (upErr) {
+      if (isGuideInsightTableUnavailable(upErr)) {
+        console.warn('[guide-insight] tabla no disponible (update):', upErr.message)
+        return NextResponse.json({ ok: false, skipped: true }, { status: 200 })
+      }
+      return NextResponse.json({ error: upErr.message }, { status: 500 })
+    }
     return NextResponse.json({ ok: true, mode: 'bump' })
   }
 
@@ -76,6 +130,19 @@ export async function POST(req: Request) {
     last_seen_at: now,
   })
   if (insErr) {
+    if (insErr.code === '23505') {
+      const bumped = await bumpAggregateInsight(supabase, screen_kind, insight_key, now)
+      if (bumped.ok) return NextResponse.json({ ok: true, mode: 'bump_race' })
+      if (!bumped.error) {
+        console.warn('[guide-insight] conflicto único pero bump no aplicable:', insErr.message)
+        return NextResponse.json({ ok: false, skipped: true }, { status: 200 })
+      }
+      return NextResponse.json({ error: bumped.error }, { status: 500 })
+    }
+    if (isGuideInsightTableUnavailable(insErr)) {
+      console.warn('[guide-insight] tabla no disponible (insert):', insErr.message)
+      return NextResponse.json({ ok: false, skipped: true }, { status: 200 })
+    }
     return NextResponse.json({ error: insErr.message }, { status: 500 })
   }
   return NextResponse.json({ ok: true, mode: 'insert' })

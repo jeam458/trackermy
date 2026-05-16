@@ -1,15 +1,13 @@
 'use client'
 
-import { CoachNotification } from '@/components/ui/CoachNotification'
+import { CoachNotification, type CoachEngagementHandlers } from '@/components/ui/CoachNotification'
 import type { PetAiMindState } from '@/components/pet/GuardDhPetAtlas'
-import type { GuidePetMood } from '@/lib/pet/guidePetBridge'
 
 interface SidebarPetContentProps {
   mood: string
   externalEventSource: string | null | undefined
   externalEventToastType: string | null | undefined
   guideLlmThinking: boolean
-  petMood: GuidePetMood
   petVisible: boolean
   petEmotion: any
   petAiMindState: PetAiMindState | 'off' | 'thinking'
@@ -20,6 +18,7 @@ interface SidebarPetContentProps {
   showMessageBubble: boolean
   hideForVoice: boolean
   onSetMessageVisible: (visible: boolean) => void
+  coachEngagement?: CoachEngagementHandlers | null
 }
 
 export function SidebarPetContent({
@@ -27,7 +26,6 @@ export function SidebarPetContent({
   externalEventSource,
   externalEventToastType,
   guideLlmThinking,
-  petMood,
   petVisible,
   petEmotion,
   petAiMindState,
@@ -38,6 +36,7 @@ export function SidebarPetContent({
   showMessageBubble,
   hideForVoice,
   onSetMessageVisible,
+  coachEngagement = null,
 }: SidebarPetContentProps) {
   return (
     <div className="pointer-events-auto flex w-full flex-col items-center px-1">
@@ -46,7 +45,6 @@ export function SidebarPetContent({
         externalEventSource={externalEventSource}
         externalEventToastType={externalEventToastType}
         guideLlmThinking={guideLlmThinking}
-        petMood={petMood}
         petVisible={petVisible}
         petEmotion={petEmotion}
         petAiMindState={petAiMindState}
@@ -59,6 +57,7 @@ export function SidebarPetContent({
         hideForVoice={hideForVoice}
         onSetMessageVisible={onSetMessageVisible}
         isSidebar={true}
+        coachEngagement={coachEngagement ?? undefined}
       />
     </div>
   )

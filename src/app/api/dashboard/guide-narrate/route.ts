@@ -1,6 +1,13 @@
 import { NextResponse } from 'next/server'
 import { buildGuideNarrationFullPrompt } from '@/lib/guide-ai/guidePromptBuild'
-import type { GuideContext, GuideReaction, GuideSessionReplaySignal, GuideUiEvent } from '@/lib/guide-ai/types'
+import type { GuideCoachTurnMemoryPromptRow } from '@/lib/guide-ai/guideCoachTurnMemory'
+import type {
+  GuideContext,
+  GuideInteractionSessionHint,
+  GuideReaction,
+  GuideSessionReplaySignal,
+  GuideUiEvent,
+} from '@/lib/guide-ai/types'
 import type { RiderGuideMood } from '@/lib/riderGuide'
 
 const MOODS: RiderGuideMood[] = ['guide', 'focus', 'triumph', 'fatigue', 'warning', 'error']
@@ -33,15 +40,11 @@ export async function POST(req: Request) {
     executeMcpTools?: boolean
     sessionReplaySignals?: GuideSessionReplaySignal[] | null
     affectiveAugment?: Record<string, unknown> | null
+    sessionHint?: GuideInteractionSessionHint | null
+    coachTurnMemory?: GuideCoachTurnMemoryPromptRow[] | null
   }
   try {
-    body = (await req.json()) as {
-      context?: GuideContext
-      event?: GuideUiEvent
-      executeMcpTools?: boolean
-      sessionReplaySignals?: GuideSessionReplaySignal[] | null
-      affectiveAugment?: Record<string, unknown> | null
-    }
+    body = (await req.json()) as typeof body
   } catch {
     return NextResponse.json({ ok: false, code: 'BAD_JSON', message: 'Cuerpo JSON inválido.' }, { status: 400 })
   }
@@ -64,6 +67,8 @@ export async function POST(req: Request) {
     executeMcpTools,
     sessionReplaySignals: body.sessionReplaySignals ?? null,
     affectiveAugment: body.affectiveAugment ?? null,
+    sessionHint: body.sessionHint ?? null,
+    coachTurnMemory: body.coachTurnMemory ?? null,
   })
 
   try {

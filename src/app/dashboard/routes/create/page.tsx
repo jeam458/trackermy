@@ -25,7 +25,7 @@ import {
   DashboardAppTopBar,
   DashboardAppTopBarHeading,
   DASHBOARD_APP_TOP_BAR_ICON_BUTTON_CLASS,
-  DashboardCoachHeaderSlot,
+  DashboardAppTopBarTrailingCluster,
 } from '@/app/dashboard/components/DashboardAppTopBar'
 import { cn } from '@/lib/utils'
 
@@ -76,7 +76,7 @@ function TrackStats({
         <p className="text-xs text-gray-400">puntos</p>
       </div>
       <div className="text-center border-l border-slate-700">
-        <div className="flex items-center justify-center gap-1 text-purple-400 mb-1">
+        <div className="flex items-center justify-center gap-1 text-gdh-brand-highlight mb-1">
           <Mountain size={14} />
         </div>
         <p className="text-lg font-bold text-white">{filteredCount}</p>
@@ -182,7 +182,6 @@ export default function CreateRoutePage() {
   return (
     <div className="min-h-screen bg-gdh-page text-slate-100">
       <DashboardAppTopBar
-        contentMaxWidth="7xl"
         leading={
           <button
             type="button"
@@ -200,8 +199,7 @@ export default function CreateRoutePage() {
           />
         }
         trailing={
-          <div className="flex min-w-0 shrink-0 items-center justify-end gap-1.5">
-            <DashboardCoachHeaderSlot />
+          <DashboardAppTopBarTrailingCluster className="gap-1.5">
             {isDrawing ? (
               <div className="flex max-w-[min(100%,11rem)] flex-wrap items-center justify-end gap-1 sm:max-w-none sm:gap-2">
                 <button
@@ -222,7 +220,7 @@ export default function CreateRoutePage() {
                 </button>
               </div>
             ) : null}
-          </div>
+          </DashboardAppTopBarTrailingCluster>
         }
       />
 

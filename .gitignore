@@ -47,3 +47,6 @@ next-env.d.ts
 
 # local IDE (si no quieres versionarlo)
 .vscode/
+
+# clon temporal al sincronizar Impeccable desde GitHub
+.tmp-impeccable/

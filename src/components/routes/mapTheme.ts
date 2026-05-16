@@ -6,11 +6,11 @@ import appBrandMapStyle from '@/map-styles/app-brand-osm.json'
  */
 export const APP_BRAND_OSM_STYLE = appBrandMapStyle
 
-/** Fondo del contenedor Leaflet (huecos antes de cargar tiles) — alineado con `globals.css` (--gdh-canvas-2). */
-export const APP_MAP_CANVAS_HEX = '#121820' as const
+/** Fondo del contenedor Leaflet — alineado con `globals.css` (--gdh-canvas-2). */
+export const APP_MAP_CANVAS_HEX = '#131316' as const
 
-/** Variante outdoor: superficie elevada, misma familia que --gdh-elevated. */
-export const APP_MAP_CANVAS_OUTDOOR_HEX = '#181f29' as const
+/** Variante outdoor: superficie elevada. */
+export const APP_MAP_CANVAS_OUTDOOR_HEX = '#1e1e22' as const
 
 /**
  * OSM raster directo (sin filtro CSS). Mantener para referencia/snapping/OSM tooling;
@@ -64,17 +64,18 @@ export function tileLayerPresetProps(tile: BrandLeafletRasterPreset) {
   }
 }
 
+/** Trazos en mapa: familia cálida + neutros (legibles sobre mapa oscuro, sin teal/violeta “marca vieja”). */
 export const ROUTE_PALETTE = [
-  '#14b8a6',
-  '#06b6d4',
-  '#22d3ee',
-  '#6366f1',
-  '#8b5cf6',
-  '#10b981',
+  '#e37845',
+  '#c55a2f',
+  '#d97736',
+  '#f4a261',
+  '#ea580c',
+  '#fb923c',
   '#f59e0b',
-  '#2dd4bf',
-  '#0ea5e9',
-  '#7c3aed',
+  '#fdba74',
+  '#fda4af',
+  '#a8a29e',
 ] as const
 
 export function routeColorFromId(id: string): string {

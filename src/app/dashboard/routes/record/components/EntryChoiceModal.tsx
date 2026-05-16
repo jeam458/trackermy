@@ -36,22 +36,22 @@ export function EntryChoiceModal({
         </p>
         <div className="mt-4 space-y-2.5">
           <button type="button" onClick={onNuevaRutaLibre}
-            className="flex w-full items-center justify-between rounded-xl border border-cyan-500/35 bg-cyan-500/10 px-3 py-3 text-left hover:bg-cyan-500/15"
+            className="flex w-full items-center justify-between rounded-xl border border-gdh-sun/35 bg-gdh-sun/10 px-3 py-3 text-left hover:bg-gdh-sun/15"
           >
             <span>
-              <span className="block text-sm font-semibold text-cyan-100">Ruta libre</span>
-              <span className="block text-xs text-cyan-200/75">Sin nombre obligatorio, guardado automático.</span>
+              <span className="block text-sm font-semibold text-gdh-sun">Ruta libre</span>
+              <span className="block text-xs text-gdh-sun/80">Sin nombre obligatorio, guardado automático.</span>
             </span>
-            <ChevronRight size={18} className="text-cyan-300" />
+            <ChevronRight size={18} className="text-gdh-sun" />
           </button>
           <button type="button" onClick={onNewRoute}
-            className="flex w-full items-center justify-between rounded-xl border border-teal-500/35 bg-teal-500/10 px-3 py-3 text-left hover:bg-teal-500/15"
+            className="flex w-full items-center justify-between rounded-xl border border-gdh-brand/35 bg-gdh-brand/10 px-3 py-3 text-left hover:bg-gdh-brand/15"
           >
             <span>
-              <span className="block text-sm font-semibold text-teal-100">Nueva ruta</span>
-              <span className="block text-xs text-teal-200/75">Define nombre y descripción desde cero.</span>
+              <span className="block text-sm font-semibold text-white">Nueva ruta</span>
+              <span className="block text-xs text-slate-300/90">Define nombre y descripción desde cero.</span>
             </span>
-            <ChevronRight size={18} className="text-teal-300" />
+            <ChevronRight size={18} className="text-gdh-brand-highlight" />
           </button>
           <button type="button" onClick={onSelectExisting}
             className="flex w-full items-center justify-between rounded-xl border border-white/15 bg-white/5 px-3 py-3 text-left hover:bg-white/10"

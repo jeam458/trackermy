@@ -4,6 +4,7 @@
  * Evita duplicar armado de `GuideUiEvent` y mapeo a toast en cada `useEffect`.
  */
 import { generateGuideReactionWithLightLlm } from '@/lib/guide-ai/lightweightGuideLlm'
+import type { GuideCoachTurnMemoryPromptRow } from '@/lib/guide-ai/guideCoachTurnMemory'
 import type { GuideContext, GuideInteractionSessionHint, GuideReaction, GuideSessionReplaySignal, GuideUiEvent } from '@/lib/guide-ai/types'
 import type { RiderGuideMood, RiderGuideToastType } from '@/lib/riderGuide'
 
@@ -44,6 +45,7 @@ export async function executeDashboardReactiveGuideTurn(input: {
   sessionReplaySignals?: GuideSessionReplaySignal[] | null
   affectiveAugment?: Record<string, unknown> | null
   sessionHint?: GuideInteractionSessionHint | null
+  coachTurnMemory?: GuideCoachTurnMemoryPromptRow[] | null
 }): Promise<GuideReaction> {
   const event = buildDashboardReactiveEvent(input.pathname, input.label)
   return generateGuideReactionWithLightLlm({
@@ -53,5 +55,6 @@ export async function executeDashboardReactiveGuideTurn(input: {
     sessionReplaySignals: input.sessionReplaySignals ?? undefined,
     affectiveAugment: input.affectiveAugment ?? undefined,
     sessionHint: input.sessionHint ?? undefined,
+    coachTurnMemory: input.coachTurnMemory ?? undefined,
   })
 }

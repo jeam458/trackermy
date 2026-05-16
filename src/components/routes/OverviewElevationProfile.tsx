@@ -60,7 +60,7 @@ export function OverviewElevationProfile({
   return (
     <div className={`space-y-2 ${className}`}>
       <div className="flex items-end justify-between px-0.5">
-        <h4 className="text-[10px] font-bold uppercase tracking-wider text-teal-400/90">
+        <h4 className="text-[10px] font-bold uppercase tracking-wider text-gdh-brand-highlight/90">
           {mode === 'elevation' ? 'Perfil de elevación' : 'Perfil de velocidad (sin alt. GPS)'}
         </h4>
         {minV != null && maxV != null && (

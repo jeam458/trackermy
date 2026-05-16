@@ -15,15 +15,18 @@ export type SupabaseEmotionContext = {
 export async function fetchSupabaseEmotionContext(params: {
   supabase: SupabaseClient
   userId: string
+  /** Default 80; rutas API livianas pueden bajar a ~48 para menos latencia. */
+  attemptsLimit?: number
 }): Promise<SupabaseEmotionContext> {
   const { supabase, userId } = params
+  const limit = Math.min(100, Math.max(16, Math.floor(params.attemptsLimit ?? 80)))
 
   const { data: attempts } = await supabase
     .from('route_attempts')
     .select('route_id, distance, total_time, completed_at')
     .eq('user_id', userId)
     .order('completed_at', { ascending: false })
-    .limit(80)
+    .limit(limit)
 
   const rows = attempts || []
   const now = Date.now()

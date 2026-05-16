@@ -15,7 +15,7 @@ import { ALL_PET_EMOTIONS } from '@/components/pet/guardDhPetTypes'
  */
 export const PET_ESTADOS_SHEET_URL = '/brand/guarddh-pet-estados-sheet.png'
 
-export const PET_ROSTRO_SINGLE_URL = '/brand/guarddh-pet-rostro.png'
+export const PET_ROSTRO_SINGLE_URL = '/brand/patt-pet.png'
 
 export const PET_ESTADOS_SHEET_COLS = 7
 export const PET_ESTADOS_SHEET_ROWS = 3

@@ -26,8 +26,8 @@ export function RecordExistingRouteStatus({
   return (
     <div className="absolute left-3 right-3 top-16 z-[1090] max-h-[38vh] space-y-2 overflow-y-auto sm:top-20">
       {awaitingStartGate && (
-        <div className="bg-cyan-500/15 border border-cyan-500/35 rounded-xl p-3 text-sm text-cyan-100 shadow-lg backdrop-blur-sm">
-          <p className="font-semibold text-cyan-200">Línea de salida</p>
+        <div className="bg-gdh-sun/15 border border-gdh-sun/35 rounded-xl p-3 text-sm text-gdh-sun shadow-lg backdrop-blur-sm">
+          <p className="font-semibold text-white">Línea de salida</p>
           <p>
             El cronómetro y el registro de GPS empiezan al estar a {startEndRadiusM} m o menos del
             inicio.

@@ -17,7 +17,7 @@ import { gpsStartEndFromAttemptJson } from '@/lib/rankingGps'
 import { normalizeRouteViewFrom, routeViewUrl } from '@/lib/routeViewNavigation'
 import { optimizeMediaBeforeUpload } from '@/lib/mediaUploadOptimizer'
 import { toast } from '@/lib/toast'
-import { DashboardCoachHeaderSlot } from '@/app/dashboard/components/DashboardAppTopBar'
+import { DashboardAppTopBarTrailingCluster } from '@/app/dashboard/components/DashboardAppTopBar'
 
 const AttemptReplayViewer = dynamic(
   () =>
@@ -375,7 +375,7 @@ function AttemptReplayInner() {
                   attemptId,
                   replayFrom: from || 'ranking',
                 })}
-                className="text-teal-400 hover:text-teal-300"
+                className="text-gdh-brand-highlight hover:text-gdh-brand-highlight/85"
               >
                 {routeName}
               </Link>
@@ -421,7 +421,7 @@ function AttemptReplayInner() {
               href={gpsExtra.mapsStartUrl || '#'}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1.5 text-sky-400 hover:text-sky-300 font-mono text-xs break-all"
+              className="inline-flex items-center gap-1.5 text-gdh-sun hover:text-gdh-brand-highlight font-mono text-xs break-all"
             >
               <MapPin size={12} className="shrink-0" />
               {gpsExtra.startLabel}
@@ -438,7 +438,7 @@ function AttemptReplayInner() {
               href={gpsExtra.mapsEndUrl || '#'}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1.5 text-emerald-400/90 hover:text-emerald-300 font-mono text-xs break-all"
+              className="inline-flex items-center gap-1.5 text-gdh-muted hover:text-slate-200 font-mono text-xs break-all"
             >
               <MapPin size={12} className="shrink-0" />
               {gpsExtra.endLabel}
@@ -484,18 +484,17 @@ function AttemptReplayInner() {
             </>
           }
           trailing={
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              <DashboardCoachHeaderSlot />
+            <DashboardAppTopBarTrailingCluster className="gap-2">
               {statsHref ? (
                 <Link
                   href={statsHref}
-                  className="inline-flex items-center gap-2 rounded-lg border border-sky-400/40 bg-sky-400/10 px-3 py-1.5 text-xs font-semibold text-sky-300 hover:bg-sky-400/15"
+                  className="inline-flex items-center gap-2 rounded-lg border border-gdh-brand/40 bg-gdh-brand/12 px-3 py-1.5 text-xs font-semibold text-gdh-brand-highlight hover:bg-gdh-brand/18"
                 >
                   <BarChart3 size={14} aria-hidden />
                   Ver estadísticas
                 </Link>
               ) : null}
-            </div>
+            </DashboardAppTopBarTrailingCluster>
           }
         />
 
@@ -520,8 +519,8 @@ function AttemptReplayInner() {
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-sm font-semibold text-white">Multimedia del recorrido</h2>
             {canUploadMedia ? (
-              <label className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-xs font-medium text-teal-300 cursor-pointer disabled:opacity-50">
-                {uploading ? <span className="h-2.5 w-2.5 rounded-full bg-teal-300 animate-pulse" /> : <Upload size={14} />}
+              <label className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-xs font-medium text-gdh-brand-highlight cursor-pointer disabled:opacity-50">
+                {uploading ? <span className="h-2.5 w-2.5 rounded-full bg-gdh-brand-highlight animate-pulse" /> : <Upload size={14} />}
                 {uploading ? 'Subiendo...' : 'Subir fotos / vídeo'}
                 <input
                   type="file"

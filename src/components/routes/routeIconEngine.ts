@@ -5,13 +5,13 @@ import {
 } from '@/lib/routeThemedIcons'
 
 const ROUTE_ICON_COLORS = [
-  '#14b8a6', // teal
-  '#06b6d4', // cyan
-  '#22d3ee', // sky-cyan
-  '#6366f1', // indigo
-  '#8b5cf6', // violet
-  '#10b981', // emerald
-  '#f59e0b', // amber
+  '#c55a2f', // marca PATT
+  '#e37845',
+  '#d97736', // sol
+  '#8f3d1f', // brand muted
+  '#64748b', // trail
+  '#f59e0b', // ámbar
+  '#b45309', // ámbar oscuro
 ] as const
 
 function hash(input: string): number {

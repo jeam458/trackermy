@@ -2,17 +2,13 @@ import { useEffect, useRef } from 'react'
 import { animate } from '@/lib/animeUi'
 import type { JSAnimation } from 'animejs'
 import { GuardDhPet } from '@/components/pet/GuardDhPet'
-import { GuidePetMoodEyesOverlay } from '@/components/pet/GuidePetMoodEyesOverlay'
 import { BrandSpinner } from '@/components/ui/BrandLogoLoader'
 import type { PetAiMindState } from '@/components/pet/GuardDhPetAtlas'
-import type { GuidePetMood } from '@/lib/pet/guidePetBridge'
 
 interface PetOrbProps {
   mood: string
   externalEventSource?: string | null | undefined
   externalEventToastType?: string | null | undefined
-  guideLlmThinking: boolean
-  petMood: GuidePetMood | null
   petVisible: boolean
   petEmotion: any
   petAiMindState: PetAiMindState | 'off' | 'thinking'
@@ -26,8 +22,6 @@ export function PetOrb({
   mood,
   externalEventSource,
   externalEventToastType,
-  guideLlmThinking,
-  petMood,
   petVisible,
   petEmotion,
   petAiMindState,
@@ -141,40 +135,44 @@ export function PetOrb({
     if (externalEventSource === 'toast' && externalEventToastType) {
       switch (externalEventToastType) {
         case 'success':
-          return 'from-emerald-400/55 via-teal-400/35 to-cyan-400/35'
+          return 'from-gdh-brand-highlight/50 via-gdh-brand/35 to-gdh-sun/30'
         case 'error':
           return 'from-rose-500/50 via-red-500/35 to-fuchsia-500/28'
         case 'warning':
           return 'from-amber-500/50 via-yellow-400/35 to-orange-400/28'
         default:
-          return 'from-sky-500/45 via-cyan-500/28 to-indigo-500/28'
+          return 'from-gdh-brand/40 via-gdh-trail/25 to-gdh-sun/22'
       }
     }
     // Default colors based on mood
     if (mood === 'triumph') return 'from-amber-400/45 via-orange-400/25 to-yellow-300/30'
-    if (mood === 'loading') return 'from-sky-400/45 via-cyan-400/25 to-teal-400/35'
+    if (mood === 'loading') return 'from-gdh-brand-highlight/40 via-gdh-brand/28 to-gdh-trail/22'
     if (mood === 'warning') return 'from-amber-500/45 via-yellow-400/30 to-orange-400/30'
     if (mood === 'error') return 'from-rose-500/45 via-red-500/30 to-fuchsia-500/25'
-    if (mood === 'focus') return 'from-teal-400/45 via-cyan-400/25 to-sky-400/30'
-    return 'from-cyan-400/35 via-indigo-500/20 to-teal-400/30'
+    if (mood === 'focus') return 'from-gdh-brand-highlight/42 via-gdh-brand/25 to-gdh-sun/26'
+    return 'from-gdh-brand/32 via-gdh-trail/18 to-gdh-brand-highlight/26'
   })()
 
   const borderColor = (() => {
     if (externalEventSource === 'toast' && externalEventToastType) {
       switch (externalEventToastType) {
-        case 'success': return 'border-emerald-400/70'
-        case 'error': return 'border-rose-400/60'
-        case 'warning': return 'border-amber-400/65'
-        default: return 'border-sky-400/65'
+        case 'success':
+          return 'border-gdh-brand-highlight/65'
+        case 'error':
+          return 'border-rose-400/60'
+        case 'warning':
+          return 'border-amber-400/65'
+        default:
+          return 'border-gdh-brand/50'
       }
     }
     // Default based on mood
     if (mood === 'triumph') return 'border-amber-300/60'
-    if (mood === 'loading') return 'border-cyan-300/50'
+    if (mood === 'loading') return 'border-gdh-brand-highlight/50'
     if (mood === 'warning') return 'border-amber-300/60'
     if (mood === 'error') return 'border-rose-300/60'
-    if (mood === 'focus') return 'border-teal-300/60'
-    return 'border-cyan-200/45'
+    if (mood === 'focus') return 'border-gdh-brand-highlight/58'
+    return 'border-gdh-brand/40'
   })()
 
   return (
@@ -185,7 +183,7 @@ export function PetOrb({
       />
       <div
         ref={orbRef}
-        className={`relative overflow-visible rounded-full border ${borderColor} bg-[#101722]/93 shadow-[0_10px_28px_rgba(0,0,0,0.42)] flex items-center justify-center`}
+        className={`relative overflow-visible rounded-full border ${borderColor} bg-gdh-canvas/93 shadow-[0_10px_28px_rgba(0,0,0,0.42)] flex items-center justify-center`}
         style={{ width: size, height: size }}
       >
         <div
@@ -202,9 +200,6 @@ export function PetOrb({
               aiMindState={petAiMindState}
             />
           )}
-           {petVisible && externalEventSource !== 'toast' && guideLlmThinking && (
-             <GuidePetMoodEyesOverlay mood={(petMood ?? 'neutral') as GuidePetMood} isThinking size={petSize} />
-           )}
           {petVisible && mood === 'loading' && (
             <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/35 rounded-full">
               <BrandSpinner size={isSidebar ? 24 : size <= 50 ? 18 : 22} />

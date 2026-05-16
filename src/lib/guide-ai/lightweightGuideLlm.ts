@@ -6,6 +6,7 @@ import {
 } from '@/lib/guide-ai/guideMcpClient'
 import { isGuideMcpToolName, type GuideToolRequest } from '@/lib/guide-ai/guideProtocol'
 import { defaultGuideModelChain } from '@/lib/guide-ai/guideModelDefaults'
+import type { GuideCoachTurnMemoryPromptRow } from '@/lib/guide-ai/guideCoachTurnMemory'
 import { buildGuideNarrationFullPrompt } from '@/lib/guide-ai/guidePromptBuild'
 import {
   inferPetMoodFromAttemptSummary,
@@ -27,7 +28,6 @@ import type {
   GuideSessionReplaySignal,
   GuideUiEvent,
 } from '@/lib/guide-ai/types'
-import { maybeSubmitPetEmotionProposalFromLlm } from '@/lib/pet/experimentalPetEmotionFromLlm'
 
 const INIT_TIMEOUT_MS = 22_000
 const GEN_TIMEOUT_MS = 4_200
@@ -437,7 +437,24 @@ function heuristicToolRequests(context: GuideContext, event: GuideUiEvent): Guid
     Number.isFinite(Number(context.approxLat)) &&
     Number.isFinite(Number(context.approxLng))
 
-  if (event.type === 'click') {
+  if (event.type === 'user-message') {
+    const um = String(event.userMessage || '').trim().slice(0, 400)
+    out.push({
+      tool: 'click_context_actions',
+      args: {
+        event_type: 'user_message',
+        label: um,
+        pathname: context.pathname,
+        ...(hasGeo ? { lat: context.approxLat, lng: context.approxLng } : {}),
+      },
+    })
+    out.push({ tool: 'my_weekly_progress', args: {} })
+    if (path.includes('/routes/view') || path.includes('/routes/attempt')) {
+      if (context.routeId) {
+        out.push({ tool: 'get_route_by_id', args: { route_id: context.routeId } })
+      }
+    }
+  } else if (event.type === 'click') {
     out.push({
       tool: 'click_context_actions',
       args: {
@@ -549,8 +566,18 @@ export async function generateGuideReactionWithLightLlm(input: {
   affectiveAugment?: Record<string, unknown> | null
   /** Memoria breve de la vista (anti-repetición, ritmo). */
   sessionHint?: GuideInteractionSessionHint | null
+  /** Últimos turnos del coach en esta vista (continuidad). */
+  coachTurnMemory?: GuideCoachTurnMemoryPromptRow[] | null
 }): Promise<GuideReaction> {
-  const { context, event, executeMcpTools = true, sessionReplaySignals, affectiveAugment, sessionHint } = input
+  const {
+    context,
+    event,
+    executeMcpTools = true,
+    sessionReplaySignals,
+    affectiveAugment,
+    sessionHint,
+    coachTurnMemory,
+  } = input
   if (!canRunLocalLlm()) {
     return finalizeGuideReaction(
       fallbackReaction(context, event, sessionReplaySignals),
@@ -570,6 +597,7 @@ export async function generateGuideReactionWithLightLlm(input: {
       sessionReplaySignals: sessionReplaySignals ?? null,
       affectiveAugment: affectiveAugment ?? null,
       sessionHint: sessionHint ?? null,
+      coachTurnMemory: coachTurnMemory ?? null,
     })
 
     const res = (await withTimeout(
@@ -588,15 +616,9 @@ export async function generateGuideReactionWithLightLlm(input: {
 
     const parsed = JSON.parse(m[0]) as Partial<GuideReaction> & {
       tool_requests?: unknown
-      pet_emotion_proposal?: unknown
     }
     const fb = fallbackReaction(context, event, sessionReplaySignals)
 
-    if (parsed.pet_emotion_proposal !== undefined) {
-      void maybeSubmitPetEmotionProposalFromLlm(parsed.pet_emotion_proposal).catch(() => {
-        /* experimental: no bloquear guía */
-      })
-    }
     const p = context.pathname.toLowerCase()
     const replayCoachTurn =
       p.includes('attempt-replay') &&

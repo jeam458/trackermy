@@ -4,13 +4,13 @@ export const dynamic = 'force-static'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Downhill Tracker',
-    short_name: 'DH Tracker',
-    description: 'Track your downhill trails, speed, and time.',
+    name: 'PATT',
+    short_name: 'PATT',
+    description: 'Tu compañero de descenso: rutas, actividad y ranking.',
     start_url: '/',
     display: 'standalone',
-    background_color: '#0b0f14',
-    theme_color: '#121820',
+    background_color: '#09090b',
+    theme_color: '#c55a2f',
     icons: [
       {
         src: '/icon512_maskable.png',

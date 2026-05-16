@@ -1,5 +1,5 @@
 /**
- * ## Configuración única del pet GuardDH (runtime)
+ * ## Configuración única del pet PATT (runtime)
  *
  * **Prioridad de renderer** (la primera activa gana; el resto queda en código muerto hasta el próximo flag):
  * 1. **`USE_PET_BRAND_SVG`** — `public/brand/pet.svg` inline + micro-anime por `data-gdh-part` (heurística bbox).
@@ -38,8 +38,8 @@
 /** SVG de marca servido desde `public/`. */
 export const PET_BRAND_SVG_URL = '/brand/pet.svg'
 
-/** Marca oficial vector en DOM (prioridad 1). */
-export const USE_PET_BRAND_SVG = true
+/** Marca oficial vector en DOM (prioridad 1). Apagado: nuevo pet es raster en `PET_ROSTRO_SINGLE_URL`. */
+export const USE_PET_BRAND_SVG = false
 
 /**
  * Avatar vector “placeholder” (prioridad 2 si brand SVG está apagado).

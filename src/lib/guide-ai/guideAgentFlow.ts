@@ -5,7 +5,7 @@
  */
 
 export const GUIDE_AGENT_PIPELINE = [
-  '1) Señal UI primero: leé `event.type` (navigation | click | data-refresh | toast) y `event.label` si existe. Eso es la intención inmediata del rider (ej. click en “Reproducir” / “Pausa” en replay = controlar el visionado, no cambiar de tema).',
+  '1) Señal UI primero: leé `event.type` (navigation | click | data-refresh | toast | user-message) y `event.label` si existe. Si es user-message, leé el texto del rider en el bloque Evento UI / user_message (pregunta o pedido). Si no, el label acota la intención (ej. replay: play/pausa = controlar el visionado, no cambiar de tema).',
   '2) Anclaje de sesión: usá el JSON de contexto ya resuelto (pathname, screen_kind, route_id, attempt_id, attempt_summary, ranking_summary, replay_summary, profile_summary, current_route). Eso es la “situación” actual; no hables como si no supieras en qué pantalla está.',
   '3) Datos extra (MCP / tool_requests) solo si el contexto NO alcanza para una afirmación concreta o para contrastar tendencia (popularidad, vecinos, semana). No pidas herramientas por reflejo si el subtitle puede armarse solo con el JSON.',
   '4) Síntesis: una idea principal + title/subtitle alineados al evento. En replay con play/pausa, comentá tramo/ritmo/lectura de línea usando replay_summary y attempt_summary; no dispares un barrido de BD si el usuario solo pausó.',

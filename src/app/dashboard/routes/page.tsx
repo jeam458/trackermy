@@ -28,7 +28,7 @@ import {
   DashboardAppTopBar,
   DashboardAppTopBarHeading,
   DASHBOARD_APP_TOP_BAR_ICON_BUTTON_CLASS,
-  DashboardCoachHeaderSlot,
+  DashboardAppTopBarTrailingCluster,
 } from '@/app/dashboard/components/DashboardAppTopBar'
 import { useDashboardSidebar } from '@/lib/dashboard/DashboardSidebarContext'
 import { cn } from '@/lib/utils'
@@ -429,16 +429,15 @@ export default function RoutesPage() {
           />
         }
         trailing={
-          <div className="flex min-w-0 shrink-0 items-center justify-end gap-1.5">
-            <DashboardCoachHeaderSlot />
+          <DashboardAppTopBarTrailingCluster className="gap-1.5">
             <Link
               href="/dashboard/routes/create"
-              className="inline-flex max-w-[10.5rem] items-center gap-1.5 truncate rounded-xl border border-teal-400/30 bg-teal-500/15 px-3 py-2 text-sm font-semibold text-teal-100 transition-colors hover:bg-teal-500/25 sm:max-w-none sm:gap-2"
+              className="inline-flex max-w-[10.5rem] items-center gap-1.5 truncate rounded-xl border border-gdh-brand/30 bg-gdh-brand/15 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-gdh-brand/25 sm:max-w-none sm:gap-2"
             >
               <Plus size={18} aria-hidden className="shrink-0" />
               <span className="truncate">Crear Ruta</span>
             </Link>
-          </div>
+          </DashboardAppTopBarTrailingCluster>
         }
       />
 
@@ -460,7 +459,7 @@ export default function RoutesPage() {
             <div className="flex items-center justify-center">
               <Link
                 href="/dashboard/routes/create"
-                className="px-6 py-3 rounded-xl border border-teal-400/30 bg-teal-500/20 text-teal-100 hover:bg-teal-500/30 transition-colors flex items-center gap-2 font-semibold"
+                className="px-6 py-3 rounded-xl border border-gdh-brand/30 bg-gdh-brand/20 text-white hover:bg-gdh-brand/30 transition-colors flex items-center gap-2 font-semibold"
               >
                 <Plus size={20} />
                 Crear Ruta

@@ -35,21 +35,23 @@ export default function LoginPage() {
 
   if (checking) {
     return (
-      <div className={`min-h-screen flex items-center justify-center bg-slate-900 ${styles.loginPage}`}>
+      <div className={`min-h-screen flex items-center justify-center gdh-immersive-page ${styles.loginPage}`}>
         <BrandLogoLoader label="Validando sesión…" showRing />
       </div>
     )
   }
 
   return (
-    <div className={`min-h-screen flex items-center justify-center bg-slate-900 ${styles.loginPage}`}>
-      <div className={`w-full max-w-md p-8 space-y-8 bg-slate-800 rounded-3xl shadow-xl border border-slate-700 ${styles.loginCard}`}>
+    <div className={`min-h-screen flex items-center justify-center gdh-immersive-page px-4 py-10 ${styles.loginPage}`}>
+      <div
+        className={`w-full max-w-md space-y-8 rounded-3xl border border-white/10 bg-gdh-card/90 p-8 shadow-[0_24px_64px_rgba(0,0,0,0.45)] backdrop-blur-md ${styles.loginCard}`}
+      >
         <div className="text-center">
-          <h2 className="text-3xl font-extrabold text-white tracking-tight">
-            guard<span className="text-teal-400">Dh</span>
+          <h2 className="text-3xl font-extrabold tracking-tight text-gdh-brand-highlight">
+            PATT
           </h2>
-          <p className="mt-2 text-sm text-slate-400">
-            Sign in to track your best times and routes.
+          <p className="mt-2 text-sm text-gdh-muted">
+            Iniciá sesión para seguir tus tiempos y rutas.
           </p>
         </div>
         <LoginForm />

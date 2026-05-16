@@ -164,7 +164,7 @@ export function ActivityCalendarMonth({ entries, emphasizeWeekStart = null }: Pr
               className={[
                 'aspect-square rounded-full flex flex-col items-center justify-center text-sm font-medium transition-colors min-h-[2.5rem]',
                 isToday ? 'ring-2 ring-white/80 ring-offset-2 ring-offset-[#151c25]' : '',
-                inWeek && !isSelected ? 'ring-1 ring-teal-400/45 ring-offset-1 ring-offset-[#151c25]' : '',
+                inWeek && !isSelected ? 'ring-1 ring-gdh-brand/45 ring-offset-1 ring-offset-gdh-canvas-2' : '',
                 isSelected ? 'bg-gdh-brand/25 text-gdh-brand-highlight' : 'bg-white/5 text-slate-200 hover:bg-white/10',
                 n === 0 ? 'opacity-70' : '',
               ].join(' ')}

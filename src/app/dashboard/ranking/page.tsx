@@ -9,7 +9,7 @@ import {
   DashboardAppTopBar,
   DashboardAppTopBarHeading,
   DASHBOARD_APP_TOP_BAR_ICON_BUTTON_CLASS,
-  DashboardCoachHeaderSlot,
+  DashboardAppTopBarTrailingCluster,
 } from '@/app/dashboard/components/DashboardAppTopBar'
 import { useDashboardSidebar } from '@/lib/dashboard/DashboardSidebarContext'
 import { cn } from '@/lib/utils'
@@ -80,7 +80,7 @@ export default function RankingPage() {
             subtitle="Elegí una ruta pública para ver posiciones y tiempos."
           />
         }
-        trailing={<DashboardCoachHeaderSlot />}
+        trailing={<DashboardAppTopBarTrailingCluster />}
       />
 
       <div className="mx-auto max-w-lg space-y-6 px-4 pt-4">
@@ -96,7 +96,7 @@ export default function RankingPage() {
           <p className="text-sm text-slate-500 mt-2">Cuando haya rutas publicadas, podrás abrir su ranking aquí.</p>
           <Link
             href="/dashboard/routes"
-            className="inline-block mt-5 text-sm font-semibold text-teal-400 hover:text-teal-300"
+            className="inline-block mt-5 text-sm font-semibold text-gdh-brand-highlight hover:text-gdh-brand-highlight/85"
           >
             Ir a mis rutas
           </Link>
@@ -109,14 +109,14 @@ export default function RankingPage() {
                 href={`/dashboard/routes/route-ranking?id=${encodeURIComponent(r.id)}`}
                 className="gdh-immersive-card flex items-center gap-3 p-4 rounded-2xl transition-colors group"
               >
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-teal-500/15 text-teal-400">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gdh-brand/15 text-gdh-brand-highlight">
                   <Trophy size={22} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-white truncate group-hover:text-teal-300 transition-colors">{r.name}</p>
+                  <p className="font-semibold text-white truncate group-hover:text-gdh-brand-highlight transition-colors">{r.name}</p>
                   <p className="text-xs text-slate-500">{r.distanceKm.toFixed(2)} km · {r.difficulty}</p>
                 </div>
-                <ChevronRight size={20} className="text-slate-600 group-hover:text-teal-400/80 shrink-0" />
+                <ChevronRight size={20} className="text-slate-600 group-hover:text-gdh-brand-highlight/80 shrink-0" />
               </Link>
             </li>
           ))}

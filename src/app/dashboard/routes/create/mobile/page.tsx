@@ -26,7 +26,7 @@ import {
   DashboardAppTopBar,
   DashboardAppTopBarHeading,
   DASHBOARD_APP_TOP_BAR_ICON_BUTTON_CLASS,
-  DashboardCoachHeaderSlot,
+  DashboardAppTopBarTrailingCluster,
 } from '@/app/dashboard/components/DashboardAppTopBar'
 import { tryPersistRouteIconFromLocalAi } from '@/lib/refineRouteIconWithLocalAi'
 import { cn } from '@/lib/utils'
@@ -319,7 +319,7 @@ export default function MobileRouteCreatePage() {
               }
             />
           }
-          trailing={<DashboardCoachHeaderSlot />}
+          trailing={<DashboardAppTopBarTrailingCluster />}
         />
 
         <main className="p-4 max-w-lg mx-auto space-y-4">

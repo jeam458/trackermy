@@ -60,7 +60,7 @@ export function GuardDhGlobeStage({ className = '' }: { className?: string }) {
           background: 'radial-gradient(circle at 50% 55%, rgba(56,189,248,0.35), transparent 62%)',
         }}
       />
-      <div className="relative h-full w-full overflow-hidden rounded-full border border-sky-400/35 bg-[#070b10] shadow-[0_0_40px_rgba(56,189,248,0.18),inset_0_0_60px_rgba(0,0,0,0.65)]">
+      <div className="relative h-full w-full overflow-hidden rounded-full border border-gdh-brand/35 bg-gdh-canvas shadow-[0_0_40px_rgba(227,120,69,0.14),inset_0_0_60px_rgba(0,0,0,0.65)]">
         <div
           className="absolute inset-0 touch-none cursor-grab active:cursor-grabbing"
           onPointerDown={onPointerDown}

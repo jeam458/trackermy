@@ -15,6 +15,11 @@ import {
 } from '@/lib/pet/guidePetBridge'
 import type { GuideContext, GuideGpsHint, GuideSessionReplaySignal, GuideUiEvent } from '@/lib/guide-ai/types'
 import { generateGuideReactionWithLightLlm } from '@/lib/guide-ai/lightweightGuideLlm'
+import {
+  appendGuideCoachTurnMemory,
+  coachTurnMemoryForPrompt,
+  type GuideCoachTurnMemoryEntry,
+} from '@/lib/guide-ai/guideCoachTurnMemory'
 import { buildGuideInteractionSessionHint } from '@/lib/guide-ai/guideSessionHint'
 import { buildAffectiveAugmentForLlm } from './helpers'
 import type { GuideWorldStateController } from '@/lib/affective'
@@ -49,6 +54,9 @@ interface UseGuideReplaySignalsParams {
   lastSpokenAtRef: MutableRefObject<number>
   spokenTitlesRef: MutableRefObject<string[]>
   viewEnteredAtRef: MutableRefObject<number>
+  /** Metadata de auth ya obtenida en layout; evita `getUser` extra en cada getContext. */
+  coachAuthMetadataRef: MutableRefObject<Record<string, unknown> | null>
+  coachTurnMemoryRef: MutableRefObject<GuideCoachTurnMemoryEntry[]>
 }
 
 export function useGuideReplaySignals(params: UseGuideReplaySignalsParams) {
@@ -68,6 +76,8 @@ export function useGuideReplaySignals(params: UseGuideReplaySignalsParams) {
     lastSpokenAtRef,
     spokenTitlesRef,
     viewEnteredAtRef,
+    coachAuthMetadataRef,
+    coachTurnMemoryRef,
   } = params
 
   const sessionReplaySignalsRef = useRef<GuideSessionReplaySignal[]>([])
@@ -147,6 +157,7 @@ export function useGuideReplaySignals(params: UseGuideReplaySignalsParams) {
               routeId: contextualRouteId,
               attemptId: contextualAttemptId || undefined,
               clientHints: petClientHints,
+              ...(coachAuthMetadataRef.current != null ? { authMetadata: coachAuthMetadataRef.current } : {}),
             })) as GuideContext
             pageGuideContextRef.current = ctx
           }
@@ -172,6 +183,7 @@ export function useGuideReplaySignals(params: UseGuideReplaySignalsParams) {
                 recentCoachTitlesLower: spokenTitlesRef.current,
                 lastTriggerType: 'click',
               }),
+              coachTurnMemory: coachTurnMemoryForPrompt(coachTurnMemoryRef),
             }),
           )
           setExternalEvent({
@@ -180,6 +192,12 @@ export function useGuideReplaySignals(params: UseGuideReplaySignalsParams) {
             subtitle: reaction.subtitle,
             duration: reaction.duration,
             source: 'manual',
+          })
+          appendGuideCoachTurnMemory(coachTurnMemoryRef, {
+            trigger: replayEvent.type,
+            label: replayEvent.label,
+            coachTitle: reaction.title,
+            coachSubtitleSnippet: reaction.subtitle.slice(0, 200),
           })
           lastSpokenAtRef.current = Date.now()
           spokenTitlesRef.current = [
@@ -303,6 +321,7 @@ export function useGuideReplaySignals(params: UseGuideReplaySignalsParams) {
               routeId: contextualRouteId,
               attemptId: contextualAttemptId || undefined,
               clientHints: petClientHints,
+              ...(coachAuthMetadataRef.current != null ? { authMetadata: coachAuthMetadataRef.current } : {}),
             })) as GuideContext
             pageGuideContextRef.current = ctx
           }
@@ -329,6 +348,7 @@ export function useGuideReplaySignals(params: UseGuideReplaySignalsParams) {
                 recentCoachTitlesLower: spokenTitlesRef.current,
                 lastTriggerType: 'data-refresh',
               }),
+              coachTurnMemory: coachTurnMemoryForPrompt(coachTurnMemoryRef),
             }),
           )
           const subKey =
@@ -349,6 +369,12 @@ export function useGuideReplaySignals(params: UseGuideReplaySignalsParams) {
             duration: Math.min(9000, Math.max(5200, reaction.duration)),
             source: 'navigation',
             toastType: mapReactionMoodToToastType(reaction.mood),
+          })
+          appendGuideCoachTurnMemory(coachTurnMemoryRef, {
+            trigger: coachEvent.type,
+            label: coachEvent.label,
+            coachTitle: reaction.title,
+            coachSubtitleSnippet: reaction.subtitle.slice(0, 200),
           })
           setMessageVisible(true)
         } catch {

@@ -65,13 +65,33 @@ export function replayRiderIconPulse(el: Element | null): JSAnimation | undefine
   })
 }
 
-const SHIMMER_GRADIENT =
-  'linear-gradient(90deg, transparent 0%, rgba(45,212,191,0.12) 45%, rgba(99,102,241,0.2) 55%, transparent 100%)'
+function shimmerGradientCss(): string {
+  if (typeof window === 'undefined') {
+    return 'linear-gradient(90deg, transparent 0%, rgba(227,120,69,0.12) 50%, transparent 100%)'
+  }
+  const h =
+    typeof getComputedStyle === 'undefined'
+      ? '#e37845'
+      : getComputedStyle(document.documentElement).getPropertyValue('--gdh-brand-highlight').trim() ||
+        '#e37845'
+  const core =
+    typeof getComputedStyle === 'undefined'
+      ? '#c55a2f'
+      : getComputedStyle(document.documentElement).getPropertyValue('--gdh-brand').trim() || '#c55a2f'
+
+  /**
+   * Protección SSR: valores por defecto PATT (`#e37845`, `#c55a2f`) si falta cascada CSS.
+   * Evita teal/púrpura genéricos (anti-slop tipo Impeccable).
+   */
+  const safeHl = /^#|^rgb|^hsla?/i.test(h) ? h : '#e37845'
+  const safeCore = /^#|^rgb|^hsla?/i.test(core) ? core : '#c55a2f'
+  return `linear-gradient(90deg, transparent 0%, color-mix(in srgb, ${safeHl} 18%, transparent) 44%, color-mix(in srgb, ${safeCore} 14%, transparent) 56%, transparent 100%)`
+}
 
 /** Barra interna que se desplaza (shimmer); el padre debe ser `position: relative; overflow: hidden`. */
 export function runShimmerSweep(barEl: HTMLElement | null): JSAnimation | undefined {
   if (!barEl) return
-  barEl.style.background = SHIMMER_GRADIENT
+  barEl.style.background = shimmerGradientCss()
   barEl.style.width = '50%'
   return animate(barEl, {
     x: ['-100%', '250%'],

@@ -39,7 +39,7 @@ export function UserHeader({
     <section className="flex flex-col items-center px-1">
       <div className="relative mt-2">
         <div
-          className={`rounded-full p-[3px] bg-gradient-to-tr from-indigo-400 via-violet-500 to-sky-400 shadow-[0_0_24px_rgba(99,102,241,0.35)] ${isEditing ? 'cursor-pointer group' : ''}`}
+          className={`rounded-full p-[3px] bg-gradient-to-tr from-gdh-brand-muted via-gdh-brand to-gdh-brand-highlight shadow-[0_0_24px_rgba(197,90,47,0.35)] ${isEditing ? 'cursor-pointer group' : ''}`}
           onClick={isEditing ? onAvatarClick : undefined}
           role={isEditing ? 'button' : undefined}
         >
@@ -80,7 +80,7 @@ export function UserHeader({
           type="text"
           value={name}
           onChange={(e) => onNameChange?.(e.target.value)}
-          className="mt-7 text-[1.35rem] font-semibold text-center text-white bg-[#1e2529] border border-white/10 rounded-xl px-4 py-2 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/30 w-full max-w-[min(100%,320px)] transition-colors"
+          className="mt-7 text-[1.35rem] font-semibold text-center text-white bg-[#1e2529] border border-white/10 rounded-xl px-4 py-2 focus:outline-none focus:border-gdh-brand/50 focus:ring-1 focus:ring-gdh-brand/30 w-full max-w-[min(100%,320px)] transition-colors"
           placeholder={t.namePlaceholder}
         />
       ) : (
@@ -91,7 +91,7 @@ export function UserHeader({
         <textarea
           value={bio}
           onChange={(e) => onBioChange?.(e.target.value)}
-          className="mt-3 text-center text-sm text-slate-300 bg-[#1e2529] border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/30 w-full max-w-[min(100%,340px)] resize-none min-h-[5rem] leading-relaxed"
+          className="mt-3 text-center text-sm text-slate-300 bg-[#1e2529] border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-gdh-brand/50 focus:ring-1 focus:ring-gdh-brand/30 w-full max-w-[min(100%,340px)] resize-none min-h-[5rem] leading-relaxed"
           placeholder={t.bioPlaceholder}
         />
       ) : (

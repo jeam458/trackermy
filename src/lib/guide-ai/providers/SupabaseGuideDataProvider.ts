@@ -17,10 +17,12 @@ export class SupabaseGuideDataProvider implements GuideDataProvider {
     routeId?: string | null
     attemptId?: string | null
     clientHints?: { gpsHint?: GuideGpsHint; networkOnline?: boolean | null }
+    authMetadata?: Record<string, unknown> | null
   }): Promise<GuideContext> {
     const base = await fetchSupabaseEmotionContext({
       supabase: this.supabase,
       userId: input.userId,
+      attemptsLimit: 52,
     })
 
     let attemptSummary = null as GuideContext['attemptSummary']
@@ -40,7 +42,15 @@ export class SupabaseGuideDataProvider implements GuideDataProvider {
       }
     }
 
-    const [{ data: profileRow }, routeRes, countRes, authRes] = await Promise.all([
+    let md: Record<string, unknown>
+    if (input.authMetadata !== undefined) {
+      md = (input.authMetadata ?? {}) as Record<string, unknown>
+    } else {
+      const { data: authRes } = await this.supabase.auth.getUser()
+      md = (authRes.user?.user_metadata ?? {}) as Record<string, unknown>
+    }
+
+    const [{ data: profileRow }, routeRes, countRes] = await Promise.all([
       this.supabase.from('profiles').select('full_name').eq('id', input.userId).maybeSingle(),
       routeIdEffective
         ? this.supabase
@@ -55,10 +65,7 @@ export class SupabaseGuideDataProvider implements GuideDataProvider {
             .select('id', { count: 'exact', head: true })
             .eq('route_id', routeIdEffective)
         : Promise.resolve({ count: null as number | null }),
-      this.supabase.auth.getUser(),
     ])
-    const authUser = authRes.data.user
-    const md = (authUser?.user_metadata ?? {}) as Record<string, unknown>
     const fromMeta = (key: string) => {
       const v = md[key]
       return typeof v === 'string' && v.trim() ? v.trim() : ''

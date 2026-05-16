@@ -2,14 +2,12 @@
 
 import { CoachNotification } from '@/components/ui/CoachNotification'
 import type { PetAiMindState } from '@/components/pet/GuardDhPetAtlas'
-import type { GuidePetMood } from '@/lib/pet/guidePetBridge'
 
 interface RecordDockCoachProps {
   mood: string
   externalEventSource: string | null | undefined
   externalEventToastType: string | null | undefined
   guideLlmThinking: boolean
-  petMood: GuidePetMood
   petVisible: boolean
   petEmotion: any
   petAiMindState: PetAiMindState | 'off' | 'thinking'
@@ -27,7 +25,6 @@ export function RecordDockCoach({
   externalEventSource,
   externalEventToastType,
   guideLlmThinking,
-  petMood,
   petVisible,
   petEmotion,
   petAiMindState,
@@ -45,7 +42,6 @@ export function RecordDockCoach({
       externalEventSource={externalEventSource}
       externalEventToastType={externalEventToastType}
       guideLlmThinking={guideLlmThinking}
-      petMood={petMood}
       petVisible={petVisible}
       petEmotion={petEmotion}
       petAiMindState={petAiMindState}

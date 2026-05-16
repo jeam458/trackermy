@@ -1,12 +1,14 @@
 import type { RiderGuideMood } from '@/lib/riderGuide'
 import type { CoachKnowledgeNode } from '@/lib/guide-ai/coachKnowledgeTree.types'
 
-export type GuideUiEventType = 'navigation' | 'click' | 'toast' | 'data-refresh'
+export type GuideUiEventType = 'navigation' | 'click' | 'toast' | 'data-refresh' | 'user-message'
 
 export type GuideUiEvent = {
   type: GuideUiEventType
   pathname: string
   label?: string
+  /** Texto libre del rider cuando `type === 'user-message'`. */
+  userMessage?: string
   timestamp: number
 }
 
@@ -243,5 +245,10 @@ export interface GuideDataProvider {
     /** Pantalla estadísticas: enriquece contexto con tiempos/velocidades del intento. */
     attemptId?: string | null
     clientHints?: { gpsHint?: GuideGpsHint; networkOnline?: boolean | null }
+    /**
+     * Si viene definido (p. ej. tras `auth.getUser()` en el cliente), se usa para el nombre en coach
+     * y **no** se vuelve a llamar a `auth.getUser()` dentro del provider (menos latencia por navegación).
+     */
+    authMetadata?: Record<string, unknown> | null
   }): Promise<GuideContext>
 }

@@ -39,18 +39,18 @@ export function CreateRouteModal({
             <label className="mb-1.5 block text-xs font-medium text-slate-400">Nombre de la ruta *</label>
             <input type="text" value={name} onChange={(e) => onNameChange(e.target.value)}
               placeholder="Ej: Bajada Casa-laguna" autoFocus
-              className="w-full rounded-xl border border-white/10 bg-[#0d1114] px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-teal-500/50 focus:outline-none"
+              className="w-full rounded-xl border border-white/10 bg-[#0d1114] px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-gdh-brand/50 focus:outline-none"
             />
           </div>
           <div>
             <label className="mb-1.5 block text-xs font-medium text-slate-400">Descripción (opcional)</label>
             <textarea value={description} onChange={(e) => onDescriptionChange(e.target.value)}
               placeholder="Describe la ruta, terreno o recomendaciones." rows={3}
-              className="w-full resize-y rounded-xl border border-white/10 bg-[#0d1114] px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-teal-500/50 focus:outline-none"
+              className="w-full resize-y rounded-xl border border-white/10 bg-[#0d1114] px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-gdh-brand/50 focus:outline-none"
             />
           </div>
           <button type="button" onClick={onCreate} disabled={!name.trim()}
-            className="mt-1 flex min-h-[3rem] w-full items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-gdh-brand to-gdh-brand-muted px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-teal-900/30 [text-shadow:0_1px_2px_rgba(0,0,0,0.35)] hover:from-gdh-brand-highlight hover:to-gdh-brand disabled:opacity-50"
+            className="mt-1 flex min-h-[3rem] w-full items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-gdh-brand to-gdh-brand-muted px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-[0_8px_24px_rgba(197,90,47,0.35)] [text-shadow:0_1px_2px_rgba(0,0,0,0.35)] hover:from-gdh-brand-highlight hover:to-gdh-brand disabled:opacity-50"
           >
             <PlusCircle size={18} /> Crear
           </button>

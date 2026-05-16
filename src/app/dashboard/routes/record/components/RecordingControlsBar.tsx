@@ -50,7 +50,7 @@ export function RecordingControlsBar({
             onClick={onStart}
             disabled={armCountdown !== null || startingArm}
             aria-busy={checkingPosition}
-            className="flex min-h-[3.25rem] flex-1 items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-gdh-brand to-gdh-brand-muted px-4 py-3.5 text-sm font-bold text-white shadow-lg shadow-teal-900/30 [text-shadow:0_1px_2px_rgba(0,0,0,0.35)] transition-colors hover:from-gdh-brand-highlight hover:to-gdh-brand disabled:opacity-50"
+            className="flex min-h-[3.25rem] flex-1 items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-gdh-brand to-gdh-brand-muted px-4 py-3.5 text-sm font-bold text-white shadow-lg shadow-[0_8px_24px_rgba(197,90,47,0.35)] [text-shadow:0_1px_2px_rgba(0,0,0,0.35)] transition-colors hover:from-gdh-brand-highlight hover:to-gdh-brand disabled:opacity-50"
             whileTap={{ scale: 0.985 }}
             whileHover={{ y: -1 }}
           >

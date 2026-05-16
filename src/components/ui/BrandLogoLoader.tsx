@@ -3,7 +3,7 @@
 import { GuardDhMarkLoaderSvg, GuardDhMarkSpinnerMini } from '@/components/ui/GuardDhMarkLoaderSvg'
 
 /** Logo de marca (splash, etc.); el loader de pantalla usa SVG vectorial. */
-export const BRAND_MARK_IMAGE_SRC = '/brand/guarddh-logo.jpg'
+export const BRAND_MARK_IMAGE_SRC = '/brand/patt-logo.png'
 
 type BrandLogoLoaderProps = {
   label?: string
@@ -18,7 +18,7 @@ type BrandSpinnerProps = {
 }
 
 /**
- * Loader de pantalla: emblema guardDh como SVG (anillos + escudo + montaña + sol)
+ * Loader de pantalla: marca PATT como SVG (anillos + hex + montaña + sol)
  * animado con animejs; tipografía alineada a la app (`--font-inter`).
  */
 export function BrandLogoLoader({

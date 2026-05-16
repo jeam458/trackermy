@@ -16,9 +16,41 @@ export function DashboardCoachHeaderSlot() {
   )
 }
 
+/**
+ * Bloque derecho estándar (Descubrir y resto del dashboard): coach pet + voz + acciones propias de la página.
+ * Mantiene la misma alineación y `gap` en todas las pantallas.
+ */
+export const DASHBOARD_APP_TOP_BAR_TRAILING_CLUSTER_CLASS =
+  'flex min-w-0 shrink-0 items-center justify-end gap-1'
+
+export function DashboardAppTopBarTrailingCluster({
+  children,
+  className,
+}: {
+  children?: ReactNode
+  className?: string
+}) {
+  return (
+    <div className={cn(DASHBOARD_APP_TOP_BAR_TRAILING_CLUSTER_CLASS, className)}>
+      <DashboardCoachHeaderSlot />
+      {children}
+    </div>
+  )
+}
+
+/** Superficie top bar / nav inferior: tokens PATT (ver globals.css `.gdh-app-chrome-*`) */
+export const DASHBOARD_APP_TOP_BAR_SURFACE_CLASS =
+  'gdh-app-chrome-surface gdh-app-chrome-edge-top'
+
+/** Barra inferior fija — mismo tratamiento visual que cabeceras */
+export const DASHBOARD_BOTTOM_NAV_SURFACE_CLASS =
+  'gdh-app-chrome-surface gdh-app-chrome-edge-bottom'
+
 /** Shell sticky compartido entre pantallas del dashboard con cabecera propia (Descubrir, Mis rutas, etc.). */
-export const DASHBOARD_APP_TOP_BAR_SHELL_CLASS =
-  'sticky top-0 z-40 border-b border-white/10 bg-[#121821]/95 backdrop-blur-md'
+export const DASHBOARD_APP_TOP_BAR_SHELL_CLASS = cn(
+  'sticky top-0 z-40',
+  DASHBOARD_APP_TOP_BAR_SURFACE_CLASS,
+)
 
 /** Misma tipografía de título que Descubrir (cabecera centrada). */
 export const DASHBOARD_APP_TOP_BAR_TITLE_CLASS =
@@ -90,7 +122,13 @@ export function DashboardAppTopBarInner({
   const mw = maxWidthClass[contentMaxWidth]
 
   return (
-    <div className={cn('mx-auto px-3 pb-2 pt-3', mw, innerClassName)}>
+    <div
+      className={cn(
+        'mx-auto px-3 pb-2 pt-[max(0.75rem,calc(env(safe-area-inset-top)+0.25rem))]',
+        mw,
+        innerClassName,
+      )}
+    >
       <div className="grid grid-cols-[minmax(0,auto)_minmax(0,1fr)_minmax(0,auto)] items-center gap-2">
         <div className="flex min-h-[2.75rem] min-w-0 items-center justify-self-start">{leading}</div>
         <div className="min-w-0 justify-self-center px-1 text-center">{center}</div>

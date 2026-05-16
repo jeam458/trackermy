@@ -6,10 +6,9 @@ import {
   COACH_DOCK_CLUSTER_CLASS,
   COACH_HEADER_CLUSTER_CLASS,
 } from '@/components/ui/VoiceControlPanel'
-import { CoachNotification } from '@/components/ui/CoachNotification'
+import { CoachNotification, type CoachEngagementHandlers } from '@/components/ui/CoachNotification'
 import { Menu } from 'lucide-react'
 import type { PetAiMindState } from '@/components/pet/GuardDhPetAtlas'
-import type { GuidePetMood } from '@/lib/pet/guidePetBridge'
 import type { VoiceCoachUi } from '@/components/ui/VoiceControlPanel'
 
 interface RouteViewCoachClusterProps {
@@ -23,7 +22,6 @@ interface RouteViewCoachClusterProps {
   externalEventSource: string | null | undefined
   externalEventToastType: string | null | undefined
   guideLlmThinking: boolean
-  petMood: GuidePetMood
   petVisible: boolean
   petEmotion: unknown
   petAiMindState: PetAiMindState | 'off' | 'thinking'
@@ -34,6 +32,7 @@ interface RouteViewCoachClusterProps {
   showMessageBubble: boolean
   hideForVoice: boolean
   onSetMessageVisible: (visible: boolean) => void
+  coachEngagement?: CoachEngagementHandlers | null
 }
 
 export function RouteViewCoachCluster({
@@ -46,7 +45,6 @@ export function RouteViewCoachCluster({
   externalEventSource,
   externalEventToastType,
   guideLlmThinking,
-  petMood,
   petVisible,
   petEmotion,
   petAiMindState,
@@ -57,6 +55,7 @@ export function RouteViewCoachCluster({
   showMessageBubble,
   hideForVoice,
   onSetMessageVisible,
+  coachEngagement = null,
 }: RouteViewCoachClusterProps) {
   const header = layout === 'header'
   const clusterClass = header ? COACH_HEADER_CLUSTER_CLASS : COACH_DOCK_CLUSTER_CLASS
@@ -83,7 +82,6 @@ export function RouteViewCoachCluster({
           externalEventSource={externalEventSource}
           externalEventToastType={externalEventToastType}
           guideLlmThinking={guideLlmThinking}
-          petMood={petMood}
           petVisible={petVisible}
           petEmotion={petEmotion}
           petAiMindState={petAiMindState}
@@ -98,6 +96,7 @@ export function RouteViewCoachCluster({
           isSidebar={false}
           density={header ? 'header' : 'default'}
           bubbleLayout={header ? 'underOrb' : 'overOrb'}
+          coachEngagement={coachEngagement ?? undefined}
         />
 
         <VoiceControlPanel voiceCoach={voiceCoach} density={header ? 'header' : 'default'} />

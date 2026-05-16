@@ -60,6 +60,7 @@ import {
   DashboardAppTopBar,
   DashboardAppTopBarHeading,
   DASHBOARD_APP_TOP_BAR_ICON_BUTTON_CLASS,
+  DashboardAppTopBarTrailingCluster,
 } from '@/app/dashboard/components/DashboardAppTopBar'
 import { RECORD_SCREEN_ENTRY_QUERY } from '@/lib/recordScreenEntry'
 import { cn } from '@/lib/utils'
@@ -1481,7 +1482,6 @@ export default function RecordRoutePage() {
       )}
 
       <DashboardAppTopBar
-        contentMaxWidth="7xl"
         leading={
           <button
             type="button"
@@ -1501,7 +1501,7 @@ export default function RecordRoutePage() {
           />
         }
         trailing={
-          <div className="flex max-w-[min(100%,12rem)] shrink-0 flex-wrap items-center justify-end gap-2 sm:max-w-none">
+          <DashboardAppTopBarTrailingCluster className="max-w-[min(100%,12rem)] flex-wrap gap-2 sm:max-w-none">
             {!isRecording && (
               <>
                 <button
@@ -1509,9 +1509,9 @@ export default function RecordRoutePage() {
                   onClick={() => {
                     void handleNuevaRutaLibre()
                   }}
-                  className="flex max-w-[48%] flex-1 items-center justify-center gap-1 rounded-xl border border-cyan-500/35 bg-cyan-500/10 px-2 py-2 text-[11px] font-semibold text-cyan-100 transition hover:bg-cyan-500/15 sm:max-w-none sm:flex-initial sm:gap-2 sm:px-4 sm:text-sm"
+                  className="flex max-w-[48%] flex-1 items-center justify-center gap-1 rounded-xl border border-gdh-sun/35 bg-gdh-sun/10 px-2 py-2 text-[11px] font-semibold text-gdh-sun transition hover:bg-gdh-sun/15 sm:max-w-none sm:flex-initial sm:gap-2 sm:px-4 sm:text-sm"
                 >
-                  <Navigation size={16} className="shrink-0 text-cyan-300 sm:h-[18px] sm:w-[18px]" aria-hidden />
+                  <Navigation size={16} className="shrink-0 text-gdh-sun sm:h-[18px] sm:w-[18px]" aria-hidden />
                   <span className="truncate sm:max-w-none">Ruta libre</span>
                 </button>
                 <button
@@ -1521,9 +1521,9 @@ export default function RecordRoutePage() {
                     setNewRouteDraftDescription(routeDescription)
                     setCreateRouteModalOpen(true)
                   }}
-                  className="flex max-w-[48%] flex-1 items-center justify-center gap-1 rounded-xl border border-teal-500/35 bg-teal-500/10 px-2 py-2 text-[11px] font-semibold text-teal-100 transition hover:bg-teal-500/15 sm:max-w-none sm:flex-initial sm:gap-2 sm:px-4 sm:text-sm"
+                  className="flex max-w-[48%] flex-1 items-center justify-center gap-1 rounded-xl border border-gdh-brand/35 bg-gdh-brand/10 px-2 py-2 text-[11px] font-semibold text-white transition hover:bg-gdh-brand/15 sm:max-w-none sm:flex-initial sm:gap-2 sm:px-4 sm:text-sm"
                 >
-                  <PlusCircle size={16} className="shrink-0 text-teal-400 sm:h-[18px] sm:w-[18px]" aria-hidden />
+                  <PlusCircle size={16} className="shrink-0 text-gdh-brand-highlight sm:h-[18px] sm:w-[18px]" aria-hidden />
                   <span className="truncate sm:max-w-none">
                     <span className="sm:hidden">Nueva</span>
                     <span className="hidden sm:inline">Nueva ruta</span>
@@ -1537,7 +1537,7 @@ export default function RecordRoutePage() {
                 <span className="text-sm text-red-400">{isPaused ? 'Pausado' : 'Grabando'}</span>
               </div>
             )}
-          </div>
+          </DashboardAppTopBarTrailingCluster>
         }
       />
 
@@ -1640,7 +1640,7 @@ export default function RecordRoutePage() {
                 }}
                 title="Centrar en mi GPS"
                 aria-label="Centrar mapa en mi GPS"
-                className="pointer-events-auto flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-gdh-card/95 text-teal-400 shadow-lg hover:bg-white/10 disabled:pointer-events-none disabled:opacity-40"
+                className="pointer-events-auto flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-gdh-card/95 text-gdh-brand-highlight shadow-lg hover:bg-white/10 disabled:pointer-events-none disabled:opacity-40"
                 style={{ willChange: 'transform, opacity' }}
               >
                 <Crosshair size={20} aria-hidden strokeWidth={2} />
@@ -1656,7 +1656,7 @@ export default function RecordRoutePage() {
                   : 'Maximizar mapa para ver más detalle'
               }
               title={mapMaximized ? 'Reducir mapa' : 'Maximizar mapa'}
-              className="pointer-events-auto flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-gdh-card/95 text-teal-400 shadow-lg hover:bg-white/10"
+              className="pointer-events-auto flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-gdh-card/95 text-gdh-brand-highlight shadow-lg hover:bg-white/10"
             >
               {mapMaximized ? (
                 <Minimize2 size={20} aria-hidden strokeWidth={2} />

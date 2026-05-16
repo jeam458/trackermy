@@ -311,7 +311,7 @@ export function UserRouteAttemptsSection({ routeId }: { routeId: string }) {
                   <p className="text-sm font-semibold text-slate-200">{when}</p>
                   <p className="text-[11px] text-slate-500 font-mono">ID · {a.id.slice(0, 8)}…</p>
                 </div>
-                <label className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-xs font-medium text-teal-300 cursor-pointer disabled:opacity-50">
+                <label className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-xs font-medium text-gdh-brand-highlight cursor-pointer disabled:opacity-50">
                   {busy ? <BrandSpinner size={14} /> : <Upload size={14} />}
                   {busy ? 'Subiendo…' : 'Fotos / vídeo'}
                   <input
@@ -330,7 +330,7 @@ export function UserRouteAttemptsSection({ routeId }: { routeId: string }) {
 
               <div className="p-4 grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
                 <div className="flex items-start gap-2">
-                  <Clock className="text-sky-400 shrink-0 mt-0.5" size={16} />
+                  <Clock className="text-gdh-sun shrink-0 mt-0.5" size={16} />
                   <div>
                     <p className="text-[10px] uppercase tracking-wider text-slate-500">Tiempo</p>
                     <p className="font-mono font-bold text-white">{formatTime(Number(a.total_time))}</p>
@@ -346,14 +346,14 @@ export function UserRouteAttemptsSection({ routeId }: { routeId: string }) {
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
-                  <TrendingUp className="text-emerald-400 shrink-0 mt-0.5" size={16} />
+                  <TrendingUp className="text-gdh-brand-highlight shrink-0 mt-0.5" size={16} />
                   <div>
                     <p className="text-[10px] uppercase tracking-wider text-slate-500">Distancia</p>
                     <p className="text-slate-200">{(Number(a.distance) / 1000).toFixed(2)} km</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
-                  <Mountain className="text-violet-400 shrink-0 mt-0.5" size={16} />
+                  <Mountain className="text-gdh-muted shrink-0 mt-0.5" size={16} />
                   <div>
                     <p className="text-[10px] uppercase tracking-wider text-slate-500">Desnivel + / saltos</p>
                     <p className="text-slate-200">
@@ -425,7 +425,7 @@ export function UserRouteAttemptsSection({ routeId }: { routeId: string }) {
               {hasVideo && primaryVideoUrlForReel && (
                 <div className="px-4 pb-4 space-y-2 border-t border-white/5 pt-3">
                   <p className="text-[10px] uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                    <Film size={12} className="text-violet-400" />
+                    <Film size={12} className="text-gdh-muted" />
                     Reel automático (beta)
                   </p>
                   <p className="text-[11px] text-slate-500 leading-snug">
@@ -436,9 +436,9 @@ export function UserRouteAttemptsSection({ routeId }: { routeId: string }) {
                     <p className="text-[11px] text-amber-200/90">Último error reel: {a.reel_error}</p>
                   ) : null}
                   {typeof a.reel_output_url === 'string' && a.reel_output_url.trim() ? (
-                    <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-2 text-[11px]">
-                      <span className="text-emerald-200/90">Vídeo exportado: </span>
-                      <a href={a.reel_output_url} className="text-teal-300 underline break-all" target="_blank" rel="noreferrer">
+                    <div className="rounded-lg border border-gdh-brand/30 bg-gdh-brand/10 p-2 text-[11px]">
+                      <span className="text-slate-200/90">Vídeo exportado: </span>
+                      <a href={a.reel_output_url} className="text-gdh-brand-highlight underline break-all" target="_blank" rel="noreferrer">
                         abrir
                       </a>
                     </div>
@@ -477,7 +477,7 @@ export function UserRouteAttemptsSection({ routeId }: { routeId: string }) {
                         }
                       })()
                     }}
-                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-violet-600/80 hover:bg-violet-500 text-xs font-medium text-white disabled:opacity-45"
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gdh-brand hover:bg-gdh-brand-highlight text-xs font-medium text-white disabled:opacity-45"
                   >
                     {reelBusy === a.id ? <BrandSpinner size={14} /> : <Film size={14} />}
                     {reelBusy === a.id ? 'Generando…' : a.reel_plan_json ? 'Regenerar plan de reel' : 'Generar plan de reel'}
@@ -529,7 +529,7 @@ export function UserRouteAttemptsSection({ routeId }: { routeId: string }) {
 
               <div className="px-4 pb-4 border-t border-white/5 pt-3 space-y-2">
                 {uploadingFor === a.id && (
-                  <p className="text-[11px] text-teal-300/90 flex items-center gap-1.5">
+                  <p className="text-[11px] text-gdh-brand-highlight/90 flex items-center gap-1.5">
                     <BrandSpinner size={12} />
                     {uploadingLabel}
                   </p>
@@ -537,14 +537,14 @@ export function UserRouteAttemptsSection({ routeId }: { routeId: string }) {
                 {hasGpsTrack && (
                   <Link
                     href={`/dashboard/routes/attempt-replay?attemptId=${encodeURIComponent(a.id)}&routeId=${encodeURIComponent(routeId)}`}
-                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-teal-600/85 hover:bg-teal-500 text-xs font-medium text-white mb-1"
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gdh-brand hover:bg-gdh-brand-highlight text-xs font-medium text-white mb-1"
                   >
                     <MapPin size={14} />
                     Replay mapa + vídeo (GPS)
                   </Link>
                 )}
                 <p className="text-[10px] uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                  <Sparkles size={12} className="text-violet-400" />
+                  <Sparkles size={12} className="text-gdh-muted" />
                   Replay 3D (servidor / LingBot cuando lo integres)
                 </p>
                 {(replayStatus || replayEngine || pipelineStatus !== 'none') && (
@@ -591,7 +591,7 @@ export function UserRouteAttemptsSection({ routeId }: { routeId: string }) {
                         }
                       })()
                     }}
-                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-violet-600/80 hover:bg-violet-500 text-xs font-medium text-white disabled:opacity-40 disabled:pointer-events-none"
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gdh-brand hover:bg-gdh-brand-highlight text-xs font-medium text-white disabled:opacity-40 disabled:pointer-events-none"
                   >
                     {replayBusy === a.id ? (
                       <BrandSpinner size={14} />
@@ -626,8 +626,8 @@ export function UserRouteAttemptsSection({ routeId }: { routeId: string }) {
         })}
       </div>
 
-      <div className="rounded-xl border border-teal-500/20 bg-teal-500/5 p-4 text-xs text-slate-400 leading-relaxed space-y-2">
-        <p className="font-semibold text-teal-200/90">Sobre visión 3D tipo LingBot-Map</p>
+      <div className="rounded-xl border border-gdh-brand/20 bg-gdh-brand/5 p-4 text-xs text-slate-400 leading-relaxed space-y-2">
+        <p className="font-semibold text-gdh-brand-highlight/90">Sobre visión 3D tipo LingBot-Map</p>
         <p>
           <strong className="text-slate-300">LingBot-Map</strong> es un modelo de investigación (reconstrucción 3D con IA a
           partir de vídeo), no un componente que se instala en la app: requiere inferencia pesada (GPU) y un pipeline en
@@ -648,7 +648,7 @@ export function UserRouteAttemptsSection({ routeId }: { routeId: string }) {
           Proyectos oficiales Robbyant (modelos y licencia):{' '}
           <a
             href="https://github.com/robbyant/lingbot-world"
-            className="text-teal-300 underline hover:text-teal-200"
+            className="text-gdh-brand-highlight underline hover:text-gdh-brand-highlight/80"
             target="_blank"
             rel="noreferrer"
           >
@@ -657,7 +657,7 @@ export function UserRouteAttemptsSection({ routeId }: { routeId: string }) {
           ,{' '}
           <a
             href="https://www.lingbot-world.com/"
-            className="text-teal-300 underline hover:text-teal-200"
+            className="text-gdh-brand-highlight underline hover:text-gdh-brand-highlight/80"
             target="_blank"
             rel="noreferrer"
           >

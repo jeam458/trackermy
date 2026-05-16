@@ -14,6 +14,7 @@ export class McpSupabaseGuideProvider implements GuideDataProvider {
     routeId?: string | null
     attemptId?: string | null
     clientHints?: { gpsHint?: GuideGpsHint; networkOnline?: boolean | null }
+    authMetadata?: Record<string, unknown> | null
   }): Promise<GuideContext> {
     const url = new URL('/api/dashboard/guide-context', window.location.origin)
     url.searchParams.set('pathname', input.pathname)

@@ -2,6 +2,20 @@ import type { GuideContext } from '@/lib/guide-ai/types'
 import { coachVosFirstName } from '@/lib/guide-ai/riderCoachDisplayName'
 import type { RiderGuideMood, RiderGuideToastType } from '@/lib/riderGuide'
 
+type WarmupCtx = Pick<
+  GuideContext,
+  | 'riderDisplayName'
+  | 'currentRoute'
+  | 'routeTrackPointCount'
+  | 'attemptSummary'
+  | 'weeklyKm'
+  | 'topRouteName'
+  | 'topRouteKm'
+  | 'recentTriumph'
+  | 'fatigue'
+  | 'aggregateCoachInsights'
+>
+
 export type NavigationWarmup = {
   mood: RiderGuideMood
   title: string
@@ -25,10 +39,7 @@ function formatAttemptClock(totalSec: number): string {
   return `${m}:${String(r).padStart(2, '0')}`
 }
 
-export function buildNavigationWarmup(
-  pathname: string,
-  ctx: Pick<GuideContext, 'riderDisplayName' | 'currentRoute' | 'routeTrackPointCount' | 'attemptSummary'>
-): NavigationWarmup {
+export function buildNavigationWarmup(pathname: string, ctx: WarmupCtx): NavigationWarmup {
   const p = pathname.toLowerCase()
   const nick = coachVosFirstName(ctx.riderDisplayName)
   const routeLabel = ctx.currentRoute?.name?.trim() || null
@@ -103,19 +114,56 @@ export function buildNavigationWarmup(
   if (p.includes('/dashboard/activity')) {
     return {
       mood: 'guide',
-      title: nick ? `${nick}, miramos tu actividad` : 'Revisando tu actividad',
+      title: nick ? `${nick}, tu actividad` : 'Tu actividad',
       subtitle: nick
-        ? 'Saco señales de progreso y te marco un solo foco para esta semana.'
-        : 'Analizo progreso y te marco el siguiente foco.',
+        ? 'Miramos volumen y constancia; te marco un solo foco para esta semana.'
+        : 'Volumen y constancia: un foco claro para la semana.',
+      toastType: 'info',
+    }
+  }
+  /** Descubrir / home: mensaje con datos reales (km semana, ruta top), sin meta “estoy leyendo…”. */
+  if (p === '/dashboard' || p === '/dashboard/') {
+    const wk = ctx.weeklyKm
+    const hasWk = wk != null && Number.isFinite(Number(wk)) && Number(wk) > 0.05
+    const topName = ctx.topRouteName?.trim()
+    const topKm = ctx.topRouteKm
+    const agr = (ctx.aggregateCoachInsights ?? []).find((s) => typeof s === 'string' && s.trim().length > 10)
+
+    const parts: string[] = []
+    if (hasWk) parts.push(`~${Number(wk).toFixed(1)} km esta semana`)
+    if (topName) {
+      const kmBit =
+        topKm != null && Number.isFinite(Number(topKm)) ? ` · ${Number(topKm).toFixed(1)} km` : ''
+      parts.push(`la que más movés: ${topName}${kmBit}`)
+    }
+    if (ctx.recentTriumph) parts.push('muy buenos tiempos recientes')
+    if (ctx.fatigue) parts.push('mucho volumen ayer/hoy: prioricemos descanso')
+
+    let sub =
+      parts.length >= 2
+        ? `${parts[0]} — ${parts[1]}. Elegí una ruta del mapa o abrí ranking semanal.`
+        : parts.length === 1
+          ? `${parts[0]}. Tocá una ruta para ver tiempos y preparar la bajada.`
+          : 'Explorá rutas públicas o favoritas; cuando bajes, el coach arma feedback con tus números.'
+
+    if (agr) {
+      const t = agr.trim()
+      sub = `${sub} Idea del grupo: ${t.length > 100 ? `${t.slice(0, 99)}…` : t}`
+    }
+
+    return {
+      mood: ctx.fatigue ? 'fatigue' : ctx.recentTriumph ? 'triumph' : 'guide',
+      title: nick ? `${nick}, mapa listo` : 'Mapa listo',
+      subtitle: sub,
       toastType: 'info',
     }
   }
   return {
     mood: 'guide',
-    title: nick ? `${nick}, leyendo tu contexto` : 'Estoy leyendo tu contexto',
+    title: nick ? `${nick}, seguimos` : 'Acá estamos',
     subtitle: nick
-      ? 'Según lo que abras te hablo con nombre y datos, no con frases vacías.'
-      : 'Navega y te doy recomendaciones según lo que abras.',
+      ? 'Abrí ruta, actividad o perfil: el mensaje se arma con datos de esa pantalla, no con relleno.'
+      : 'Elegí sección en el menú; el coach se ajusta a lo que estés mirando.',
     toastType: 'info',
   }
 }

@@ -40,7 +40,7 @@ export function ActivityWeekStrip({ selectedWeekStart, onSelectWeek, thisWeekLab
               className={[
                 'shrink-0 rounded-xl border px-3 py-2 text-left min-w-[7.5rem] transition-colors',
                 sel
-                  ? 'border-teal-400/50 bg-teal-500/15 text-teal-100 shadow-[0_0_16px_rgba(45,212,191,0.12)]'
+                  ? 'border-gdh-brand/50 bg-gdh-brand/15 text-white shadow-[0_0_16px_rgba(227,120,69,0.12)]'
                   : 'border-white/10 bg-white/5 text-slate-300 hover:bg-white/10',
               ].join(' ')}
             >

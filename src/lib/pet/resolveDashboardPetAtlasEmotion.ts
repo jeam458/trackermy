@@ -32,7 +32,7 @@ import type { RiderGuideMood } from '@/lib/riderGuide'
  * embebido (`PetEmotionRecipeContext`, `resolveProceduralFaceRecipe`).
  *
  * **Experimental**  
- * Propuestas de nuevas emociones / recetas → `pet_emotion_proposals` (`experimentalPetEmotionFromLlm.ts`).
+ * (Retirado del pipeline público) propuestas LLM → BD: el rider usa solo `pet_mood` + atlas curado.
  *
  * Si en el futuro el modelo devuelve un `pet_emotion_slug` acotado a filas aprobadas en BD,
  * se puede extender esta resolución sin otro “parche” disperso en la UI.

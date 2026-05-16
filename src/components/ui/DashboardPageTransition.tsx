@@ -4,8 +4,10 @@ import { usePathname } from 'next/navigation'
 import { useReducedMotion, motion, AnimatePresence } from 'framer-motion'
 import type { ReactNode } from 'react'
 
+import { GDH_EASE_BEZIER } from '@/lib/design/motion'
+
 /**
- * Al cambiar de ruta bajo /dashboard, entrada suave del contenido (sin parpadeo en carga inicial).
+ * Al cambiar de ruta bajo /dashboard, entrada suave (sin bounce; respeta prefers-reduced-motion).
  */
 export function DashboardPageTransition({ children }: { children: ReactNode }) {
   const pathname = usePathname()
@@ -27,7 +29,10 @@ export function DashboardPageTransition({ children }: { children: ReactNode }) {
         initial={{ opacity: reduce ? 0.98 : 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: reduce ? 0.98 : 0 }}
-        transition={{ duration: reduce ? 0.12 : 0.16, ease: [0.22, 1, 0.36, 1] }}
+        transition={{
+          duration: reduce ? 0.1 : 0.26,
+          ease: GDH_EASE_BEZIER,
+        }}
       >
         {children}
       </motion.div>

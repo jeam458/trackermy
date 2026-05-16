@@ -81,7 +81,7 @@ export function RecordRouteSelectionPanel({
                   onFocus={onPickFocus}
                   onBlur={onPickBlur}
                   placeholder="Nombre de la ruta…"
-                  className="w-full rounded-xl border border-white/10 bg-[#0d1114] py-2.5 pl-10 pr-3 text-sm text-white placeholder:text-slate-500 focus:border-teal-500/50 focus:outline-none"
+                  className="w-full rounded-xl border border-white/10 bg-[#0d1114] py-2.5 pl-10 pr-3 text-sm text-white placeholder:text-slate-500 focus:border-gdh-brand/50 focus:outline-none"
                 />
               </div>
               {recordingPickFocused && (
@@ -124,7 +124,7 @@ export function RecordRouteSelectionPanel({
             <button
               type="button"
               onClick={onOpenRouteSetup}
-              className="text-[11px] font-medium text-slate-500 underline-offset-2 hover:text-teal-300 hover:underline sm:text-xs"
+              className="text-[11px] font-medium text-slate-500 underline-offset-2 hover:text-gdh-brand-highlight hover:underline sm:text-xs"
             >
               Vista previa, distancia al inicio y vías OSM…
             </button>
@@ -136,12 +136,12 @@ export function RecordRouteSelectionPanel({
         <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-2">
           <p className="min-w-0 flex-1 text-sm">
             <span className="text-slate-500">Ruta </span>
-            <span className="font-semibold text-teal-300">{selectedRouteForPreview.name}</span>
+            <span className="font-semibold text-gdh-brand-highlight">{selectedRouteForPreview.name}</span>
           </p>
           <button
             type="button"
             onClick={onChangeSelectedRoute}
-            className="shrink-0 text-sm font-medium text-teal-400 hover:underline"
+            className="shrink-0 text-sm font-medium text-gdh-brand-highlight hover:underline"
           >
             Cambiar de ruta
           </button>
@@ -152,12 +152,12 @@ export function RecordRouteSelectionPanel({
         <div className="mx-auto mt-3 flex max-w-4xl flex-wrap items-center gap-2 border-t border-white/5 pt-3">
           <p className="min-w-0 flex-1 text-sm">
             <span className="text-slate-500">Elegiste: </span>
-            <span className="font-semibold text-teal-300">{selectedRouteForPreview.name}</span>
+            <span className="font-semibold text-gdh-brand-highlight">{selectedRouteForPreview.name}</span>
           </p>
           <button
             type="button"
             onClick={onNuevaRutaLibre}
-            className="shrink-0 text-sm font-medium text-teal-400 hover:underline"
+            className="shrink-0 text-sm font-medium text-gdh-brand-highlight hover:underline"
           >
             Quitar selección
           </button>
@@ -168,12 +168,12 @@ export function RecordRouteSelectionPanel({
         <div className="mx-auto mt-3 flex max-w-4xl flex-wrap items-center gap-2 border-t border-white/5 pt-3">
           <p className="min-w-0 flex-1 text-sm">
             <span className="text-slate-500">Nueva ruta: </span>
-            <span className="font-semibold text-teal-300">{newRouteSelectedName}</span>
+            <span className="font-semibold text-gdh-brand-highlight">{newRouteSelectedName}</span>
           </p>
           <button
             type="button"
             onClick={onEditNewRouteName}
-            className="shrink-0 text-sm font-medium text-teal-400 hover:underline"
+            className="shrink-0 text-sm font-medium text-gdh-brand-highlight hover:underline"
           >
             Editar nombre
           </button>

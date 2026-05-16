@@ -25,7 +25,7 @@ import {
   DashboardAppTopBar,
   DashboardAppTopBarHeading,
   DASHBOARD_APP_TOP_BAR_ICON_BUTTON_CLASS,
-  DashboardCoachHeaderSlot,
+  DashboardAppTopBarTrailingCluster,
 } from '@/app/dashboard/components/DashboardAppTopBar'
 import { cn } from '@/lib/utils'
 import { Route } from '@/core/domain/Route'
@@ -463,7 +463,6 @@ function EditRoutePageInner() {
   return (
     <div className="min-h-screen bg-gdh-page text-slate-100">
       <DashboardAppTopBar
-        contentMaxWidth="7xl"
         leading={
           <button
             type="button"
@@ -480,7 +479,7 @@ function EditRoutePageInner() {
             subtitle="Modifica los detalles y puntos de tu ruta"
           />
         }
-        trailing={<DashboardCoachHeaderSlot />}
+        trailing={<DashboardAppTopBarTrailingCluster />}
       >
         <div className="flex flex-wrap items-center justify-end gap-2">
           <button
@@ -594,7 +593,7 @@ function EditRoutePageInner() {
 
                 {calculatedStats.minAltitude !== undefined && (
                   <div className="bg-slate-800 rounded-lg p-4">
-                    <div className="flex items-center gap-2 text-purple-400 mb-2">
+                    <div className="flex items-center gap-2 text-gdh-brand-highlight mb-2">
                       <Mountain size={20} className="rotate-180" />
                       <span className="text-sm font-medium">Altitud Mín</span>
                     </div>
@@ -683,7 +682,7 @@ function EditRoutePageInner() {
                   type="button"
                   disabled={previewBusy}
                   onClick={() => void handleRecordPreviewClip()}
-                  className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-teal-600/80 hover:bg-teal-500 text-sm text-white disabled:opacity-50"
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gdh-brand/90 hover:bg-gdh-brand-highlight text-sm text-white disabled:opacity-50"
                 >
                   <Camera size={16} />
                   Grabar 2 s

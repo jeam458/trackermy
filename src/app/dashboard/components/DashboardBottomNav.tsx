@@ -10,6 +10,8 @@ import { animate, gentlePulse } from '@/lib/animeUi'
 import { useLocale } from '@/lib/i18n/LocaleProvider'
 import { recordScreenPathWithEntry } from '@/lib/recordScreenEntry'
 import { EntryChoiceModal } from '@/app/dashboard/routes/record/components/EntryChoiceModal'
+import { cn } from '@/lib/utils'
+import { DASHBOARD_BOTTOM_NAV_SURFACE_CLASS } from '@/app/dashboard/components/DashboardAppTopBar'
 
 /** Z-index del nav fijo (portal). Los CTA fijos encima del nav deben usar un valor mayor. */
 export const DASHBOARD_BOTTOM_NAV_Z_INDEX = 2147483000
@@ -140,7 +142,7 @@ export function DashboardBottomNav() {
       <Link
         href={href}
         className={`nav-tab-link flex flex-col items-center gap-0.5 min-w-0 max-w-[5rem] py-1 rounded-xl transition-colors ${
-          active ? 'text-teal-400' : 'text-slate-500 hover:text-slate-300'
+          active ? 'text-gdh-brand-highlight' : 'text-slate-500 hover:text-slate-300'
         }`}
       >
         <span className="nav-tab-icon inline-flex">
@@ -156,7 +158,7 @@ export function DashboardBottomNav() {
   const nav = (
     <motion.nav
       id={DASHBOARD_BOTTOM_NAV_DOM_ID}
-      className="bg-gdh-card/95 backdrop-blur-md border-t border-white/5 pt-1 pb-2 flex flex-col items-center relative"
+      className={cn('relative flex flex-col items-center pt-1 pb-2', DASHBOARD_BOTTOM_NAV_SURFACE_CLASS)}
       style={{
         position: 'fixed',
         left: 0,
@@ -175,7 +177,7 @@ export function DashboardBottomNav() {
       >
         <div
           ref={indicatorRef}
-          className="pointer-events-none absolute bottom-1 h-0.5 rounded-full bg-gradient-to-r from-teal-400 to-cyan-400 shadow-[0_0_12px_rgba(45,212,191,0.45)] hidden"
+          className="pointer-events-none absolute bottom-1 h-0.5 rounded-full bg-gradient-to-r from-gdh-brand to-gdh-brand-highlight shadow-[0_0_12px_rgba(227,120,69,0.45)] hidden"
           style={{ left: 0, width: 0 }}
         />
         {renderTab(tabs[0].href, tabs[0].label, tabs[0].icon, tabs[0].match(pathname))}
@@ -188,11 +190,11 @@ export function DashboardBottomNav() {
             whileTap={{ scale: 0.92 }}
             whileHover={{ y: -2 }}
             onClick={openRecordChoiceOrStartRouteView}
-            className="-mt-7 mb-0.5 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-gdh-brand to-teal-600 text-white shadow-lg shadow-teal-950/50 ring-2 ring-white/25 ring-offset-2 ring-offset-[#14181f]"
+            className="-mt-7 mb-0.5 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-gdh-brand to-gdh-brand-muted text-white shadow-lg shadow-[0_10px_28px_rgba(197,90,47,0.45)] ring-2 ring-white/25 ring-offset-2 ring-offset-gdh-canvas-2"
           >
             <Play className="h-7 w-7 translate-x-0.5" fill="currentColor" strokeWidth={0} aria-hidden />
           </motion.button>
-          <span className="text-[9px] font-semibold tracking-wide uppercase text-teal-300/90">
+          <span className="text-[9px] font-semibold tracking-wide uppercase text-gdh-brand-highlight/95">
             {messages.nav.recordFab}
           </span>
         </div>

@@ -51,7 +51,7 @@ export function DashboardSidebar() {
             transition={{ type: 'spring', stiffness: 380, damping: 34 }}
           >
             <div className="flex items-center justify-between px-3 pb-2">
-              <p className="text-xs font-bold uppercase tracking-widest text-teal-300/90">guardDh</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-gdh-brand-highlight/90">PATT</p>
               <button
                 type="button"
                 onClick={closeSidebar}
@@ -71,7 +71,7 @@ export function DashboardSidebar() {
                     href={href}
                     onClick={closeSidebar}
                     className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-                      active ? 'bg-teal-500/15 text-teal-300' : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                      active ? 'bg-gdh-brand/15 text-gdh-brand-highlight' : 'text-slate-300 hover:bg-white/5 hover:text-white'
                     }`}
                   >
                     <Icon size={20} strokeWidth={active ? 2.25 : 1.75} />

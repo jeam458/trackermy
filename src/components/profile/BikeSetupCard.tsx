@@ -190,7 +190,7 @@ export function BikeSetupCard({
                 setBrandQuery(selectedBrand?.name || '')
               }}
               placeholder={b.searchBrandPlaceholder}
-              className="w-full text-sm bg-slate-800/80 border border-slate-600 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-sky-500"
+              className="w-full text-sm bg-slate-800/80 border border-slate-600 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-gdh-brand/50"
               autoComplete="off"
             />
             {brandOpen && (
@@ -202,7 +202,7 @@ export function BikeSetupCard({
                   <li key={b.id}>
                     <button
                       type="button"
-                      className="w-full text-left px-3 py-2 text-slate-100 hover:bg-sky-600/30"
+                      className="w-full text-left px-3 py-2 text-slate-100 hover:bg-gdh-brand/30"
                       onClick={() => {
                         onBrandChange?.(b.id)
                         setBrandQuery('')
@@ -265,7 +265,7 @@ export function BikeSetupCard({
                 setModelQuery(selectedModel?.name || '')
               }}
               placeholder={brandId ? b.searchModelPlaceholder : b.pickBrandFirst}
-              className="w-full text-sm bg-slate-800/80 border border-slate-600 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-sky-500 disabled:opacity-50"
+              className="w-full text-sm bg-slate-800/80 border border-slate-600 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-gdh-brand/50 disabled:opacity-50"
               autoComplete="off"
             />
             {modelOpen && brandId && (
@@ -277,7 +277,7 @@ export function BikeSetupCard({
                   <li key={m.id}>
                     <button
                       type="button"
-                      className="w-full text-left px-3 py-2 text-slate-100 hover:bg-sky-600/30"
+                      className="w-full text-left px-3 py-2 text-slate-100 hover:bg-gdh-brand/30"
                       onClick={() => {
                         onModelChange?.(m.id)
                         setModelQuery('')
@@ -335,7 +335,7 @@ export function BikeSetupCard({
                   type="text"
                   value={tint}
                   onChange={(e) => onColorChange?.(e.target.value)}
-                  className="flex-1 text-sm font-mono bg-slate-800/80 border border-slate-600 rounded-lg px-2 py-2 text-slate-100 focus:outline-none focus:border-sky-500"
+                  className="flex-1 text-sm font-mono bg-slate-800/80 border border-slate-600 rounded-lg px-2 py-2 text-slate-100 focus:outline-none focus:border-gdh-brand/50"
                   placeholder={b.colorPlaceholder}
                 />
               </div>
@@ -348,7 +348,7 @@ export function BikeSetupCard({
         {slides.length === 0 ? (
           <div
             className={`h-40 bg-transparent flex items-center justify-center relative rounded-xl overflow-hidden ${
-              isEditing ? 'cursor-pointer group ring-1 ring-slate-600 hover:ring-sky-500 transition-all bg-[#1e2529]' : ''
+              isEditing ? 'cursor-pointer group ring-1 ring-slate-600 hover:ring-gdh-brand/50 transition-all bg-[#1e2529]' : ''
             }`}
             onClick={isEditing && !uploadingBike ? onImageClick : undefined}
           >
@@ -382,7 +382,7 @@ export function BikeSetupCard({
                     key={`mq-${i}-${src}`}
                     className={`relative shrink-0 w-[min(78vw,260px)] h-[168px] rounded-lg overflow-hidden bg-[#0f1316] shadow-inner shadow-black/40 ${
                       isPrimarySlot && isEditing && !uploadingBike && onImageClick
-                        ? 'cursor-pointer ring-1 ring-white/15 hover:ring-teal-500/70'
+                        ? 'cursor-pointer ring-1 ring-white/15 hover:ring-gdh-brand/70'
                         : ''
                     }`}
                     onClick={
@@ -431,7 +431,7 @@ export function BikeSetupCard({
                   key={`static-${src}-${idx}`}
                   className={`relative shrink-0 w-[min(78vw,260px)] h-[168px] snap-center rounded-lg overflow-hidden bg-[#0f1316] ${
                     idx === 0 && isEditing && !uploadingBike && onImageClick
-                      ? 'cursor-pointer ring-1 ring-white/15 hover:ring-teal-500/70'
+                      ? 'cursor-pointer ring-1 ring-white/15 hover:ring-gdh-brand/70'
                       : ''
                   }`}
                   onClick={
@@ -487,7 +487,7 @@ export function BikeSetupCard({
                 type="button"
                 disabled={uploadingBike || uploadingGallery}
                 onClick={onAddGalleryClick}
-                className="inline-flex items-center gap-1.5 rounded-full border border-sky-500/40 bg-gdh-canvas-2 px-3 py-1.5 text-xs font-medium text-sky-200 hover:bg-gdh-elevated disabled:opacity-45"
+                className="inline-flex items-center gap-1.5 rounded-full border border-gdh-brand/40 bg-gdh-canvas-2 px-3 py-1.5 text-xs font-medium text-gdh-brand-highlight hover:bg-gdh-elevated disabled:opacity-45"
               >
                 {uploadingGallery ? (
                   <BrandSpinner className="shrink-0" size={14} />
@@ -526,7 +526,7 @@ export function BikeSetupCard({
               type="text"
               value={frame}
               onChange={(e) => onFrameChange?.(e.target.value)}
-              className="w-full text-sm font-semibold text-center text-slate-100 bg-slate-800/50 border border-slate-600 rounded px-1 py-1 focus:outline-none focus:border-sky-500"
+              className="w-full text-sm font-semibold text-center text-slate-100 bg-slate-800/50 border border-slate-600 rounded px-1 py-1 focus:outline-none focus:border-gdh-brand/50"
             />
           ) : (
             <p className="text-sm font-semibold text-slate-200 truncate w-full">{frame || '—'}</p>
@@ -539,7 +539,7 @@ export function BikeSetupCard({
               type="text"
               value={fork}
               onChange={(e) => onForkChange?.(e.target.value)}
-              className="w-full text-sm font-semibold text-center text-slate-100 bg-slate-800/50 border border-slate-600 rounded px-1 py-1 focus:outline-none focus:border-sky-500"
+              className="w-full text-sm font-semibold text-center text-slate-100 bg-slate-800/50 border border-slate-600 rounded px-1 py-1 focus:outline-none focus:border-gdh-brand/50"
             />
           ) : (
             <p className="text-sm font-semibold text-slate-200 truncate w-full">{fork || '—'}</p>
@@ -552,7 +552,7 @@ export function BikeSetupCard({
               type="text"
               value={drivetrain}
               onChange={(e) => onDrivetrainChange?.(e.target.value)}
-              className="w-full text-sm font-semibold text-center text-slate-100 bg-slate-800/50 border border-slate-600 rounded px-1 py-1 focus:outline-none focus:border-sky-500"
+              className="w-full text-sm font-semibold text-center text-slate-100 bg-slate-800/50 border border-slate-600 rounded px-1 py-1 focus:outline-none focus:border-gdh-brand/50"
             />
           ) : (
             <p className="text-sm font-semibold text-slate-200 truncate w-full">{drivetrain || '—'}</p>

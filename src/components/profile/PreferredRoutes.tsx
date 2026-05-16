@@ -15,9 +15,9 @@ function MiniSpark({ variant }: { variant: 'gold' | 'silver' | 'bronze' }) {
   const heights = variant === 'gold' ? [40, 55, 35, 70, 50, 80, 45, 92] : variant === 'silver' ? [35, 48, 55, 40, 62, 50, 70, 58] : [45, 38, 52, 60, 48, 72, 55, 68]
   const grad =
     variant === 'gold'
-      ? 'from-sky-500 to-cyan-400'
+      ? 'from-gdh-brand to-gdh-brand-highlight'
       : variant === 'silver'
-        ? 'from-violet-500 to-purple-400'
+        ? 'from-gdh-brand-muted to-gdh-sun'
         : 'from-orange-500 to-amber-400'
 
   const score =
@@ -85,7 +85,7 @@ export function PreferredRoutes({ selectedRoutes, isEditing, onAddRouteClick, us
           <button
             type="button"
             onClick={onAddRouteClick}
-            className="p-2.5 bg-violet-500/15 text-violet-300 rounded-xl border border-violet-500/25 hover:bg-violet-500/25 transition-colors shrink-0"
+            className="p-2.5 bg-gdh-brand/15 text-gdh-brand-highlight rounded-xl border border-gdh-brand/25 hover:bg-gdh-brand/25 transition-colors shrink-0"
             title={p.pickRoutesTitle}
           >
             <Plus size={20} />
@@ -98,7 +98,7 @@ export function PreferredRoutes({ selectedRoutes, isEditing, onAddRouteClick, us
           <div className="text-center py-10 px-4 border border-dashed border-white/10 rounded-[1.25rem] bg-gdh-card/80">
             <p className="text-slate-500 text-sm">{p.empty}</p>
             {isEditing && (
-              <button type="button" onClick={onAddRouteClick} className="mt-3 text-sm font-medium text-teal-400 hover:text-teal-300">
+              <button type="button" onClick={onAddRouteClick} className="mt-3 text-sm font-medium text-gdh-brand-highlight hover:text-gdh-brand-highlight/85">
                 {p.addFeatured}
               </button>
             )}

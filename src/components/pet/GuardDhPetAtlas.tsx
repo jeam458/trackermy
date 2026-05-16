@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
-import { Cpu, Sparkles } from 'lucide-react'
+import { Sparkles } from 'lucide-react'
 import type { PetEmotion } from '@/components/pet/guardDhPetTypes'
 import { applyRostroFrame } from '@/components/pet/guardDhPetRostroFrames'
 import {
@@ -17,71 +17,40 @@ import { PetBrandSvgInline } from '@/components/pet/PetBrandSvgInline'
 import { USE_GUARD_DH_VECTOR_PET, USE_PET_BRAND_SVG } from '@/lib/pet/petRuntimeConfig'
 import { playPetBrandSvgPartEnter } from '@/lib/pet/guardDhPetBrandSvgPartsAnime'
 import { GuardDhPetVectorAvatar } from '@/components/pet/petVector/GuardDhPetVectorAvatar'
+import { cn } from '@/lib/utils'
 
-/**
- * Indicador facial tipo foco:
- * - `ready` = motor WebLLM listo (cian).
- * - `heuristic` = guía activa sin modelo local (WebGPU ausente o motor aún no cargado).
- * - `thinking` = generando respuesta (pulso).
- */
-export type PetAiMindState = 'off' | 'ready' | 'thinking' | 'heuristic'
-
-function PetAiMindLamp({ size, state }: { size: number; state: PetAiMindState }) {
-  if (state === 'off') return null
-
-  const thinking = state === 'thinking'
-  const heuristic = state === 'heuristic'
+/** Solo se muestra en rider cuando `aiMindState === 'thinking'` (generando con WebLLM). */
+function PetAiThinkingLamp({ size }: { size: number }) {
   const box = Math.max(20, Math.round(size * 0.36))
   const iconSz = Math.max(8, Math.round(size * 0.18))
-
-  const haloBg = thinking
-    ? 'radial-gradient(circle, rgba(34,211,238,0.6) 0%, rgba(56,189,248,0.14) 50%, transparent 72%)'
-    : heuristic
-      ? 'radial-gradient(circle, rgba(251,191,36,0.48) 0%, rgba(245,158,11,0.14) 52%, transparent 72%)'
-      : 'radial-gradient(circle, rgba(34,211,238,0.42) 0%, rgba(45,212,191,0.12) 52%, transparent 72%)'
-
-  const label = thinking
-    ? 'IA procesando respuesta'
-    : heuristic
-      ? 'Guía activa sin modelo WebLLM en este dispositivo'
-      : 'WebLLM listo, modelo local activo'
-
   return (
     <div
       className="relative flex shrink-0 items-center justify-center pointer-events-none select-none"
       style={{ width: box, height: box }}
       role="img"
-      aria-label={label}
+      aria-label="IA procesando respuesta"
     >
       <div
-        className={`absolute inset-0 rounded-full blur-[4px] ${thinking ? 'animate-pulse' : heuristic ? 'animate-pulse opacity-95' : ''}`}
-        style={{ background: haloBg }}
+        className="absolute inset-0 animate-pulse rounded-full blur-[4px]"
+        style={{
+          background:
+            'radial-gradient(circle, color-mix(in srgb, var(--gdh-brand-highlight) 55%, transparent) 0%, color-mix(in srgb, var(--gdh-brand) 18%, transparent) 50%, transparent 72%)',
+        }}
       />
       <div className="relative z-[1] flex items-center justify-center">
-        {heuristic && !thinking ? (
-          <Cpu
-            className="text-amber-200 drop-shadow-[0_0_6px_rgba(251,191,36,0.9)]"
-            style={{ width: iconSz, height: iconSz }}
-            strokeWidth={2.25}
-            aria-hidden
-          />
-        ) : (
-          <Sparkles
-            className={`text-cyan-200 drop-shadow-[0_0_7px_rgba(34,211,238,0.95)] ${
-              thinking ? 'animate-pulse scale-110' : ''
-            }`}
-            style={{ width: iconSz, height: iconSz }}
-            strokeWidth={2.25}
-            aria-hidden
-          />
-        )}
+        <Sparkles
+          className="scale-110 animate-pulse text-gdh-brand-highlight drop-shadow-[0_0_8px_rgba(227,120,69,0.85)]"
+          style={{ width: iconSz, height: iconSz }}
+          strokeWidth={2.25}
+          aria-hidden
+        />
       </div>
-      {thinking ? (
-        <span className="pointer-events-none absolute inset-[-3px] z-[0] rounded-full border-2 border-cyan-300/45 animate-ping" />
-      ) : null}
+      <span className="pointer-events-none absolute inset-[-3px] z-[0] animate-ping rounded-full border-2 border-gdh-brand-highlight/45" />
     </div>
   )
 }
+
+export type PetAiMindState = 'off' | 'ready' | 'thinking' | 'heuristic'
 
 export type GuardDhPetAtlasProps = {
   emotion: PetEmotion
@@ -90,7 +59,7 @@ export type GuardDhPetAtlasProps = {
   showcase?: boolean
   toastGlanceSignal?: number
   toastGlanceDirection?: ToastGlanceDirection
-  /** WebLLM listo / heurística / pensando; `off` oculta el foco. */
+  /** En rider solo se usa `thinking` | `off`; otros valores se tratan como `off`. */
   aiMindState?: PetAiMindState
 }
 
@@ -229,6 +198,9 @@ export function GuardDhPetAtlas({
 
   const vectorPartial = (e: PetEmotion) => bySlug.get(e)?.proceduralFace ?? null
 
+  /** PNG `patt-pet` puede traer blanco o “tablero” grabado sin alpha real; multiply + base oscura lo integra al UI. */
+  const usePngRostro = !USE_PET_BRAND_SVG && !USE_GUARD_DH_VECTOR_PET
+
   return (
     <div
       className={`relative shrink-0 overflow-visible ${className}`}
@@ -237,22 +209,28 @@ export function GuardDhPetAtlas({
       data-pet-emotion={emotion}
       data-pet-renderer={USE_PET_BRAND_SVG ? 'brand-svg-inline' : USE_GUARD_DH_VECTOR_PET ? 'vector' : 'atlas'}
     >
-      {aiMindState !== 'off' ? (
+      {aiMindState === 'thinking' ? (
         <div
           className="absolute left-1/2 z-[12] flex -translate-x-1/2 justify-center pointer-events-none"
           style={{ top: lampTop }}
         >
-          <PetAiMindLamp size={size} state={aiMindState} />
+          <PetAiThinkingLamp size={size} />
         </div>
       ) : null}
 
       <div
         ref={wrapRef}
-        className="absolute inset-0 overflow-hidden rounded-full border border-white/15 bg-[#0d1218] shadow-[0_8px_22px_rgba(0,0,0,0.45)]"
+        className="absolute inset-0 overflow-hidden rounded-full border border-white/20 bg-transparent shadow-[0_6px_20px_rgba(0,0,0,0.35)]"
       >
+        {usePngRostro ? (
+          <div className="pointer-events-none absolute inset-0 z-0 bg-gdh-canvas-2" aria-hidden />
+        ) : null}
         <div
           ref={face0Ref}
-          className="absolute inset-0 will-change-transform pointer-events-none overflow-hidden"
+          className={cn(
+            'absolute inset-0 will-change-transform pointer-events-none overflow-hidden',
+            usePngRostro && 'z-[1] mix-blend-multiply'
+          )}
           style={{ transformOrigin: '50% 50%' }}
         >
           {USE_PET_BRAND_SVG ? (
@@ -263,7 +241,10 @@ export function GuardDhPetAtlas({
         </div>
         <div
           ref={face1Ref}
-          className="absolute inset-0 will-change-transform pointer-events-none overflow-hidden"
+          className={cn(
+            'absolute inset-0 will-change-transform pointer-events-none overflow-hidden',
+            usePngRostro && 'z-[1] mix-blend-multiply'
+          )}
           style={{ transformOrigin: '50% 50%' }}
         >
           {!USE_PET_BRAND_SVG && USE_GUARD_DH_VECTOR_PET ? (

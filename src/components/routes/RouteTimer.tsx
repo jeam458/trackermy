@@ -57,7 +57,7 @@ function ConnectionIndicator({ isOnline }: { isOnline: boolean }) {
     <div
       className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold ${
         isOnline
-          ? 'border-teal-500/35 bg-teal-500/15 text-teal-200'
+          ? 'border-gdh-brand/35 bg-gdh-brand/15 text-gdh-brand-highlight'
           : 'border-red-500/30 bg-red-500/10 text-red-300'
       }`}
     >
@@ -96,8 +96,8 @@ function LiveMetricsPanel({
       </div>
 
       <div className="flex items-center gap-3">
-        <div className="rounded-xl bg-teal-500/15 p-2">
-          <Gauge className="text-teal-400" size={20} />
+        <div className="rounded-xl bg-gdh-brand/15 p-2">
+          <Gauge className="text-gdh-brand-highlight" size={20} />
         </div>
         <div>
           <p className="text-xs text-zinc-500">Vel. Actual</p>
@@ -106,8 +106,8 @@ function LiveMetricsPanel({
       </div>
 
       <div className="flex items-center gap-3">
-        <div className="rounded-xl bg-sky-500/15 p-2">
-          <TrendingUp className="text-sky-400" size={20} />
+        <div className="rounded-xl bg-gdh-sun/15 p-2">
+          <TrendingUp className="text-gdh-sun" size={20} />
         </div>
         <div>
           <p className="text-xs text-zinc-500">Vel. Máx</p>
@@ -116,8 +116,8 @@ function LiveMetricsPanel({
       </div>
 
       <div className="flex items-center gap-3">
-        <div className="rounded-xl bg-violet-500/15 p-2">
-          <Activity className="text-violet-400" size={20} />
+        <div className="rounded-xl bg-gdh-trail/18 p-2">
+          <Activity className="text-gdh-muted" size={20} />
         </div>
         <div>
           <p className="text-xs text-zinc-500">Vel. Prom</p>
@@ -126,8 +126,8 @@ function LiveMetricsPanel({
       </div>
 
       <div className="flex items-center gap-3">
-        <div className="rounded-xl bg-teal-500/10 p-2">
-          <MapPin className="text-teal-300" size={20} />
+        <div className="rounded-xl bg-gdh-brand/12 p-2">
+          <MapPin className="text-gdh-brand-highlight" size={20} />
         </div>
         <div>
           <p className="text-xs text-zinc-500">Distancia</p>
@@ -199,7 +199,7 @@ function ResultsPanel({
       <div className="rounded-2xl border border-white/10 bg-gdh-card p-4">
         <div className="mb-3 flex items-center justify-between">
           <h3 className="font-semibold text-white">Velocidades</h3>
-          <Gauge className="text-teal-400" size={18} />
+          <Gauge className="text-gdh-brand-highlight" size={18} />
         </div>
         <div className="grid grid-cols-3 gap-3">
           <div className="text-center">
@@ -216,7 +216,7 @@ function ResultsPanel({
           </div>
           <div className="text-center">
             <p className="text-xs text-gray-400">Máx</p>
-            <p className="text-lg font-bold text-teal-300">
+            <p className="text-lg font-bold text-gdh-brand-highlight">
               {RoutePerformanceService.formatSpeed(performance.maxSpeed)}
             </p>
           </div>
@@ -242,8 +242,8 @@ function ResultsPanel({
             <p className="text-xs text-orange-400">Giros bruscos</p>
             <p className="text-2xl font-bold text-white">{performance.sharpMovements.length}</p>
           </div>
-          <div className="rounded-lg bg-teal-500/10 p-3">
-            <p className="text-xs text-teal-300">Paradas</p>
+          <div className="rounded-lg bg-gdh-brand/12 p-3">
+            <p className="text-xs text-gdh-brand-highlight">Paradas</p>
             <p className="text-2xl font-bold text-white">{performance.stops.length}</p>
           </div>
         </div>
@@ -260,7 +260,7 @@ function ResultsPanel({
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-zinc-800">
               <div
-                className="h-full bg-sky-500 transition-all"
+                className="h-full bg-gdh-sun transition-all"
                 style={{ width: `${performance.rhythmScore}%` }}
               />
             </div>
@@ -272,7 +272,7 @@ function ResultsPanel({
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-zinc-800">
               <div
-                className="h-full bg-teal-500 transition-all"
+                className="h-full bg-gdh-brand transition-all"
                 style={{ width: `${performance.intensityScore}%` }}
               />
             </div>
@@ -483,8 +483,8 @@ export function RouteTimer({ routeId, routeName, onComplete }: RouteTimerProps) 
                 />
                 <defs>
                   <linearGradient id={countdownGradientId} x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#2dd4bf" />
-                    <stop offset="100%" stopColor="#5eead4" />
+                    <stop offset="0%" stopColor="#c55a2f" />
+                    <stop offset="100%" stopColor="#e37845" />
                   </linearGradient>
                 </defs>
               </svg>
@@ -552,8 +552,8 @@ export function RouteTimer({ routeId, routeName, onComplete }: RouteTimerProps) 
         {/* Estado: No iniciado */}
         {!state.isRunning && !state.isFinished && armCountdown === null && (
           <div className="space-y-6 py-10 text-center">
-            <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-teal-500/15 ring-1 ring-teal-500/30">
-              <Timer className="text-teal-400" size={40} />
+            <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-gdh-brand/15 ring-1 ring-gdh-brand/30">
+              <Timer className="text-gdh-brand-highlight" size={40} />
             </div>
             <div>
               <h2 className="mb-2 text-2xl font-bold text-white">¿Listo para el reto?</h2>
@@ -564,7 +564,7 @@ export function RouteTimer({ routeId, routeName, onComplete }: RouteTimerProps) 
             <button
               type="button"
               onClick={beginCountdown}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-teal-400/35 bg-teal-600 py-4 text-lg font-bold text-white shadow-lg shadow-teal-950/30 transition-colors hover:bg-teal-500 active:bg-teal-700"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-gdh-brand/35 bg-gdh-brand py-4 text-lg font-bold text-white shadow-lg shadow-[0_10px_28px_rgba(197,90,47,0.35)] transition-colors hover:bg-gdh-brand-highlight active:bg-gdh-brand-muted"
             >
               <Play size={24} />
               Iniciar Cronómetro
@@ -580,13 +580,13 @@ export function RouteTimer({ routeId, routeName, onComplete }: RouteTimerProps) 
               className={`rounded-2xl border-2 p-4 ${
                 state.isPaused
                   ? 'border-amber-500/40 bg-amber-500/10'
-                  : 'border-teal-500/40 bg-teal-500/10'
+                  : 'border-gdh-brand/40 bg-gdh-brand/10'
               }`}
             >
               <div className="flex items-center gap-2">
                 <div
                   className={`h-3 w-3 animate-pulse rounded-full ${
-                    state.isPaused ? 'bg-amber-400' : 'bg-teal-400'
+                    state.isPaused ? 'bg-amber-400' : 'bg-gdh-brand-highlight'
                   }`}
                 />
                 <span className="font-semibold text-white">
@@ -620,7 +620,7 @@ export function RouteTimer({ routeId, routeName, onComplete }: RouteTimerProps) 
                 <button
                   type="button"
                   onClick={actions.resumeTimer}
-                  className="flex items-center justify-center gap-2 rounded-2xl border border-teal-400/40 bg-teal-600 py-3.5 font-semibold text-white transition-colors hover:bg-teal-500"
+                  className="flex items-center justify-center gap-2 rounded-2xl border border-gdh-brand/40 bg-gdh-brand py-3.5 font-semibold text-white transition-colors hover:bg-gdh-brand-highlight"
                 >
                   <Play size={20} />
                   Reanudar
@@ -652,14 +652,14 @@ export function RouteTimer({ routeId, routeName, onComplete }: RouteTimerProps) 
         {state.isFinished && performance && (
           <div className="space-y-4">
             <div className="text-center">
-              <CheckCircle2 className="mx-auto mb-2 text-teal-400" size={40} />
+              <CheckCircle2 className="mx-auto mb-2 text-gdh-brand-highlight" size={40} />
               <h2 className="text-2xl font-bold text-white">¡Ruta Completada!</h2>
             </div>
 
             {state.offlineAttemptQueued && (
-              <div className="p-4 bg-teal-500/15 border border-teal-500/35 rounded-lg text-sm text-teal-100/95">
-                <p className="font-semibold text-teal-200 mb-1">Guardado en el dispositivo</p>
-                <p className="text-teal-100/80">
+              <div className="p-4 bg-gdh-brand/15 border border-gdh-brand/35 rounded-lg text-sm text-slate-100">
+                <p className="font-semibold text-gdh-brand-highlight mb-1">Guardado en el dispositivo</p>
+                <p className="text-slate-300">
                   Sin conexión al finalizar: tu recorrido y métricas están en almacenamiento local. Se subirán a tu cuenta
                   automáticamente cuando vuelva Internet (no hace falta repetir la bajada).
                 </p>

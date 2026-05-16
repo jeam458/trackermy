@@ -43,9 +43,19 @@ export async function updateSession(request: NextRequest) {
   // supabase.auth.getUser(). A simple mistake could make it very hard to debug
   // issues with users being randomly logged out.
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  let user = null as Awaited<ReturnType<typeof supabase.auth.getUser>>['data']['user']
+  try {
+    const { data } = await supabase.auth.getUser()
+    user = data.user
+  } catch (err) {
+    // Red caída, URL/claves mal puestas, proxy, etc. → fetch falla en Edge (no siempre hay `cause`).
+    if (process.env.NODE_ENV === 'development') {
+      console.warn(
+        '[middleware] Supabase auth no alcanzable (getUser/refresh). Revisa NEXT_PUBLIC_SUPABASE_URL, red y .env.local.',
+        err
+      )
+    }
+  }
 
   if (
     !user &&

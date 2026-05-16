@@ -66,7 +66,7 @@ export function VoiceControlPanel({ voiceCoach, density = 'default' }: VoiceCont
         className={cn(
           iconBtn,
           voiceCoach.coachVoiceRead
-            ? 'border-sky-400/45 bg-sky-500/15 text-sky-100'
+            ? 'border-gdh-brand/40 bg-gdh-brand/15 text-gdh-brand-highlight'
             : 'text-slate-400',
         )}
         aria-pressed={voiceCoach.coachVoiceRead}

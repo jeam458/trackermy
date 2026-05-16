@@ -103,20 +103,20 @@ export function RouteCardSilhouette({ trackPoints }: { trackPoints: RouteTrackPo
   return (
     <svg
       viewBox={`0 0 ${VB_W} ${VB_H}`}
-      className="h-14 w-full max-w-[7.5rem] drop-shadow-[0_0_12px_rgba(34,211,238,0.15)]"
+      className="h-14 w-full max-w-[7.5rem] drop-shadow-[0_0_10px_rgba(227,120,69,0.2)]"
       preserveAspectRatio="xMidYMid meet"
       aria-hidden
     >
       <defs>
         <linearGradient id={gradStroke} x1="0%" y1="100%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#22d3ee" />
-          <stop offset="55%" stopColor="#38bdf8" />
-          <stop offset="100%" stopColor="#818cf8" />
+          <stop offset="0%" stopColor="#8f3d1f" />
+          <stop offset="45%" stopColor="#c55a2f" />
+          <stop offset="100%" stopColor="#e37845" />
         </linearGradient>
         <linearGradient id={gradFill} x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.45} />
-          <stop offset="70%" stopColor="#6366f1" stopOpacity={0.12} />
-          <stop offset="100%" stopColor="#312e81" stopOpacity={0.02} />
+          <stop offset="0%" stopColor="#e37845" stopOpacity={0.35} />
+          <stop offset="70%" stopColor="#c55a2f" stopOpacity={0.12} />
+          <stop offset="100%" stopColor="#131316" stopOpacity={0.04} />
         </linearGradient>
       </defs>
       <path ref={fillRef} d={data.areaD} fill={`url(#${gradFill})`} opacity={0} />

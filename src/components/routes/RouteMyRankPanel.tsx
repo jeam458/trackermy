@@ -179,7 +179,7 @@ export function RouteMyRankPanel({ routeId, replayReturnFrom = null }: Props) {
           Replay de bajada (mapa)
         </Link>
         {pipeline !== 'none' && (
-          <span className="inline-flex items-center gap-1.5 rounded-lg border border-teal-500/30 bg-teal-500/10 px-3 py-2 text-xs text-teal-200/90">
+          <span className="inline-flex items-center gap-1.5 rounded-lg border border-gdh-brand/30 bg-gdh-brand/10 px-3 py-2 text-xs text-gdh-brand-highlight/90">
             <Box size={14} className="shrink-0" />
             {replay3dStatusLabel(pipeline)}
           </span>

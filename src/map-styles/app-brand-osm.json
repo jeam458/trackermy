@@ -35,16 +35,16 @@
     "railIndustrial": "#4a5568",
     "sportLeisureTracks": "#2a382f",
     "labelRoad": "#cbd5e1",
-    "labelWater": "#5eead4",
-    "labelGreen": "#6ee7b7"
+    "labelWater": "#94a3b8",
+    "labelGreen": "#a8a29e"
   },
   "leafletRaster": {
     "tileCssClassDark": "leaflet-app-brand-osm-tiles",
     "tileCssClassOutdoor": "leaflet-app-brand-osm-tiles-outdoor",
     "filterIntent": {
       "dark": "Base muy oscura (canvas #121820), carreteras y contornos legibles sin quemar verdes/azules.",
-      "outdoor": "Más luminosidad pero misma línea fría/teal oscura para calles, agua y verdes."
+      "outdoor": "Más luminosidad; acentos alineados a PATT (terracota / neutros)."
     }
   },
-  "routeAccentReference": ["#14b8a6", "#2dd4bf", "#0f766e", "#6366f1"]
+  "routeAccentReference": ["#c55a2f", "#e37845", "#d97736", "#8f3d1f"]
 }
